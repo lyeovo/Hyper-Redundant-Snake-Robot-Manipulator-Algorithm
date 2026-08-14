@@ -1,0 +1,40 @@
+# ---- MATLAB ----
+*.asv
+*.m~
+resources/
+*.slxc
+*.slprj
+*.mlappinstall
+*.mlpkginstall
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+runs/
+datasets/
+*.egg-info/
+
+# ---- AI 代理 / 构建工具运行时状态（非项目源码） ----
+.reasonix/
+.buildtool/
+
+# ---- 视觉模块：独立 git 仓库（自带 origin，参考不改），保持独立不纳入本仓库 ----
+vision/D405_MarkerVision/
+
+# ---- 编辑器 / 系统 ----
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ---- Office 临时 / 锁文件 ----
+~$*
+~WRL*.tmp
+$null
+
+# ---- 大型可再生二进制（训练产物/示范数据；源码与训练脚本已入仓） ----
+# 如需交付模型快照，可临时解除下面注释后提交
+# rl_pipeline/policy_*.mat
+# rl_pipeline/policy_*.npz
+# demonstrations_*/
