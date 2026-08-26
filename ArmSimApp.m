@@ -50,24 +50,32 @@ function app = ArmSimApp()
         'Background',[0.14 0.15 0.18],'Title','参数 · 任务 · 障碍','Foreground',[0.9 0.9 1],'FontSize',9);
     rH = 0.0265;  py = 0.97;
 
-    % === 模型参数 ===
-    [hN, hL, py]    = twoCol(hp, py, rH, '关节数 N:', num2str(s.model.cfg.N), '杆长 L(m):', num2str(s.model.cfg.L_seg(1)));
-    s.hN = hN;  s.hL = hL;
-    [hQm, hQx, py]  = twoCol(hp, py, rH, 'q_min:', num2str(s.model.cfg.q_min(1)), 'q_max:', num2str(s.model.cfg.q_max(1)));
-    s.hQm = hQm;  s.hQx = hQx;
-    [hRho, hMi, py]= twoCol(hp, py, rH, '安全距 rho0:', num2str(s.model.cfg.rho0), 'max_iter:', num2str(s.model.cfg.max_iter));
-    s.hRho = hRho;  s.hMi = hMi;
-    [hSamp, ~, py]  = twoCol(hp, py, rH, '采样预算:', num2str(s.model.cfg.rrt_max_samples), '', '');
-    s.hSamp = hSamp;
+    % === 模型参数（可折叠） ===
+    s.hParamHeader = uicontrol(hp,'Style','togglebutton','String','▾ 模型参数', ...
+        'Value',1,'Units','normalized','Position',[0.02 py-0.016 0.96 0.026], ...
+        'Background',[0.22 0.22 0.30],'Foreground',[1 0.7 0.3],'FontSize',8, ...
+        'HorizontalAlignment','left','Callback',@onToggleParam);
+    py = py - 0.030;
+    s.paramContent = [];
+    [hN, hL, py, hh]    = twoCol(hp, py, rH, '关节数 N:', num2str(s.model.cfg.N), '杆长 L(m):', num2str(s.model.cfg.L_seg(1)));
+    s.hN = hN;  s.hL = hL;  s.paramContent = [s.paramContent hh]; %#ok<AGROW>
+    [hQm, hQx, py, hh]  = twoCol(hp, py, rH, 'q_min:', num2str(s.model.cfg.q_min(1)), 'q_max:', num2str(s.model.cfg.q_max(1)));
+    s.hQm = hQm;  s.hQx = hQx;  s.paramContent = [s.paramContent hh]; %#ok<AGROW>
+    [hRho, hMi, py, hh]= twoCol(hp, py, rH, '安全距 rho0:', num2str(s.model.cfg.rho0), 'max_iter:', num2str(s.model.cfg.max_iter));
+    s.hRho = hRho;  s.hMi = hMi;  s.paramContent = [s.paramContent hh]; %#ok<AGROW>
+    [hSamp, ~, py, hh] = twoCol(hp, py, rH, '采样预算:', num2str(s.model.cfg.rrt_max_samples), '', '');
+    s.hSamp = hSamp;  s.paramContent = [s.paramContent hh]; %#ok<AGROW>
     s.hAdaptive = uicontrol(hp,'Style','checkbox','String','自适应预算（按场景难度，失败自动升档）', ...
         'Value',1,'Units','normalized','Position',[0.05 py-rH-0.008 0.92 rH], ...
         'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7, ...
         'Callback',@onParamEdit);
+    s.paramContent = [s.paramContent s.hAdaptive]; %#ok<AGROW>
     py = py - rH - 0.016;
     s.hStrict = uicontrol(hp,'Style','checkbox','String','严格收敛（位置<1e-4 且 角度<1e-3；关闭=动态逐项<0.001）', ...
         'Value',1,'Units','normalized','Position',[0.05 py-rH-0.008 0.92 rH], ...
         'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7, ...
         'Callback',@onParamEdit);
+    s.paramContent = [s.paramContent s.hStrict]; %#ok<AGROW>
     py = py - rH - 0.016;
 
     % === 目标位姿 ===
@@ -91,14 +99,19 @@ function app = ArmSimApp()
     py = py - 0.038;
     s.hQj = [];  s.hQjLbl = [];   % 动态创建（syncJointEditors 填充）
 
-    % === 目标函数权重 ===
-    sectionTitle(hp, py, '── 目标函数权重 ──'); py = py - 0.024;
-    [hWp, hWa, py] = twoCol(hp, py, rH, 'w_pos:', num2str(s.model.cfg.w_pos), 'w_ang:', num2str(s.model.cfg.w_ang));
-    s.hWPos = hWp;  s.hWAng = hWa;
-    [hWo, hWv, py] = twoCol(hp, py, rH, 'w_obs:', num2str(s.model.cfg.w_obs), 'w_var:', num2str(s.model.cfg.w_var));
-    s.hWObs = hWo;  s.hWVar = hWv;
-    [hWc, ~, py]   = twoCol(hp, py, rH, 'w_acc:', num2str(s.model.cfg.w_acc), '', '');
-    s.hWAcc = hWc;
+    % === 目标函数权重（可折叠） ===
+    s.hWgtHeader = uicontrol(hp,'Style','togglebutton','String','▾ 目标函数权重', ...
+        'Value',1,'Units','normalized','Position',[0.02 py-0.016 0.96 0.026], ...
+        'Background',[0.22 0.22 0.30],'Foreground',[1 0.7 0.3],'FontSize',8, ...
+        'HorizontalAlignment','left','Callback',@onToggleWgt);
+    py = py - 0.030;
+    s.wgtContent = [];
+    [hWp, hWa, py, hh] = twoCol(hp, py, rH, 'w_pos:', num2str(s.model.cfg.w_pos), 'w_ang:', num2str(s.model.cfg.w_ang));
+    s.hWPos = hWp;  s.hWAng = hWa;  s.wgtContent = [s.wgtContent hh]; %#ok<AGROW>
+    [hWo, hWv, py, hh] = twoCol(hp, py, rH, 'w_obs:', num2str(s.model.cfg.w_obs), 'w_var:', num2str(s.model.cfg.w_var));
+    s.hWObs = hWo;  s.hWVar = hWv;  s.wgtContent = [s.wgtContent hh]; %#ok<AGROW>
+    [hWc, ~, py, hh]   = twoCol(hp, py, rH, 'w_acc:', num2str(s.model.cfg.w_acc), '', '');
+    s.hWAcc = hWc;  s.wgtContent = [s.wgtContent hh]; %#ok<AGROW>
 
     % 参数编辑回调：修改模型/目标/权重参数后立即重建并重置图像（保持一致）
     set([hN hL hQm hQx hRho hMi hSamp hTx hTy hTth hWp hWa hWo hWv hWc], 'Callback', @onParamEdit);
@@ -489,6 +502,30 @@ function onFitView(src, ~)
     s = guidata(f);
     s = drawAll(s);   % drawAll 已内置「适应视图」逻辑（按全部物体自动缩放）
     guidata(f, s);
+end
+
+function onToggleParam(src, ~)
+    s = guidata(ancestor(src,'figure'));
+    if get(src,'Value')
+        if ~isempty(s.paramContent), set(s.paramContent,'Visible','on'); end
+        set(src,'String','▾ 模型参数');
+    else
+        if ~isempty(s.paramContent), set(s.paramContent,'Visible','off'); end
+        set(src,'String','▸ 模型参数');
+    end
+    guidata(ancestor(src,'figure'), s);
+end
+
+function onToggleWgt(src, ~)
+    s = guidata(ancestor(src,'figure'));
+    if get(src,'Value')
+        if ~isempty(s.wgtContent), set(s.wgtContent,'Visible','on'); end
+        set(src,'String','▾ 目标函数权重');
+    else
+        if ~isempty(s.wgtContent), set(s.wgtContent,'Visible','off'); end
+        set(src,'String','▸ 目标函数权重');
+    end
+    guidata(ancestor(src,'figure'), s);
 end
 
 function onParamEdit(src, ~)
@@ -973,29 +1010,29 @@ function cmd = mockTaskCommand(ct, xt, yt, tt, dx, dy)
         'allow_execute', true, 'estop_active', false);
 end
 
-function sectionTitle(hp, py, str)
-    uicontrol(hp,'Style','text','String',str,'Units','normalized', ...
+function h = sectionTitle(hp, py, str)
+    h = uicontrol(hp,'Style','text','String',str,'Units','normalized', ...
         'Position',[0.03 py-0.018 0.94 0.015],'Background',[0.14 0.15 0.18], ...
         'Foreground',[1 0.7 0.3],'FontSize',7,'HorizontalAlignment','center');
 end
 
-function [h1, h2, py] = twoCol(hp, py, rH, lab1, val1, lab2, val2)
-    uicontrol(hp,'Style','text','String',lab1,'Units','normalized', ...
+function [h1, h2, py, hAll] = twoCol(hp, py, rH, lab1, val1, lab2, val2)
+    hl1 = uicontrol(hp,'Style','text','String',lab1,'Units','normalized', ...
         'Position',[0.03 py-rH 0.24 rH],'Background',[0.14 0.15 0.18], ...
         'Foreground',[0.85 0.85 0.95],'FontSize',7,'HorizontalAlignment','left');
     h1 = uicontrol(hp,'Style','edit','String',val1,'Units','normalized', ...
         'Position',[0.27 py-rH 0.20 rH],'Background',[0.2 0.2 0.3], ...
         'Foreground',[1 1 1],'FontSize',8);
+    hl2 = [];  h2 = [];
     if ~isempty(lab2)
-        uicontrol(hp,'Style','text','String',lab2,'Units','normalized', ...
+        hl2 = uicontrol(hp,'Style','text','String',lab2,'Units','normalized', ...
             'Position',[0.50 py-rH 0.24 rH],'Background',[0.14 0.15 0.18], ...
             'Foreground',[0.85 0.85 0.95],'FontSize',7,'HorizontalAlignment','left');
         h2 = uicontrol(hp,'Style','edit','String',val2,'Units','normalized', ...
             'Position',[0.74 py-rH 0.22 rH],'Background',[0.2 0.2 0.3], ...
             'Foreground',[1 1 1],'FontSize',8);
-    else
-        h2 = [];
     end
+    hAll = [hl1 h1 hl2 h2];   % 本行创建的全部句柄（label1/edit1/label2/edit2，空则省略）
     py = py - rH - 0.005;
 end
 
