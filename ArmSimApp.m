@@ -179,10 +179,15 @@ function app = ArmSimApp()
         'Background',[0.1 0.1 0.12],'Foreground',[0.8 1 0.85],'FontSize',8);
     s.hLogP = hLogP;
 
-    % 右下角：障碍编辑（圆 [x,y,r] / 矩形 [x,y,θ,w,h]）
+    % 右下角：场景 · 障碍编辑（圆 [x,y,r] / 矩形 [x,y,θ,w,h]）
     hObsP = uipanel('Parent',fig,'Units','normalized','Position',[0.78 0.02 0.215 0.36], ...
-        'Background',[0.13 0.13 0.15],'Title','障碍编辑','Foreground',[0.9 0.9 1],'FontSize',9);
-    s.hObsTable = uitable(hObsP,'Units','normalized','Position',[0.03 0.17 0.94 0.76], ...
+        'Background',[0.13 0.13 0.15],'Title','场景 · 障碍编辑','Foreground',[0.9 0.9 1],'FontSize',9);
+    s.hRand = uicontrol(hObsP,'Style','pushbutton','String','🎲 一键随机场景', ...
+        'Units','normalized','Position',[0.03 0.87 0.94 0.10], ...
+        'Background',[0.30 0.45 0.30],'Foreground',[1 1 1],'FontSize',8, ...
+        'TooltipString','随机生成合理障碍组 + 臂初始姿态 + 目标（不修改 N/杆长/角度区间）', ...
+        'Callback',@onRandomScene);
+    s.hObsTable = uitable(hObsP,'Units','normalized','Position',[0.03 0.17 0.94 0.67], ...
         'ColumnName',{'类型','参数'},'ColumnWidth',{70 155},'ColumnEditable',[true true], ...
         'Data',{'circle','1.0, 1.4, 0.30'}, ...
         'CellEditCallback',@onObsEdit,'BackgroundColor',[0.2 0.2 0.28], ...
@@ -668,6 +673,67 @@ function onObsDel(src, ~)
     s = rebuildModel(s);
     s = drawAll(s);
     guidata(ancestor(src,'figure'), s);
+end
+
+%% ---------- 随机场景 ----------
+function onRandomScene(src, ~)
+    f = ancestor(src,'figure');
+    s = guidata(f);
+    s = randomScene(s);
+    guidata(f, s);
+end
+
+function s = randomScene(s)
+    % 一键随机场景：随机障碍组 + 臂初始姿态 + 目标。
+    % 仅随机化场景内容，不修改基础参数（N/杆长/角度区间等——沿用当前模型）。
+    s = rebuildModel(s);          % 先从编辑框同步当前基础参数（防 N/杆长等未失焦的改动）
+    cfg = s.model.cfg;
+    [~, ~, tgt, obs_desc] = sampleTask2D(struct('N', cfg.N, 'L_seg', cfg.L_seg(1), ...
+        'difficulty', 2));
+    % 写障碍表（circle [x,y,r] / rect [x,y,θ,w,h]）
+    data = cell(0, 2);
+    for k = 1:size(obs_desc.circles, 1)
+        data(end+1, :) = {'circle', vec2str(obs_desc.circles(k, :))}; %#ok<AGROW>
+    end
+    for k = 1:size(obs_desc.rects, 1)
+        data(end+1, :) = {'rect', vec2str(obs_desc.rects(k, :))}; %#ok<AGROW>
+    end
+    set(s.hObsTable, 'Data', data);
+    % 写目标位姿
+    set(s.hTx, 'String', num2str(tgt(1), '%.3f'));
+    set(s.hTy, 'String', num2str(tgt(2), '%.3f'));
+    set(s.hTth, 'String', num2str(tgt(3), '%.3f'));
+    % 重建模型（读障碍 + 目标；基础参数保持当前值）
+    s = rebuildModel(s);
+    % 臂初始姿态：在当前 q_min/q_max 内随机且碰撞自由
+    s.q = sampleFreeQ0(s.model);
+    % 清空上次求解/回放结果，避免旧轨迹/旧信息残留
+    s.snap = [];  s.trajQ = [];  s.trajPts = [];  s.gripperSeq = [];  s.snapIdx = 1;
+    s.info = [];  s.graphDisp = [];
+    s = syncJointEditors(s);
+    s = drawAll(s);
+    s = setLog(s, sprintf('🎲 随机场景：%d 圆 %d 矩形 | q0=%s | 目标(%.2f, %.2f, θ=%.2f)', ...
+        size(obs_desc.circles,1), size(obs_desc.rects,1), mat2str(s.q, 2), tgt(1), tgt(2), tgt(3)));
+end
+
+function q0 = sampleFreeQ0(model)
+    % 在当前 q_min/q_max 区间内采样碰撞自由的初始构型（最多 50 次）
+    cfg = model.cfg;
+    q0 = zeros(1, cfg.N);
+    for tries = 1:50
+        qc = cfg.q_min + (cfg.q_max - cfg.q_min) .* rand(1, cfg.N);
+        g = obsDistAll(model, qc);
+        if isempty(g) || min(g) >= cfg.rho0 + 0.12
+            q0 = qc; return;
+        end
+    end
+end
+
+function str = vec2str(v)
+    str = num2str(v(1), '%.3f');
+    for k = 2:numel(v)
+        str = [str ', ' num2str(v(k), '%.3f')]; %#ok<AGROW>
+    end
 end
 
 %% ---------- 回放 / 鼠标 / 键盘 ----------
