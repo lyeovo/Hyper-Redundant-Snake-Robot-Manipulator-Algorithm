@@ -12,7 +12,7 @@ train_cvae.py — CVAE 多模态轨迹生成训练（L2 M3 主体）
     归一化参数 + decoder 权重（键 w_dec_0_weight 等）+ d_z/GRID/EXTENT/N/T。
 
 用法：
-    python rl_pipeline/train_cvae.py --data demonstrations_n6 --out rl_pipeline/policy_cvae --epochs 60
+    python rl_pipeline/train_cvae.py --data data/demonstrations_n6 --out rl_pipeline/policy_cvae --epochs 60
 """
 import argparse
 import glob
@@ -228,7 +228,7 @@ def train(args):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", nargs="+", default=["demonstrations_n6"])
+    ap.add_argument("--data", nargs="+", default=["data/demonstrations_n6"])
     ap.add_argument("--out", default="rl_pipeline/policy_cvae.mat")
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--lr", type=float, default=1e-3)

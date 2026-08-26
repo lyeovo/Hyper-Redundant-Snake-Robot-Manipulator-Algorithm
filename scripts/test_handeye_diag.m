@@ -1,5 +1,5 @@
 % test_handeye_diag.m — 手眼估计逐帧诊断（A/B 旋转一致性）
-cd('D:/thuedu/26夏'); addpath('ArmSimulator2D');
+cd(fileparts(fileparts(mfilename('fullpath')))); addpath('ArmSimulator2D');
 se2m = @(p) [cos(p(3)) -sin(p(3)) p(1); sin(p(3)) cos(p(3)) p(2); 0 0 1];
 inv_se2m = @(T) [T(1:2,1:2)' -T(1:2,1:2)'*T(1:2,3); 0 0 1];
 wrapA = @(a) mod(a + pi, 2*pi) - pi;

@@ -1,7 +1,7 @@
 % eval_failures.m — 失败例专项验证：C1_ft vs v2 在 37 个失败例上的救回率
 %   变体训练的目标 = 救回"可解失败例"（failures_20260810.mat 中 solvable=1 的 11 个）
-root = fileparts(mfilename('fullpath'));  cd(root);  addpath(fullfile(root, 'ArmSimulator2D'));
-S = load('failures_20260810.mat');
+root = fileparts(fileparts(mfilename('fullpath')));  cd(root);  addpath(fullfile(root, 'ArmSimulator2D'));
+S = load(fullfile(root, 'data', 'failures_20260810.mat'));
 fails = S.fails; solvable = S.solvable;
 sol_idx = find(solvable);   % 只测 11 个可解失败例（变体训练的直接目标，回退耗时可控）
 models = {'rl_pipeline/policy_cvae_c1_ft.mat', 'rl_pipeline/policy_cvae_v2.mat', 'rl_pipeline/policy_cvae_v3.mat'};

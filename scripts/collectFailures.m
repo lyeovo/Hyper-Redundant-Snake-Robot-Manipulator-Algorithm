@@ -1,6 +1,6 @@
 % collectFailures.m — 失败任务采样器：批量评估当前部署闭环，收集失败例并诊断可解性
 %   输出 failures_YYYYmmdd.mat：failures（q0/target/obs_desc/solvable 字段）
-cd('D:/thuedu/26夏'); addpath('ArmSimulator2D');
+cd(fileparts(fileparts(mfilename('fullpath')))); addpath('ArmSimulator2D');
 rng(5);
 N_TASK  = 300;              % 采样任务数
 POLICY  = 'rl_pipeline/policy_cvae_c1_ft.mat';
@@ -54,7 +54,7 @@ for k = 1:numel(fails)
     end
 end
 
-fname = sprintf('failures_%s.mat', datestr(now, 'yyyymmdd'));
+fname = fullfile('data', sprintf('failures_%s.mat', datestr(now, 'yyyymmdd')));
 save(fname, 'fails', 'stats', 'solvable');
 fprintf('=== 汇总: 任务=%d 成功=%d(%d%%) 失败=%d\n', stats.n_task, stats.succ, ...
     round(100*stats.succ/stats.n_task), stats.fail);

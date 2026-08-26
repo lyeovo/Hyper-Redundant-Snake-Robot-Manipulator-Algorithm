@@ -16,7 +16,7 @@ function res = verifyPolicy(opts)
 %
 %   返回 res：.succ/.coll/.mean_pos/.mean_gap/.mean_gen_s（部署闭环）
 %             .base_succ/.base_coll/.base_pos（RRT* 基线）
-    addpath(fullfile(fileparts(mfilename('fullpath')), 'ArmSimulator2D'));
+    addpath(fullfile(fileparts(fileparts(mfilename('fullpath'))), 'ArmSimulator2D'));
     if nargin < 1 || isempty(opts), opts = struct(); end
     policy_file = of(opts, 'policy_file', 'rl_pipeline/policy_cvae_n6.mat');
     N = of(opts, 'N', 6);

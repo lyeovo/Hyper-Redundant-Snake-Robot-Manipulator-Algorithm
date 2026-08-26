@@ -1,5 +1,5 @@
 % eval_c3_compare.m — 难度 3 专项微调评估（40 例混合 + 20 例难度 3）
-root = fileparts(mfilename('fullpath'));  cd(root);  addpath(fullfile(root, 'ArmSimulator2D'));
+root = fileparts(fileparts(mfilename('fullpath')));  cd(root);  addpath(fullfile(root, 'ArmSimulator2D'));
 
 % 40 例混合难度
 rng(11); T=40; mix=cell(1,T);

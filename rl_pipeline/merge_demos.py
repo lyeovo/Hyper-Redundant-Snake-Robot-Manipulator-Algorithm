@@ -26,7 +26,7 @@ def load_mat(path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('src_dirs', nargs='+')
-    ap.add_argument('--out', default='demonstrations_opt')
+    ap.add_argument('--out', default='data/demonstrations_opt')
     ap.add_argument('--seed', type=int, default=7)
     ap.add_argument('--n_max', type=int, default=0, help='0=全部')
     args = ap.parse_args()

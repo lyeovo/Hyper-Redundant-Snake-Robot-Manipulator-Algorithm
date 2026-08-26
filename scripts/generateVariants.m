@@ -2,12 +2,12 @@
 %   输入: failures_YYYYmmdd.mat（collectFailures 输出，含可解性诊断）
 %   输出: demonstrations_var/（变体示范，可解才入库）
 %   配置常量见下方（fail_file/n_var/rrt_ms/out_dir/seed 可改）
-cd('D:/thuedu/26夏'); addpath('ArmSimulator2D');
+cd(fileparts(fileparts(mfilename('fullpath')))); addpath('ArmSimulator2D');
 
-fail_file = 'failures_20260810.mat';
+fail_file = 'data/failures_20260810.mat';
 n_var     = 40;        % 每失败例变体数
 rrt_ms    = 20000;     % 变体可解性验证预算
-out_dir   = 'demonstrations_var';
+out_dir   = 'data/demonstrations_var';
 seed      = 1;
 fi_start  = 1;         % 起始失败例索引（并行时按实例分片）
 fi_count  = 0;         % 处理失败例数（0 = 全部）

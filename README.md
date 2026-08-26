@@ -77,7 +77,7 @@ out = cvaePolicyDeploy('rl_pipeline/policy_cvae_n6.mat', m, q0, [x,y,th]);
 % out.traj 轨迹 / out.q_final 终态 / out.via ('cvae'|'rrtstar')
 ```
 
-- **示范数据**：6000 条（`demonstrations_n6/`，RRT* 渐近最优生成，约 2.3h）；**升级版 4200 条**（`demonstrations_opt*/`，预算内最优 RRT* 3000 样本 + `optimizeTraj` 短切，路径质量提升约 40%）
+- **示范数据**：6000 条（`data/demonstrations_n6/`，RRT* 渐近最优生成，约 2.3h）；**升级版 4200 条**（`data/demonstrations_opt*/`，预算内最优 RRT* 3000 样本 + `optimizeTraj` 短切，路径质量提升约 40%）
 - **策略**：`rl_pipeline/policy_cvae_n6.mat`（CVAE 多模态轨迹生成 + 潜空间优化推理 + 终点精修；MATLAB 手写 forward，无 Deep Learning Toolbox 依赖）；升级版 `rl_pipeline/policy_cvae_opt.mat`
 - **验收**（与 RRT* 基线同测试集同预算）：成功率与基线相当（78-90%）、**碰撞率 0%**、路径最优性差距约 -3%、生成 ~0.5s；**升级后（5.7.12）**：相对近全局参考（15000 样本+优化）最优性差距 **+86.4% → +20.8%**（路径约为近全局最优 1.2 倍），成功率 88% > 参考 69%，生成 3s
 - **关键升级（5.7.12）**：示范从"早停可行解"→"预算内最优 + 轨迹优化"——解决"策略与 RRT* 拉不开差距"的根因（老师天花板 = 学生天花板）
@@ -94,33 +94,24 @@ out = cvaePolicyDeploy('rl_pipeline/policy_cvae_n6.mat', m, q0, [x,y,th]);
 ## 文件结构
 
 ```
-ArmSimulator2D/          # 新核心（重构产物，纯函数无副作用）
-├── createArmModel.m     # 接口1：模型构造（缺省兜底、旧字段迁移）
-├── simulateMotion.m     # 接口2：运动模拟（方法分派、快照/回调/取消、vel/safety）
-├── modelDefaults.m      # 默认参数表
-├── armValue.m / armGradient.m     # 统一价值函数与解析梯度
-├── kinematics2D 组       # planarFK_L / planarJac_L / getEndEffectorAngle_L 等
-├── obstacle2D 组         # 圆/可旋转矩形带符号距离与梯度（obsDistGradAll/obsDistAll）
-├── method_momentum.m / method_sa.m / method_rrt.m / method_prm.m / method_rl.m / method_auto.m
-├── refineRandomGreedy.m # 无梯度分层随机贪心精修（绕梯度势阱）
-├── inverseKinPose.m     # 末端位姿 → 关节角反解
-├── detectLocalMin.m     # 局部最优检测
-├── errorModel.m / assessRobustness.m / feedbackCorrect.m   # 误差与闭环
-├── projectTo2D.m     # 3D→2D 投影（yaw）
-├── solveIK.m         # 快捷接口（独立文件，旧版子函数对外不可用的修复）
-runTaskLoop.m        # 任务列表循环执行器（轮询 outbox，顺序执行，状态回写）
-taskExecute.m        # 单任务执行（安全校验/逐段求解/急停）
-taskToSegments.m     # command_type → 运动序列展开（含夹爪状态机）
-taskWriteStatus.m    # TaskStatus JSON 状态机回写
-exportMotorCmd.m     # motorCmd 导出 .mat/.csv（dSPACE 可加载）
-ArmSimApp.m          # 新接口交互 GUI（障碍编辑/目标拖拽/回放）
-test/                # 断言式测试：test_all 汇总运行
-solveIK.m                # 快捷接口（根目录，可被命令行直接调用）
-runLArmIK_2D.m           # 【已废弃】旧完整版，仅供 GUI 迁移过渡
-runLArmIK_2D_Simple.m    # 【已废弃】薄包装，转调新接口
-PlanarDrawApp.m / TopLevelSystem.m / GlobalParams.m   # 旧 GUI/集成层（迁移中）
-文档/实现方案.md           # 完整设计文档
-文档/电控对接说明.md        # dSPACE 电控对接契约
+ArmSimulator2D/          # 核心求解器（重构产物，纯函数）
+├── createArmModel.m / simulateMotion.m / modelDefaults.m   # 接口 + 默认参数
+├── armValue.m / armGradient.m          # 统一价值函数与解析梯度
+├── kinematics2D 组 / obstacle2D 组      # 运动学 + 障碍几何（距离/梯度）
+├── method_momentum/sa/rrt/rrtstar/graph/prm/rl.m + method_auto.m
+├── refineRandomGreedy.m / inverseKinPose.m / detectLocalMin.m
+├── errorModel.m / assessRobustness.m / feedbackCorrect.m
+├── projectTo2D.m / rasterize2D.m
+└── 学习层：generateDemonstrations.m / sampleTask2D.m / cvaePolicy*.m / kalman*.m / handEyeEstimate2D.m
+runTaskLoop.m / taskExecute.m / taskToSegments.m / taskWriteStatus.m   # 任务桥（根目录）
+exportMotorCmd.m / solveIK.m / ArmSimApp.m / runTopLevel.m             # 导出/GUI/顶层闭环（根目录）
+rl_pipeline/            # Python 训练管线（train_cvae.py / train_policy.py / policy_*.mat）
+data/                   # 数据：demonstrations_*/ 示范 + failures_*.mat
+scripts/                # 评估/实验/诊断脚本（eval_*/verifyPolicy/collectFailures/generateVariants/test_*_diag）
+test/                   # 断言式测试：test_all 汇总运行
+vision/                 # 视觉模块（独立 git 仓库，参考）
+文档/                   # 设计文档（实现方案.md / 电控对接说明.md 等）
+archive/                # 已归档旧版/死代码（PlanarDrawApp/runLArmIK_2D/TopLevelSystem 等）
 ```
 
 ## 运行测试
