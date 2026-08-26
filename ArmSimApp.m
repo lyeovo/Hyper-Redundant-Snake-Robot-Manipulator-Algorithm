@@ -131,6 +131,12 @@ function app = ArmSimApp()
         'Position',[0.84 py-0.014 0.13 0.026],'Background',[0.2 0.2 0.3], ...
         'Foreground',[1 1 1],'FontSize',8);
     py = py - 0.037;
+    s.hFit = uicontrol(hp,'Style','pushbutton','String','🔄 适应视图（显示全部物体）', ...
+        'Units','normalized','Position',[0.05 py-0.014 0.90 0.028], ...
+        'Background',[0.30 0.30 0.42],'Foreground',[1 1 1],'FontSize',8, ...
+        'TooltipString','自动缩放/平移视图，使臂、障碍、目标、轨迹全部可见', ...
+        'Callback',@onFitView);
+    py = py - 0.033;
 
     % === 模拟视觉任务 ===
     sectionTitle(hp, py, '── 模拟视觉任务 ──'); py = py - 0.024;
@@ -374,8 +380,12 @@ function s = drawAll(s)
     if isfield(s,'trajPts') && ~isempty(s.trajPts) && size(s.trajPts,1) > 1
         plot(s.ax, s.trajPts(:,1), s.trajPts(:,2), '-', 'Color',[1 0.85 0.3], 'LineWidth',1.0);
     end
-    xlim(s.ax, [-0.3, R+0.5]);
-    ylim(s.ax, [-0.8, R+0.5]);
+    % 视图自适应：按全部物体（臂/障碍/目标/放置点/轨迹/可达圆）自动缩放平移
+    [xmin, xmax, ymin, ymax] = computeViewBounds(s);
+    cx = (xmin + xmax)/2;  cy = (ymin + ymax)/2;
+    half = max(xmax - xmin, ymax - ymin)/2;
+    xlim(s.ax, [cx - half, cx + half]);
+    ylim(s.ax, [cy - half, cy + half]);
     grid(s.ax,'on');
     % 关键：绘图对象关闭 HitTest——点击任何图形（臂线/障碍/十字）都穿透到 axes，
     % 保证 onAxClick 拖拽命中检测始终触发（否则事件被图形对象吃掉）
@@ -398,6 +408,42 @@ function s = drawAll(s)
         plot(s.ax, gd.nodes(:,1), gd.nodes(:,2), 'o', ...
             'Color',[0.4 0.9 0.9], 'MarkerSize',4, 'MarkerFaceColor',[0.4 0.9 0.9]);
     end
+end
+
+function [xmin, xmax, ymin, ymax] = computeViewBounds(s)
+    % 视图包围盒：臂（当前构型）+ 障碍 + 目标 + 放置点 + 轨迹 + 基座 + 可达参考圆
+    cfg = s.model.cfg;
+    px = [];  py = [];
+    [p_all, ~] = planarFK_L(s.q, s.model.DH, cfg.rod_offset_arr);
+    px = [px; p_all(:,1)];  py = [py; p_all(:,2)]; %#ok<AGROW>
+    for k = 1:size(cfg.obstacles.circles,1)
+        c = cfg.obstacles.circles(k,:);
+        px = [px; c(1)-c(3); c(1)+c(3)];  py = [py; c(2)-c(3); c(2)+c(3)]; %#ok<AGROW>
+    end
+    for k = 1:size(cfg.obstacles.rects,1)
+        r = cfg.obstacles.rects(k,:);
+        ct = cos(r(3)); st = sin(r(3));  hw = r(4)/2; hh = r(5)/2;
+        corners = [r(1)-hw*ct+hh*st, r(2)-hw*st-hh*ct;
+                   r(1)+hw*ct+hh*st, r(2)+hw*st-hh*ct;
+                   r(1)+hw*ct-hh*st, r(2)+hw*st+hh*ct;
+                   r(1)-hw*ct-hh*st, r(2)-hw*st+hh*ct];
+        px = [px; corners(:,1)];  py = [py; corners(:,2)]; %#ok<AGROW>
+    end
+    px = [px; cfg.X_target(1)];  py = [py; cfg.X_target(2)]; %#ok<AGROW>
+    if isfield(s,'hDx') && ishandle(s.hDx)
+        dx = str2double(get(s.hDx,'String'));  dy = str2double(get(s.hDy,'String'));
+        if isfinite(dx) && isfinite(dy), px = [px; dx]; py = [py; dy]; end %#ok<AGROW>
+    end
+    if isfield(s,'trajPts') && ~isempty(s.trajPts)
+        px = [px; s.trajPts(:,1)];  py = [py; s.trajPts(:,2)]; %#ok<AGROW>
+    end
+    R = cfg.N * cfg.L_seg(1);
+    % 基座(0,0) + 可达参考圆（半径 R）四向边界，保证参考圆与整臂始终可见
+    px = [px; 0;  R; -R;  0;  0]; %#ok<AGROW>
+    py = [py; 0;  0;  0;  R; -R]; %#ok<AGROW>
+    m = 0.15*R + 0.2;              % 边距
+    xmin = min(px) - m;  xmax = max(px) + m;
+    ymin = min(py) - m;  ymax = max(py) + m;
 end
 
 %% ---------- 关节角回调 ----------
@@ -435,6 +481,13 @@ function onSetFold(src, ~)
     s.q = q;
     s = syncJointEditors(s);
     s = drawAll(s);
+    guidata(f, s);
+end
+
+function onFitView(src, ~)
+    f = ancestor(src,'figure');
+    s = guidata(f);
+    s = drawAll(s);   % drawAll 已内置「适应视图」逻辑（按全部物体自动缩放）
     guidata(f, s);
 end
 
