@@ -319,7 +319,7 @@ success / error_code / q_final / meta</pre>
     <h2><span class="no">7</span>模仿学习管线（L2）</h2>
     <p class="desc">示范生成 → CVAE 训练 → 部署闭环，把「离线全局最优规划」蒸馏为「毫秒级策略直出」。</p>
     <div class="flow">
-      <div class="node"><h4>① 示范生成 <span class="tag m">MATLAB</span></h4><p>sampleTask2D 采样 → RRT* 预算内最优 + optimizeTraj 短切 → demonstrations_*/</p></div>
+      <div class="node"><h4>① 示范生成 <span class="tag m">MATLAB</span></h4><p>sampleTask2D 采样 → RRT* 预算内最优 + optimizeTraj 短切 → data/demonstrations_*/</p></div>
       <div class="arrow">▶</div>
       <div class="node"><h4>② CVAE 训练 <span class="tag p">Python</span></h4><p>栅格化 + 增量表示 Δ → CVAE（多模态）→ policy_cvae_*.mat</p></div>
       <div class="arrow">▶</div>
@@ -341,8 +341,9 @@ success / error_code / q_final / meta</pre>
 ├── solveIK.m            快捷 IK 入口
 ├── ArmSimApp.m          新接口 GUI 仿真窗口
 ├── runTopLevel.m        顶层实时闭环估计（S1-S3）
-├── rl_pipeline/         训练端（train_cvae.py / policy_*.mat）
-├── demonstrations_*/    示范数据（训练集）
+├── rl_pipeline/         训练端（train_cvae.py / train_policy.py / policy_*.mat）
+├── data/                数据（demonstrations_*/ 示范 + failures_*.mat）
+├── scripts/             评估/实验/诊断脚本（eval_*/verifyPolicy/collectFailures 等）
 ├── test/                断言式测试（test_all 汇总）
 ├── vision/              视觉模块（独立仓库，参考）
 ├── 文档/                设计文档（.md + .docx）
