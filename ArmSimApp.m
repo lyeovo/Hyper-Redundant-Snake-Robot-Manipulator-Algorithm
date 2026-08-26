@@ -45,135 +45,122 @@ function app = ArmSimApp()
         'Units','normalized','Position',[0.04 0.05 0.92 0.90], ...
         'Color',[0.13 0.14 0.16],'KeyPressFcn',@onKey,'CloseRequestFcn',@onClose);
 
-    % ---- 左侧参数面板 ----
+    % ---- 左侧控制面板（标签页分组，避免拥挤/底部溢出） ----
     hp = uipanel('Parent',fig,'Units','normalized','Position',[0.005 0.02 0.235 0.96], ...
-        'Background',[0.14 0.15 0.18],'Title','参数 · 任务 · 障碍','Foreground',[0.9 0.9 1],'FontSize',9);
-    rH = 0.0265;  py = 0.97;
+        'Background',[0.14 0.15 0.18],'Title','控制面板','Foreground',[0.9 0.9 1],'FontSize',9);
+    tg = uitabgroup(hp,'Units','normalized','Position',[0.01 0.01 0.98 0.98]);
+    tabScene = uitab(tg,'Title','场景 · 求解');
+    tabParam = uitab(tg,'Title','模型 · 权重');
+    rH = 0.0265;
 
-    % === 模型参数（可折叠） ===
-    s.hParamHeader = uicontrol(hp,'Style','togglebutton','String','▾ 模型参数', ...
-        'Value',1,'Units','normalized','Position',[0.02 py-0.016 0.96 0.026], ...
-        'Background',[0.22 0.22 0.30],'Foreground',[1 0.7 0.3],'FontSize',8, ...
-        'HorizontalAlignment','left','Callback',@onToggleParam);
-    py = py - 0.030;
-    s.paramContent = [];
-    [hN, hL, py, hh]    = twoCol(hp, py, rH, '关节数 N:', num2str(s.model.cfg.N), '杆长 L(m):', num2str(s.model.cfg.L_seg(1)));
-    s.hN = hN;  s.hL = hL;  s.paramContent = [s.paramContent hh]; %#ok<AGROW>
-    [hQm, hQx, py, hh]  = twoCol(hp, py, rH, 'q_min:', num2str(s.model.cfg.q_min(1)), 'q_max:', num2str(s.model.cfg.q_max(1)));
-    s.hQm = hQm;  s.hQx = hQx;  s.paramContent = [s.paramContent hh]; %#ok<AGROW>
-    [hRho, hMi, py, hh]= twoCol(hp, py, rH, '安全距 rho0:', num2str(s.model.cfg.rho0), 'max_iter:', num2str(s.model.cfg.max_iter));
-    s.hRho = hRho;  s.hMi = hMi;  s.paramContent = [s.paramContent hh]; %#ok<AGROW>
-    [hSamp, ~, py, hh] = twoCol(hp, py, rH, '采样预算:', num2str(s.model.cfg.rrt_max_samples), '', '');
-    s.hSamp = hSamp;  s.paramContent = [s.paramContent hh]; %#ok<AGROW>
-    s.hAdaptive = uicontrol(hp,'Style','checkbox','String','自适应预算（按场景难度，失败自动升档）', ...
-        'Value',1,'Units','normalized','Position',[0.05 py-rH-0.008 0.92 rH], ...
-        'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7, ...
-        'Callback',@onParamEdit);
-    s.paramContent = [s.paramContent s.hAdaptive]; %#ok<AGROW>
-    py = py - rH - 0.016;
-    s.hStrict = uicontrol(hp,'Style','checkbox','String','严格收敛（位置<1e-4 且 角度<1e-3；关闭=动态逐项<0.001）', ...
-        'Value',1,'Units','normalized','Position',[0.05 py-rH-0.008 0.92 rH], ...
-        'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7, ...
-        'Callback',@onParamEdit);
-    s.paramContent = [s.paramContent s.hStrict]; %#ok<AGROW>
-    py = py - rH - 0.016;
-
-    % === 目标位姿 ===
-    sectionTitle(hp, py, '── 目标位姿 ──'); py = py - 0.024;
-    [hTx, hTy, py]  = twoCol(hp, py, rH, '目标 X:', '2.0', '目标 Y:', '0.5');
+    % ========== Tab 1：场景 · 求解 ==========
+    py = 0.97;
+    sectionTitle(tabScene, py, '── 目标位姿 ──'); py = py - 0.024;
+    [hTx, hTy, py]  = twoCol(tabScene, py, rH, '目标 X:', '2.0', '目标 Y:', '0.5');
     s.hTx = hTx;  s.hTy = hTy;
-    [hTth, ~, py]   = twoCol(hp, py, rH, '目标 θ:', '0.0', '', '');
+    [hTth, ~, py]   = twoCol(tabScene, py, rH, '目标 θ:', '0.0', '', '');
     s.hTth = hTth;
 
-    % === 关节角手动微调（动态 N） ===
-    sectionTitle(hp, py, '── 关节角（手动微调） ──'); py = py - 0.024;
-    s.hQjPanel = uipanel(hp,'Units','normalized','Position',[0.02 py-0.155 0.96 0.155], ...
+    sectionTitle(tabScene, py, '── 关节角（手动微调） ──'); py = py - 0.024;
+    s.hQjPanel = uipanel(tabScene,'Units','normalized','Position',[0.02 py-0.155 0.96 0.155], ...
         'BorderType','none','Background',[0.14 0.15 0.18]);
     py = py - 0.164;
-    s.hLevel = uicontrol(hp,'Style','pushbutton','String','— 全水平', ...
+    s.hLevel = uicontrol(tabScene,'Style','pushbutton','String','— 全水平', ...
         'Units','normalized','Position',[0.05 py-0.016 0.42 0.033], ...
         'Background',[0.25 0.45 0.55],'Foreground',[1 1 1],'FontSize',9,'Callback',@onSetLevel);
-    s.hFold = uicontrol(hp,'Style','pushbutton','String','≡ 全折叠', ...
+    s.hFold = uicontrol(tabScene,'Style','pushbutton','String','≡ 全折叠', ...
         'Units','normalized','Position',[0.53 py-0.016 0.42 0.033], ...
         'Background',[0.45 0.35 0.55],'Foreground',[1 1 1],'FontSize',9,'Callback',@onSetFold);
     py = py - 0.038;
     s.hQj = [];  s.hQjLbl = [];   % 动态创建（syncJointEditors 填充）
 
-    % === 目标函数权重（可折叠） ===
-    s.hWgtHeader = uicontrol(hp,'Style','togglebutton','String','▾ 目标函数权重', ...
-        'Value',1,'Units','normalized','Position',[0.02 py-0.016 0.96 0.026], ...
-        'Background',[0.22 0.22 0.30],'Foreground',[1 0.7 0.3],'FontSize',8, ...
-        'HorizontalAlignment','left','Callback',@onToggleWgt);
-    py = py - 0.030;
-    s.wgtContent = [];
-    [hWp, hWa, py, hh] = twoCol(hp, py, rH, 'w_pos:', num2str(s.model.cfg.w_pos), 'w_ang:', num2str(s.model.cfg.w_ang));
-    s.hWPos = hWp;  s.hWAng = hWa;  s.wgtContent = [s.wgtContent hh]; %#ok<AGROW>
-    [hWo, hWv, py, hh] = twoCol(hp, py, rH, 'w_obs:', num2str(s.model.cfg.w_obs), 'w_var:', num2str(s.model.cfg.w_var));
-    s.hWObs = hWo;  s.hWVar = hWv;  s.wgtContent = [s.wgtContent hh]; %#ok<AGROW>
-    [hWc, ~, py, hh]   = twoCol(hp, py, rH, 'w_acc:', num2str(s.model.cfg.w_acc), '', '');
-    s.hWAcc = hWc;  s.wgtContent = [s.wgtContent hh]; %#ok<AGROW>
-
-    % 参数编辑回调：修改模型/目标/权重参数后立即重建并重置图像（保持一致）
-    set([hN hL hQm hQx hRho hMi hSamp hTx hTy hTth hWp hWa hWo hWv hWc], 'Callback', @onParamEdit);
-
-    % === 单次求解 ===
-    sectionTitle(hp, py, '── 单次求解 ──'); py = py - 0.024;
-    s.hMethod = uicontrol(hp,'Style','popupmenu', ...
+    sectionTitle(tabScene, py, '── 单次求解 ──'); py = py - 0.024;
+    s.hMethod = uicontrol(tabScene,'Style','popupmenu', ...
         'String',{'auto（推荐）','momentum 动量','sa 模拟退火','rrt 采样','prm 路线图','rl 强化学习（实验性）','cvae 策略（L2 模型）'}, ...
         'Value',1,'Units','normalized','Position',[0.05 py-0.012 0.90 0.026], ...
         'Background',[0.2 0.2 0.3],'Foreground',[1 1 1],'FontSize',8);
     py = py - 0.031;
-    % 策略文件（cvae 方法用；默认 6 关节 0.5m 交付模型）
-    uicontrol(hp,'Style','text','String','策略文件:','Units','normalized', ...
+    uicontrol(tabScene,'Style','text','String','策略文件:','Units','normalized', ...
         'Position',[0.03 py-rH 0.24 rH],'Background',[0.14 0.15 0.18], ...
         'Foreground',[0.85 0.85 0.95],'FontSize',7,'HorizontalAlignment','left');
-    s.hPolicyFile = uicontrol(hp,'Style','edit','String','rl_pipeline/policy_cvae_c1_ft.mat', ...
+    s.hPolicyFile = uicontrol(tabScene,'Style','edit','String','rl_pipeline/policy_cvae_c1_ft.mat', ...
         'Units','normalized','Position',[0.27 py-rH 0.69 rH],'Background',[0.2 0.2 0.3], ...
         'Foreground',[1 1 1],'FontSize',7);
     py = py - rH - 0.005;
-    s.hRun = uicontrol(hp,'Style','pushbutton','String','▶ 求解运动', ...
+    s.hRun = uicontrol(tabScene,'Style','pushbutton','String','▶ 求解运动', ...
         'Units','normalized','Position',[0.05 py-0.016 0.40 0.033], ...
         'Background',[0.15 0.55 0.25],'Foreground',[1 1 1],'FontSize',9,'Callback',@onRun);
-    s.hPlay = uicontrol(hp,'Style','pushbutton','String','⏩ 回放', ...
+    s.hPlay = uicontrol(tabScene,'Style','pushbutton','String','⏩ 回放', ...
         'Units','normalized','Position',[0.47 py-0.016 0.25 0.033], ...
         'Background',[0.25 0.4 0.65],'Foreground',[1 1 1],'FontSize',9,'Callback',@onPlay);
-    uicontrol(hp,'Style','text','String','回放×','Units','normalized', ...
+    uicontrol(tabScene,'Style','text','String','回放×','Units','normalized', ...
         'Position',[0.73 py-0.012 0.11 0.022],'Background',[0.14 0.15 0.18], ...
         'Foreground',[0.85 0.85 0.95],'FontSize',7,'HorizontalAlignment','right');
-    s.hSpeed = uicontrol(hp,'Style','edit','String','1.0','Units','normalized', ...
+    s.hSpeed = uicontrol(tabScene,'Style','edit','String','1.0','Units','normalized', ...
         'Position',[0.84 py-0.014 0.13 0.026],'Background',[0.2 0.2 0.3], ...
         'Foreground',[1 1 1],'FontSize',8);
     py = py - 0.037;
-    s.hFit = uicontrol(hp,'Style','pushbutton','String','🔄 适应视图（显示全部物体）', ...
+    s.hFit = uicontrol(tabScene,'Style','pushbutton','String','🔄 适应视图（显示全部物体）', ...
         'Units','normalized','Position',[0.05 py-0.014 0.90 0.028], ...
         'Background',[0.30 0.30 0.42],'Foreground',[1 1 1],'FontSize',8, ...
         'TooltipString','自动缩放/平移视图，使臂、障碍、目标、轨迹全部可见', ...
         'Callback',@onFitView);
     py = py - 0.033;
 
-    % === 模拟视觉任务 ===
-    sectionTitle(hp, py, '── 模拟视觉任务 ──'); py = py - 0.024;
-    uicontrol(hp,'Style','text','String','任务类型:','Units','normalized', ...
+    sectionTitle(tabScene, py, '── 模拟视觉任务 ──'); py = py - 0.024;
+    uicontrol(tabScene,'Style','text','String','任务类型:','Units','normalized', ...
         'Position',[0.03 py-rH 0.26 rH],'Background',[0.14 0.15 0.18], ...
         'Foreground',[0.9 0.9 1],'FontSize',7,'HorizontalAlignment','left');
-    s.hTaskType = uicontrol(hp,'Style','popupmenu', ...
+    s.hTaskType = uicontrol(tabScene,'Style','popupmenu', ...
         'String',{'move_near_target','pick_target','pick_and_place','dock_to_interface','home'}, ...
         'Value',3,'Units','normalized','Position',[0.31 py-rH 0.64 0.027], ...
         'Background',[0.2 0.2 0.3],'Foreground',[1 1 1],'FontSize',7);
     py = py - rH - 0.005;
-    [hDx, hDy, py]  = twoCol(hp, py, rH, '放置 X:', '1.0', '放置 Y:', '0.5');
+    [hDx, hDy, py]  = twoCol(tabScene, py, rH, '放置 X:', '1.0', '放置 Y:', '0.5');
     s.hDx = hDx;  s.hDy = hDy;
     py = py - 0.004;
-    s.hTaskRun = uicontrol(hp,'Style','pushbutton','String','📤 下发任务并执行', ...
+    s.hTaskRun = uicontrol(tabScene,'Style','pushbutton','String','📤 下发任务并执行', ...
         'Units','normalized','Position',[0.05 py-0.016 0.42 0.033], ...
         'Background',[0.55 0.4 0.15],'Foreground',[1 1 1],'FontSize',9,'Callback',@onTaskRun);
-    s.hExport = uicontrol(hp,'Style','pushbutton','String','💾 导出 motorCmd', ...
+    s.hExport = uicontrol(tabScene,'Style','pushbutton','String','💾 导出 motorCmd', ...
         'Units','normalized','Position',[0.53 py-0.016 0.42 0.033], ...
         'Background',[0.35 0.35 0.5],'Foreground',[1 1 1],'FontSize',9,'Callback',@onExportMotor);
     py = py - 0.037;
-    [hOb, hIb, py]  = twoCol(hp, py, rH, 'outbox(可选):', '', 'inbox(可选):', '');
+    [hOb, hIb, py]  = twoCol(tabScene, py, rH, 'outbox(可选):', '', 'inbox(可选):', '');
     s.hOutbox = hOb;  s.hInbox = hIb;
-    py = py - 0.003;
+
+    % ========== Tab 2：模型 · 权重 ==========
+    py = 0.97;
+    sectionTitle(tabParam, py, '── 模型参数 ──'); py = py - 0.024;
+    [hN, hL, py]    = twoCol(tabParam, py, rH, '关节数 N:', num2str(s.model.cfg.N), '杆长 L(m):', num2str(s.model.cfg.L_seg(1)));
+    s.hN = hN;  s.hL = hL;
+    [hQm, hQx, py]  = twoCol(tabParam, py, rH, 'q_min:', num2str(s.model.cfg.q_min(1)), 'q_max:', num2str(s.model.cfg.q_max(1)));
+    s.hQm = hQm;  s.hQx = hQx;
+    [hRho, hMi, py]= twoCol(tabParam, py, rH, '安全距 rho0:', num2str(s.model.cfg.rho0), 'max_iter:', num2str(s.model.cfg.max_iter));
+    s.hRho = hRho;  s.hMi = hMi;
+    [hSamp, ~, py]  = twoCol(tabParam, py, rH, '采样预算:', num2str(s.model.cfg.rrt_max_samples), '', '');
+    s.hSamp = hSamp;
+    s.hAdaptive = uicontrol(tabParam,'Style','checkbox','String','自适应预算（按场景难度，失败自动升档）', ...
+        'Value',1,'Units','normalized','Position',[0.05 py-rH-0.008 0.92 rH], ...
+        'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7, ...
+        'Callback',@onParamEdit);
+    py = py - rH - 0.016;
+    s.hStrict = uicontrol(tabParam,'Style','checkbox','String','严格收敛（位置<1e-4 且 角度<1e-3；关闭=动态逐项<0.001）', ...
+        'Value',1,'Units','normalized','Position',[0.05 py-rH-0.008 0.92 rH], ...
+        'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7, ...
+        'Callback',@onParamEdit);
+    py = py - rH - 0.016;
+
+    sectionTitle(tabParam, py, '── 目标函数权重 ──'); py = py - 0.024;
+    [hWp, hWa, py] = twoCol(tabParam, py, rH, 'w_pos:', num2str(s.model.cfg.w_pos), 'w_ang:', num2str(s.model.cfg.w_ang));
+    s.hWPos = hWp;  s.hWAng = hWa;
+    [hWo, hWv, py] = twoCol(tabParam, py, rH, 'w_obs:', num2str(s.model.cfg.w_obs), 'w_var:', num2str(s.model.cfg.w_var));
+    s.hWObs = hWo;  s.hWVar = hWv;
+    [hWc, ~, py]   = twoCol(tabParam, py, rH, 'w_acc:', num2str(s.model.cfg.w_acc), '', '');
+    s.hWAcc = hWc;
+
+    % 参数编辑回调：修改模型/目标/权重参数后立即重建并重置图像（保持一致）
+    set([hN hL hQm hQx hRho hMi hSamp hTx hTy hTth hWp hWa hWo hWv hWc], 'Callback', @onParamEdit);
 
 
     % ---- 右侧：绘图区（中） + 运行信息日志列（右） ----
@@ -502,30 +489,6 @@ function onFitView(src, ~)
     s = guidata(f);
     s = drawAll(s);   % drawAll 已内置「适应视图」逻辑（按全部物体自动缩放）
     guidata(f, s);
-end
-
-function onToggleParam(src, ~)
-    s = guidata(ancestor(src,'figure'));
-    if get(src,'Value')
-        if ~isempty(s.paramContent), set(s.paramContent,'Visible','on'); end
-        set(src,'String','▾ 模型参数');
-    else
-        if ~isempty(s.paramContent), set(s.paramContent,'Visible','off'); end
-        set(src,'String','▸ 模型参数');
-    end
-    guidata(ancestor(src,'figure'), s);
-end
-
-function onToggleWgt(src, ~)
-    s = guidata(ancestor(src,'figure'));
-    if get(src,'Value')
-        if ~isempty(s.wgtContent), set(s.wgtContent,'Visible','on'); end
-        set(src,'String','▾ 目标函数权重');
-    else
-        if ~isempty(s.wgtContent), set(s.wgtContent,'Visible','off'); end
-        set(src,'String','▸ 目标函数权重');
-    end
-    guidata(ancestor(src,'figure'), s);
 end
 
 function onParamEdit(src, ~)
