@@ -40,6 +40,8 @@ function info = method_multilayer(model, q0, target, opts)
         [snap, qf, ok] = solveSegments(model, q0, graph.nodes, paths{pi}, target, segFast, segRob, segBud, wpEps);
         tried = tried + 1;
         if ~ok, continue; end
+        % 末尾精确微调：从 qf 朝精确目标 [x,y,θ] 做严格收敛（位置+角度收紧）
+        [snap, qf] = refineFinal(model, snap, qf, target);
         [~, peF] = planarFK_L(qf, model.DH, cfg.rod_offset_arr);
         thF = getEndEffectorAngle_L(qf, model.DH, cfg.rod_offset_arr);
         err = norm(peF - target(1:2)) + 0.5*abs(wrapAngle(target(3) - thF));
@@ -83,13 +85,23 @@ function isNear = nearWP(m, wp, eps)
     isNear = isstruct(m) && isfield(m,'dist_end') && ~isempty(m.dist_end) && m.dist_end < eps;
 end
 
+function [snap, qf] = refineFinal(model, snap, qf, target)
+    % 末尾精确微调：无梯度随机贪心精修（L2 管线同款，绕开梯度局部极小）
+    [q_rf, p_rf, ~] = refineRandomGreedy(model, qf, target, ...
+        struct('layers', 4, 'steps_per_layer', 150, 'goal_eps', 0.006));
+    if p_rf < 0.03   % 精修后位置足够精确（<0.03m）
+        qf = q_rf;
+        snap = [snap; qf];   % 精修无轨迹，追加末点与相邻快照一致
+    end
+end
+
 function info = assembleInfo(model, snap, qf, target, graph, paths, tried)
     cfg = model.cfg;
     [~, pe] = planarFK_L(qf, model.DH, cfg.rod_offset_arr);
     th = getEndEffectorAngle_L(qf, model.DH, cfg.rod_offset_arr);
     dist_end = norm(pe - target(1:2));
     err_ang  = abs(wrapAngle(target(3) - th));
-    success  = dist_end < 0.10;   % 位置松弛（多层：末端到目标位置 < 0.10m；角度放开）
+    success  = dist_end < 0.03;   % 精确微调后：末端位置 < 0.03m（角度作为报告项）
     info = struct('q_snapshot', snap, 't_seq', (1:size(snap,1)), ...
         'V_hist', [], 'q_final', qf, 'success', success, 'converged', success, ...
         'cancelled', false, 'iter', size(snap,1), ...
