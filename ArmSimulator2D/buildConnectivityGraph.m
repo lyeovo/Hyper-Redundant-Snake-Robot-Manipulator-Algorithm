@@ -96,9 +96,10 @@ function [graph, info] = buildConnectivityGraph(obstacles, start, goal, opts)
 end
 
 %% ---------- 工具 ----------
-function [ci, cj] = xy2cell(p, xmin, ymin, dx, GRID)
+function cellidx = xy2cell(p, xmin, ymin, dx, GRID)
     cj = max(1, min(GRID, 1 + floor((p(1)-xmin)/dx)));
     ci = max(1, min(GRID, 1 + floor((p(2)-ymin)/dx)));
+    cellidx = [ci, cj];
 end
 
 function occ = relaxFree(occ, cell, GRID)
@@ -110,20 +111,24 @@ function occ = relaxFree(occ, cell, GRID)
 end
 
 function d = chamferDist(occ)
-    % 二遍 Chamfer 距离变换（权重 1,√2）；返回【格数】距离
-    GRID = size(occ,1);  INF = 1e9;  d = INF*ones(GRID,GRID);  d(~occ) = 0;
+    % 二遍 Chamfer 距离变换（权重 1,√2）；返回【格数】距离（带边界保护）
+    GRID = size(occ,1);  INF = 1e6;  d = INF*ones(GRID,GRID);  d(~occ) = 0;
     a = 1;  b = sqrt(2);
     for i = 2:GRID
         for j = 2:GRID
             if occ(i,j)
-                d(i,j) = min([d(i,j), d(i-1,j)+a, d(i,j-1)+a, d(i-1,j-1)+b, d(i-1,j+1)+b]);
+                m = [d(i,j), d(i-1,j)+a, d(i,j-1)+a, d(i-1,j-1)+b];
+                if j < GRID, m(end+1) = d(i-1,j+1)+b; end      % (i-1,j+1) 需要 j+1<=GRID
+                d(i,j) = min(m);
             end
         end
     end
     for i = GRID-1:-1:1
         for j = GRID-1:-1:1
             if occ(i,j)
-                d(i,j) = min([d(i,j), d(i+1,j)+a, d(i,j+1)+a, d(i+1,j+1)+b, d(i+1,j-1)+b]);
+                m = [d(i,j), d(i+1,j)+a, d(i,j+1)+a, d(i+1,j+1)+b];
+                if j > 1, m(end+1) = d(i+1,j-1)+b; end          % (i+1,j-1) 需要 j-1>=1
+                d(i,j) = min(m);
             end
         end
     end

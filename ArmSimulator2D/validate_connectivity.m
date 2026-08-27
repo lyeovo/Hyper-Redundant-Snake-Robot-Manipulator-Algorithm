@@ -80,20 +80,21 @@ function res = validate_connectivity(opts)
 end
 
 %% ---------- 工具 ----------
-function [ci, cj] = xy2cell(p, xmin, ymin, dx, GRID)
+function cellidx = xy2cell(p, xmin, ymin, dx, GRID)
     cj = max(1, min(GRID, 1 + floor((p(1)-xmin)/dx)));
     ci = max(1, min(GRID, 1 + floor((p(2)-ymin)/dx)));
+    cellidx = [ci, cj];
 end
 
 function gt = gridConnected(occ, si, gi)
-    % 洪水填充：自由格中 start 与 goal 是否同连通分量（BFS）
+    % 洪水填充：自由格中 start 与 goal 是否同连通分量（BFS，4 邻域按行遍历）
     GRID = size(occ,1);
     visited = false(GRID,GRID);  Q = [si(1), si(2)];  visited(si(1),si(2)) = true;
-    gt = false;
+    gt = false;  NB = [-1 0; 1 0; 0 -1; 0 1];   % [di, dj] 行；'for' 需按列语义，用转置遍历行
     while ~isempty(Q)
         c = Q(1,:);  Q(1,:) = [];
         if c(1)==gi(1) && c(2)==gi(2), gt = true; return; end
-        for d = [-1 0; 1 0; 0 -1; 0 1]
+        for d = NB.'
             ii = c(1)+d(1);  jj = c(2)+d(2);
             if ii>=1 && ii<=GRID && jj>=1 && jj<=GRID && occ(ii,jj) && ~visited(ii,jj)
                 visited(ii,jj) = true;  Q(end+1,:) = [ii, jj]; %#ok<AGROW>
