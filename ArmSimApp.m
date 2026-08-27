@@ -320,12 +320,18 @@ function s = computeTraj(s)
         end
         if any(~free)
             safeIdx = find(free);
-            for k = find(~free)'
-                [~, j] = min(abs(safeIdx - k));
-                Qc(k,:) = Qc(safeIdx(j),:);
+            if isempty(safeIdx)
+                % 全部插值帧都碰撞（极端）：退回原始求解快照（求解器保证无碰），避免空索引报错
+                Qc = Q;  ups = 1; %#ok<AGROW>
+            else
+                for k = find(~free)'
+                    [~, j] = min(abs(safeIdx - k));
+                    Qc(k,:) = Qc(safeIdx(j),:);
+                end
             end
         end
     end
+    m = size(Qc,1);   % 插值/回退后重新计算帧数
     s.trajQ = Qc;
     s.trajGIdx = max(1, min(n, 1 + floor((0:m-1)/ups)));
     pts = zeros(m,2);
@@ -369,18 +375,20 @@ function s = drawAll(s)
     end
     [p_all, ~] = planarFK_L(s.q, s.model.DH, cfg.rod_offset_arr);
     p_nodes = planarFK_SimpleNode(s.q, s.model.DH, cfg.rod_offset_arr);
-    plot(s.ax, p_nodes(:,1), p_nodes(:,2), 'o-', 'Color',[0.3 0.75 1], ...
+    hArmNode = plot(s.ax, p_nodes(:,1), p_nodes(:,2), 'o-', 'Color',[0.3 0.75 1], ...
         'MarkerFaceColor',[0.3 0.75 1],'MarkerSize',5,'LineWidth',2.2);
-    plot(s.ax, p_all(:,1), p_all(:,2), ':', 'Color',[0.5 0.6 0.7]);
-    plot(s.ax, p_nodes(end,1), p_nodes(end,2), 'ro', 'MarkerSize', 6, 'MarkerFaceColor','r');
+    hArmDot  = plot(s.ax, p_all(:,1), p_all(:,2), ':', 'Color',[0.5 0.6 0.7]);
+    hArmEnd  = plot(s.ax, p_nodes(end,1), p_nodes(end,2), 'ro', 'MarkerSize', 6, 'MarkerFaceColor','r');
     g_cur = 0;
     if ~isempty(s.gripperSeq) && s.snapIdx >= 1 && s.snapIdx <= numel(s.gripperSeq)
         g_cur = s.gripperSeq(s.snapIdx);
     end
     gname = {'保持','张开','闭合'};
     gc = [0.7 0.7 0.7; 0.3 1 0.3; 1 0.4 0.4];
-    text(s.ax, 0.2, R+0.1, sprintf('夹爪: %s', gname{g_cur+1}), ...
+    hGrip = text(s.ax, 0.2, R+0.1, sprintf('夹爪: %s', gname{g_cur+1}), ...
         'Color', gc(g_cur+1,:), 'FontSize', 10, 'FontWeight','bold');
+    % 保存静态臂/夹爪句柄，供 onPlay 播放前删除（避免播放时“静态臂+动画臂”双重显示）
+    s.hArm = [hArmNode hArmDot hArmEnd hGrip];
     % 轨迹线（碰撞安全插值末端路径）
     if isfield(s,'trajPts') && ~isempty(s.trajPts) && size(s.trajPts,1) > 1
         plot(s.ax, s.trajPts(:,1), s.trajPts(:,2), '-', 'Color',[1 0.85 0.3], 'LineWidth',1.0);
@@ -406,7 +414,7 @@ function s = drawAll(s)
                     'Color',[0.55 0.55 0.6 0.30], 'LineWidth',0.8);
             end
         end
-        if ~isempty(gd.seq) && ~isempty(gd.seq)
+        if ~isempty(gd.seq)
             plot(s.ax, gd.nodes(gd.seq,1), gd.nodes(gd.seq,2), '-', ...
                 'Color',[1 0.85 0.2], 'LineWidth',1.8);
         end
@@ -499,7 +507,8 @@ end
 function onParamEdit(src, ~)
     f = ancestor(src,'figure');
     s = guidata(f);
-    s.graphDisp = [];         % 参数/障碍变化 → 旧走廊图失效
+    % 参数（N/杆长/限位/权重等）改变 → 旧轨迹/求解结果失效（N/杆长变化会致维度不匹配回放崩溃）
+    s.graphDisp = [];  s.snap = [];  s.trajQ = [];  s.trajPts = [];  s.gripperSeq = [];  s.snapIdx = 1;  s.info = [];
     s = rebuildModel(s);          % 重新读参数建模型
     s = syncJointEditors(s);      % N 变化时关节编辑器重建
     s = drawAll(s);               % 重置图像与参数一致
@@ -826,12 +835,15 @@ function onPlay(src, ~)
     end
     % 快速回放路径：只更新臂线/末端/夹爪文字，避免整图重建（大幅提速）
     hold(s.ax,'on');
+    % 删除上一帧 drawAll 画的静态臂/夹爪文字，避免“静态臂+动画臂”双重显示（幽灵臂）
+    if isfield(s,'hArm') && ~isempty(s.hArm), delete(s.hArm); s.hArm = []; end
     hA = plot(s.ax, NaN, NaN, 'o-', 'Color',[0.3 0.75 1], ...
         'MarkerFaceColor',[0.3 0.75 1],'MarkerSize',5,'LineWidth',2.2);
     gname = {'保持','张开','闭合'};
     gc = [0.7 0.7 0.7; 0.3 1 0.3; 1 0.4 0.4];
     hT = text(s.ax, 0.2, cfg.N*cfg.L_seg(1)+0.1, '夹爪: 保持', ...
         'Color',[0.7 0.7 0.7], 'FontSize', 10, 'FontWeight','bold');
+    set(hA,'HitTest','off');  set(hT,'HitTest','off');   % 播放动画不拦截鼠标
     for k = 1:m
         if ~ishandle(f), return; end
         p = planarFK_SimpleNode(Qc(k,:), s.model.DH, cfg.rod_offset_arr);
