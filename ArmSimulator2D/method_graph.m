@@ -20,12 +20,13 @@ function info = method_graph(model, q0, target, opts)
 %         .margin（膨胀额外边距 m，默认 0.15）
 
     if nargin < 4, opts = struct(); end
-    max_samples = of(opts, 'max_samples', 800);
-    seg_retry   = of(opts, 'seg_retry', 2);
-    gap_max     = of(opts, 'gap_max', 1.0);
-    margin      = of(opts, 'margin', 0.1);
-    max_iters   = of(opts, 'max_iters', 8);   % 回溯迭代上限（控制总预算）
-    total_budget = of(opts, 'total_budget', 12000);   % 全任务累计样本预算（防空转）
+    cfg0 = model.cfg;
+    max_samples = of(opts, 'max_samples', cfg0.graph_max_samples);
+    seg_retry   = of(opts, 'seg_retry', cfg0.graph_seg_retry);
+    gap_max     = of(opts, 'gap_max', cfg0.graph_gap_max);
+    margin      = of(opts, 'margin', cfg0.graph_margin);
+    max_iters   = of(opts, 'max_iters', cfg0.graph_max_iters);   % 回溯迭代上限（控制总预算）
+    total_budget = of(opts, 'total_budget', cfg0.graph_total_budget);   % 全任务累计样本预算（防空转）
 
     N = model.cfg.N;
     q_min = model.cfg.q_min(:)';  q_max = model.cfg.q_max(:)';

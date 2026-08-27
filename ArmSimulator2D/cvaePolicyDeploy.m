@@ -36,11 +36,22 @@ function out = cvaePolicyDeploy(mat_file, model, q0, target)
 end
 
 function ok = isFreeTraj(model, traj)
+    % 逐点 + 逐段插值碰撞检查（与 simulateMotion.checkSafety 粒度一致，防"点间"穿障漏检）
     ok = true;
+    if isempty(traj) || size(traj,1) < 1, return; end
     for k = 1:size(traj, 1)
-        g = obsDistAll(model, traj(k, :));
-        if ~isempty(g) && min(g) < model.cfg.rho0
-            ok = false; return;
+        if ~isFreeP(model, traj(k,:)), ok = false; return; end
+        if k < size(traj, 1)
+            dq = traj(k+1,:) - traj(k,:);
+            n = max(4, ceil(norm(dq) / 0.25));   % 与 method_rrtstar edgeFree 一致
+            for s = 0:n
+                if ~isFreeP(model, traj(k,:) + (s/n)*dq), ok = false; return; end
+            end
         end
     end
+end
+
+function ok = isFreeP(model, q)
+    g = obsDistAll(model, q);
+    ok = isempty(g) || min(g) >= model.cfg.rho0;
 end

@@ -23,6 +23,8 @@ function info = method_rrt(model, q0, target, opts)
 
     N = cfg.N;
     q_min = cfg.q_min(:)';  q_max = cfg.q_max(:)';
+    if ~isempty(of(opts, 'seed', [])), rng(of(opts, 'seed', [])); end   % 可复现
+    use_prescan = of(opts, 'use_prescan', true);                       % 种子预跑开关（无障时可关省时）
 
     % ---- 内部工具（闭包于本函数） ----
     function ok = isFree(qq)
@@ -61,13 +63,15 @@ function info = method_rrt(model, q0, target, opts)
     q_seed = [];
     best_seed_err = inf;
     n_seed = 6;
-    for k = 1:n_seed
-        qr = q_min + rand(1, N) .* (q_max - q_min);
-        ri = method_momentum(model, qr, target, ...
-            struct('max_iter', 30, 'snapshot_m', inf));
-        if ri.dist_end < best_seed_err
-            best_seed_err = ri.dist_end;
-            q_seed = ri.q_final;
+    if use_prescan
+        for k = 1:n_seed
+            qr = q_min + rand(1, N) .* (q_max - q_min);
+            ri = method_momentum(model, qr, target, ...
+                struct('max_iter', 30, 'snapshot_m', inf));
+            if ri.dist_end < best_seed_err
+                best_seed_err = ri.dist_end;
+                q_seed = ri.q_final;
+            end
         end
     end
     coarse_eps = 0.4;   % 粗达阈值：末端距目标 < 此值即启动动量精修

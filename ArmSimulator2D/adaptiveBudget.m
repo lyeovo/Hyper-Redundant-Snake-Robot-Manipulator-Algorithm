@@ -15,7 +15,8 @@ function b = adaptiveBudget(model, q0, target)
     n_obs = size(cfg.obstacles.circles,1) + size(cfg.obstacles.rects,1);
     [~, pe] = planarFK_L(q0, model.DH, cfg.rod_offset_arr);
     d = norm(pe - target(1:2));
-    if n_obs == 0 && d < 2
+    R = sum(cfg.L_seg);                      % 可达半径（几何自适应基准）
+    if n_obs == 0 && d < 0.30 * R            % "短程"阈值相对可达半径（旧硬编码 2 是为 0.5m×6 口径）
         b = 1500;
     elseif n_obs <= 2
         b = 3000;

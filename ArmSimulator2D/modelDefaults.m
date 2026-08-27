@@ -17,7 +17,8 @@ function def = modelDefaults()
     def.w_ang = 0.3;                    % 末端角度权重
     def.w_obs = 0.5;                    % 障碍屏障权重
     def.w_var = 0;                       % 关节先验权重（默认关闭：避免与位置/角度项形成伪平衡；需要时用户显式开启）
-    def.w_acc = 0.1;                    % 加速度平滑权重
+    def.w_acc = 0;                      % 加速度平滑权重（默认关闭：实际从未被 solver 传 v/v_prev，处于休眠态；
+                                        %   保留为将来 trajectory smoothing/feedbackCorrect 预留。见 strategy/docs）
     % --- 屏障 ---
     def.rho0 = 0.05;                    % 硬安全距离（机械臂到障碍边缘的最小许可距离）
     def.safe_margin = 0.01;             % 额外安全裕度（兼标定容差）
@@ -48,8 +49,16 @@ function def = modelDefaults()
     def.sa_alpha = 0.995;               % 几何冷却系数
     def.sa_sigma0 = 0.3;                % 初始扰动幅度 rad
     % --- PRM ---
-    def.prm_n_nodes = 3000;             % 路线图节点数
+    def.prm_n_nodes = 3000;             % 路线图节点数（single source of truth，method_prm 据此读默认）
     def.prm_gamma = 5.0;                % 连接半径系数 γ
+    def.prm_rad = 1.2;                  % 固定连接半径（method_prm 现行连接方式，非 PRM* 收缩半径）
+    % --- 图引导（method_graph 默认，single source of truth） ---
+    def.graph_max_samples = 800;        % 段内 RRT* 预算
+    def.graph_seg_retry = 2;            % 同段失败重试次数（失败预算翻倍）
+    def.graph_gap_max = 1.0;            % 缝隙宽度阈值 m（超过则末端可直连无需节点）
+    def.graph_margin = 0.1;             % 膨胀额外边距 m
+    def.graph_max_iters = 8;            % 回溯迭代上限
+    def.graph_total_budget = 12000;     % 全任务累计样本预算（防空转）
     % --- 局部最优检测 ---
     def.localmin_tol_grad = 1e-3;       % 梯度范数阈值（低于此且末端未达 → 判定局部最优）
     % --- 关节先验（w_var 项） ---

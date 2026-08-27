@@ -13,13 +13,15 @@ function info = method_prm(model, q0, target, opts)
     snapshot_m = of(opts, 'snapshot_m', cfg.snapshot_m);
     onStep  = of(opts, 'onStep', []);
     isCancel= of(opts, 'isCancel', []);
-    n_nodes = of(opts, 'n_nodes', 800);
-    rad     = of(opts, 'rad', 1.2);
+    n_nodes = of(opts, 'n_nodes', cfg.prm_n_nodes);
+    rad     = of(opts, 'rad', cfg.prm_rad);
     goal_eps = of(opts, 'goal_eps', cfg.rrt_goal_eps);
     goal_ang = of(opts, 'goal_ang', cfg.rrt_goal_ang);
     N = cfg.N;
     q_min = cfg.q_min(:)';  q_max = cfg.q_max(:)';
     cancelled = false;
+    if ~isempty(of(opts, 'seed', [])), rng(of(opts, 'seed', [])); end   % 可复现
+    use_prescan = of(opts, 'use_prescan', true);                       % 种子预跑开关（无障时可关省时）
 
     function ok = isFree(qq)
         g = obsDistAll(model, qq);
@@ -38,12 +40,14 @@ function info = method_prm(model, q0, target, opts)
         th = getEndEffectorAngle_L(qq, model.DH, cfg.rod_offset_arr);
     end
 
-    % ---- 1. 目标种子（多起点短动量） ----
+    % ---- 1. 目标种子（多起点短动量；可关闭） ----
     best = inf;  q_seed = [];
-    for k = 1:6
-        qr = q_min + rand(1,N) .* (q_max - q_min);
-        ri = method_momentum(model, qr, target, struct('max_iter', 30, 'snapshot_m', inf));
-        if ri.dist_end < best, best = ri.dist_end; q_seed = ri.q_final; end
+    if use_prescan
+        for k = 1:6
+            qr = q_min + rand(1,N) .* (q_max - q_min);
+            ri = method_momentum(model, qr, target, struct('max_iter', 30, 'snapshot_m', inf));
+            if ri.dist_end < best, best = ri.dist_end; q_seed = ri.q_final; end
+        end
     end
     % 种子已达标 → 直接成功
     [p_seed, a_seed] = fkEnd(q_seed);

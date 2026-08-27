@@ -24,11 +24,13 @@ function taskWriteStatus(inbox, cmd, status, varargin)
         'message', opts.Msg);
 
     fn = fullfile(inbox, [cmd.command_id '_status.json']);
-    fid = fopen(fn, 'w');
+    tmp = fullfile(inbox, [cmd.command_id '_status.tmp.json']);   % 原子写：先写临时文件再替换，防视觉侧读到半截 JSON
+    fid = fopen(tmp, 'w');
     if fid < 0
-        warning('taskWriteStatus:io', '无法写入 %s', fn);
+        warning('taskWriteStatus:io', '无法写入 %s', tmp);
         return;
     end
     fprintf(fid, '%s', jsonencode(s));
     fclose(fid);
+    movefile(tmp, fn, 'f');
 end

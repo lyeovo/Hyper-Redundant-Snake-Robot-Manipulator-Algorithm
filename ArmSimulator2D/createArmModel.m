@@ -91,7 +91,16 @@ function model = createArmModel(params)
     cfg.sa_sigma0 = gv(params, 'sa_sigma0', def.sa_sigma0);
     cfg.prm_n_nodes = gv(params, 'prm_n_nodes', def.prm_n_nodes);
     cfg.prm_gamma = gv(params, 'prm_gamma', def.prm_gamma);
+    cfg.prm_rad = gv(params, 'prm_rad', def.prm_rad);
     cfg.localmin_tol_grad = gv(params, 'localmin_tol_grad', def.localmin_tol_grad);
+
+    % --- 图引导（method_graph 默认，single source of truth） ---
+    cfg.graph_max_samples = gv(params, 'graph_max_samples', def.graph_max_samples);
+    cfg.graph_seg_retry = gv(params, 'graph_seg_retry', def.graph_seg_retry);
+    cfg.graph_gap_max = gv(params, 'graph_gap_max', def.graph_gap_max);
+    cfg.graph_margin = gv(params, 'graph_margin', def.graph_margin);
+    cfg.graph_max_iters = gv(params, 'graph_max_iters', def.graph_max_iters);
+    cfg.graph_total_budget = gv(params, 'graph_total_budget', def.graph_total_budget);
 
     % --- 关节先验 ---
     cfg.m_arr = gv(params, 'm_arr', []);
