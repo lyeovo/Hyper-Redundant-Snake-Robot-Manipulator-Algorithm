@@ -77,12 +77,12 @@ function app = ArmSimApp()
 
     sectionTitle(tabScene, py, '── 单次求解 ──'); py = py - 0.024;
     s.hMethod = uicontrol(tabScene,'Style','popupmenu', ...
-        'String',{'auto（推荐）','momentum 动量','sa 模拟退火','rrt 采样','rrtstar 渐近最优','prm 路线图','graph 图引导','rl 强化学习（实验性）','cvae 策略（L2 模型）','multilayer 多层（骨架图）'}, ...
+        'String',{'auto（推荐）','momentum 动量','sa 模拟退火','rrt 采样','rrtstar 渐近最优','prm 路线图','graph 图引导','rl 强化学习（实验性）','cvae 策略（L2 模型）'}, ...
         'Value',1,'Units','normalized','Position',[0.05 py-0.012 0.90 0.026], ...
         'Background',[0.2 0.2 0.3],'Foreground',[1 1 1],'FontSize',8);
     py = py - 0.031;
-    s.hMulti = uicontrol(tabScene,'Style','checkbox','String','强迫多层（use_multilayer）', ...
-        'Value',1,'Units','normalized','Position',[0.05 py-0.012 0.90 0.024], ...
+    s.hMulti = uicontrol(tabScene,'Style','checkbox','String','使用 LGM 分层（多层引导求解，替代单段）', ...
+        'Value',0,'Units','normalized','Position',[0.05 py-0.012 0.90 0.024], ...
         'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7);
     py = py - 0.028;
     uicontrol(tabScene,'Style','text','String','逐段宽松度:','Units','normalized', ...
@@ -568,15 +568,15 @@ function onRun(src, ~)
         s = setLog(s, ['参数错误: ' e.message]);
         guidata(f, s); return;
     end
-    method = {'auto','momentum','sa','rrt','rrtstar','prm','graph','rl','cvae','multilayer'};
+    method = {'auto','momentum','sa','rrt','rrtstar','prm','graph','rl','cvae'};
     m = method{get(s.hMethod,'Value')};
     target = [s.model.cfg.X_target, s.model.cfg.theta_target];
     t0 = tic;
     q_start = s.q;   % 记录求解前臂位姿：回放锚定到真实起点 q0
-    if strcmp(m, 'multilayer')
-        % 多层：骨架连通图 → 候选路径(k-shortest) → 逐段求解（快速+稳健回退）→ 末尾精修
-        % 开关：GUI 勾选“强迫多层(use_multilayer)”控制是否走多层；取消→多层退化为单段兜底
-        opts = struct('use_multilayer', get(s.hMulti,'Value'), ...
+    if get(s.hMulti,'Value')
+        % 「使用 LGM 分层」开关：走 LGM 连通图 → 候选路径 → 逐段求解 → 末尾精修
+        % （叠加在所选方法之上；段求解器用 momentum(快速)+rrt(稳健)，与曲线/候选无关的所选方法）
+        opts = struct('use_multilayer', true, ...
             'k_paths', 2, 'max_segments', 9, 'GRID', 64, 'Snapshot', 1, ...
             'waypoint_eps', getWpEps(s));
         info = method_multilayer(s.model, s.q, target, opts);
@@ -642,7 +642,7 @@ function onRun(src, ~)
         s.graphDisp = [];
     end
     log = sprintf('单次求解: 方法=%s | success=%d | error_code=%d\npos=%.4f m | ang=%.4f rad | 耗时=%.2fs', ...
-        m, info.success, info.error_code, info.dist_end, info.err_ang, dt);
+        info.method_used, info.success, info.error_code, info.dist_end, info.err_ang, dt);
     % 距收敛差距：按【实际执行方法】取阈值（auto 会变成 momentum/rrtstar/graph 等；
     % 之前按用户选择 m 取导致 auto+rrtstar 时显示 tol_pos=1e-4 而实际判据是 0.1 的矛盾）
     mu = info.method_used;
@@ -704,9 +704,10 @@ function onTaskRun(src, ~)
     end
     s = setLog(s, sprintf('模拟视觉任务 %s → RECEIVED → ACCEPTED → PLANNING …', ct));
     drawnow limitrate;
-    % 任务模拟遵循 GUI 方法选择（与单次求解策略一致）
-    method = {'auto','momentum','sa','rrt','rrtstar','prm','graph','rl','cvae','multilayer'};
-    mth = method{get(s.hMethod,'Value')};
+    % 任务模拟遵循 GUI 方法选择；若「使用 LGM 分层」开关打开则走 multilayer
+    method = {'auto','momentum','sa','rrt','rrtstar','prm','graph','rl','cvae'};
+    mth0 = method{get(s.hMethod,'Value')};
+    if get(s.hMulti,'Value'), mth = 'multilayer'; else, mth = mth0; end
     info = taskExecute(s.model, cmd, struct('inbox', s.taskInbox, 'snapshot_m', 1, 'method', mth));
     q_all = []; g_all = []; n_fail = 0;
     for k = 1:numel(info.seg_infos)
