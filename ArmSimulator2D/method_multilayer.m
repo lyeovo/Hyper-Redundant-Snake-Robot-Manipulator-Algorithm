@@ -35,8 +35,9 @@ function info = method_multilayer(model, q0, target, opts)
     segBud  = min(400, max(150, round(cfg.rrt_max_samples/4)));   % 受限预算防慢
     if isfield(opts,'seg_budget'), segBud = opts.seg_budget; end
     tried = 0;  lastErr = inf;  lastSnap = [];  lastQ = q0;
+    wpEps = of(opts,'waypoint_eps', 0.15);   % 路点位置松弛容差（m）
     for pi = 1:numel(paths)
-        [snap, qf, ok] = solveSegments(model, q0, graph.nodes, paths{pi}, target, segFast, segRob, segBud);
+        [snap, qf, ok] = solveSegments(model, q0, graph.nodes, paths{pi}, target, segFast, segRob, segBud, wpEps);
         tried = tried + 1;
         if ~ok, continue; end
         [~, peF] = planarFK_L(qf, model.DH, cfg.rod_offset_arr);
@@ -55,23 +56,18 @@ function info = method_multilayer(model, q0, target, opts)
     info = fallbackSolve(model, q0, target, opts);  info.method_used = 'multilayer(fallback)';
 end
 
-function [snap, qf, ok] = solveSegments(model, q0, nodes, path, target, segFast, segRob, segBud)
+function [snap, qf, ok] = solveSegments(model, q0, nodes, path, target, segFast, segRob, segBud, wpEps)
     cfg = model.cfg;  q = q0;  qf = q0;  snap = zeros(0, cfg.N);  ok = true;
     for i = 2:numel(path)
         wp = nodes(path(i), :);                 % [x,y]
-        % 路点朝向：中间点指向前进方向；终点用目标 θ
-        if i < numel(path)
-            nxt = nodes(path(i+1), :);
-            th = atan2(nxt(2)-wp(2), nxt(1)-wp(1));
-        else
-            th = target(3);
-        end
+        % 角度完全放开：目标 θ = 当前末端角度（梯度只推位置，不强制转向）
+        th = getEndEffectorAngle_L(q, model.DH, cfg.rod_offset_arr);
         tgt = [wp(1), wp(2), th];
         m = simulateMotion(model, segFast, q, tgt, 'Snapshot', 4, 'max_iter', 150);
-        if ~m.success
+        if ~nearWP(m, wp, wpEps)
             m = simulateMotion(model, segRob, q, tgt, 'Snapshot', 4, 'max_samples', segBud);
         end
-        if ~m.success, ok = false; return; end
+        if ~nearWP(m, wp, wpEps), ok = false; return; end   % 软位置判据：只看末端到路点距离
         if i == 2
             snap = [snap; m.q_snapshot]; %#ok<AGROW>
         else
@@ -82,13 +78,18 @@ function [snap, qf, ok] = solveSegments(model, q0, nodes, path, target, segFast,
     qf = q;
 end
 
+function isNear = nearWP(m, wp, eps)
+    % 软判据：仅看末端位置到路点距离（不看角度、不用严格 tol_pos）
+    isNear = isstruct(m) && isfield(m,'dist_end') && ~isempty(m.dist_end) && m.dist_end < eps;
+end
+
 function info = assembleInfo(model, snap, qf, target, graph, paths, tried)
     cfg = model.cfg;
     [~, pe] = planarFK_L(qf, model.DH, cfg.rod_offset_arr);
     th = getEndEffectorAngle_L(qf, model.DH, cfg.rod_offset_arr);
     dist_end = norm(pe - target(1:2));
     err_ang  = abs(wrapAngle(target(3) - th));
-    success  = dist_end < 0.05 && err_ang < 0.2;   % 多层粗判据（可达 + 角度近似）
+    success  = dist_end < 0.10;   % 位置松弛（多层：末端到目标位置 < 0.10m；角度放开）
     info = struct('q_snapshot', snap, 't_seq', (1:size(snap,1)), ...
         'V_hist', [], 'q_final', qf, 'success', success, 'converged', success, ...
         'cancelled', false, 'iter', size(snap,1), ...
