@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>平面蛇形机械臂 IK 平台 · 三维化实现细节与问题分析</title>
+<style>
+  :root {
+    --bg:#0e1420; --panel:#161f30; --panel2:#1c2740; --line:#2a3a55;
+    --text:#d7e0ef; --muted:#8aa0bd; --accent:#4da6ff; --accent2:#6fbf6f;
+    --warn:#e0a94d; --danger:#e05a5a; --purple:#c39bff; --code-bg:#0a0f1a;
+    --mono:'Cascadia Code','JetBrains Mono',Consolas,'Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI','Microsoft YaHei','PingFang SC',sans-serif;line-height:1.65;font-size:15px;}
+  a{color:var(--accent);text-decoration:none;} a:hover{text-decoration:underline;}
+  header.hero{padding:54px 24px 38px;text-align:center;background:radial-gradient(1200px 420px at 50% -120px,rgba(224,169,77,0.16),transparent),linear-gradient(180deg,#1a2030 0%,var(--bg) 100%);border-bottom:1px solid var(--line);}
+  header.hero h1{margin:0 0 10px;font-size:28px;letter-spacing:1px;font-weight:700;}
+  header.hero .sub{color:var(--muted);font-size:16px;max-width:900px;margin:0 auto;}
+  header.hero .badges{margin-top:16px;}
+  .badge{display:inline-block;padding:3px 12px;margin:4px;border-radius:999px;font-size:12.5px;border:1px solid var(--line);background:var(--panel);color:var(--muted);}
+  .badge b{color:var(--warn);font-weight:600;}
+  main{max-width:1120px;margin:0 auto;padding:8px 20px 80px;}
+  section.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:26px 0;}
+  section.card>h2{margin:0 0 4px;font-size:21px;color:#fff;display:flex;align-items:center;gap:10px;}
+  section.card>h2 .no{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--warn),#b5721f);color:#fff;font-size:14px;font-weight:700;flex-shrink:0;}
+  section.card>h2 .no.v{background:linear-gradient(135deg,var(--accent),#2f6fd0);}
+  section.card>h2 .no.p{background:linear-gradient(135deg,var(--purple),#8a5fd0);}
+  section.card>h2 .no.r{background:linear-gradient(135deg,var(--danger),#a43030);}
+  section.card>p.desc{color:var(--muted);margin:6px 0 18px;}
+  section.card>h3{margin:22px 0 10px;font-size:16px;color:#fff;}
+  section.card>h3 .sub{font-size:12.5px;color:var(--muted);font-weight:400;margin-left:8px;}
+  section.card>h4{margin:14px 0 6px;font-size:14px;color:#cfd9ec;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);color:#fff;font-weight:600;white-space:nowrap;}
+  tr:nth-child(even) td{background:rgba(255,255,255,0.015);}
+  td code,p code,li code,h3 code{font-family:var(--mono);font-size:12.5px;color:#8fd0ff;}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.6;color:#c9d6ea;}
+  pre .c{color:#5c708a;} pre .k{color:#e0a94d;} pre .v{color:#8fd0ff;}
+  .note{border-left:3px solid var(--accent);background:rgba(77,166,255,0.06);padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--muted);font-size:13.5px;}
+  .note.ok{border-left-color:var(--accent2);background:rgba(111,191,111,0.08);}
+  .note.warn{border-left-color:var(--warn);background:rgba(224,169,77,0.08);}
+  .note.deep{border-left-color:var(--purple);background:rgba(195,155,255,0.08);}
+  .note.danger{border-left-color:var(--danger);background:rgba(224,90,90,0.08);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr;}}
+  ul.tight{margin:6px 0;padding-left:20px;} ul.tight li{margin:4px 0;}
+  .tag{display:inline-block;padding:1px 8px;border-radius:5px;font-size:11.5px;margin-left:6px;font-weight:600;}
+  .tag.hard{background:rgba(224,90,90,0.18);color:#ff8a8a;}
+  .tag.mid{background:rgba(224,169,77,0.16);color:var(--warn);}
+  .tag.easy{background:rgba(111,191,111,0.16);color:var(--accent2);}
+  .tag.ok{background:rgba(111,191,111,0.14);color:var(--accent2);}
+  .toc{columns:2;column-gap:28px;font-size:13.5px;} .toc a{display:block;padding:2px 0;}
+  @media(max-width:560px){.toc{columns:1;}}
+  .prio{padding:2px 9px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+  .prio.p0{background:rgba(224,90,90,0.18);color:#ff8a8a;} .prio.p1{background:rgba(224,169,77,0.16);color:var(--warn);} .prio.p2{background:rgba(111,191,111,0.15);color:var(--accent2);}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:24px;border-top:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>平面蛇形机械臂 IK 平台 · 三维化实现细节与问题分析</h1>
+  <p class="sub">把当前 <b style="color:#fff">SE(2) 平面蛇臂</b>演进为 <b style="color:#fff">SE(3) 空间蛇臂</b>，到底要改什么、难在哪、哪些坑。结论先行：项目的“维度无关”只在<strong style="color:#fff">搜索骨架 + 数据 schema + 部署回退结构</strong>成立；<strong style="color:#fff">数学 / 损失 / 碰撞 / 接口 / 估计层几乎处处硬编码了平面几何</strong>。因此三维化是一次<b style="color:#ffb347">跨层手臂抽象重构</b>，而不是“换几个嵌套函数”。</p>
+  <div class="badges">
+    <span class="badge">现状维度 <b>SE(2)</b></span>
+    <span class="badge">目标维度 <b>SE(3)</b></span>
+    <span class="badge">2D 硬编码点 <b>≈ 30 文件 / 全 5 层</b></span>
+    <span class="badge">最大难点 <b>运动学 + 碰撞梯度</b></span>
+  </div>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2><span class="no">◈</span>目录</h2>
+    <div class="toc">
+      <a href="#t0">0 · 核心判断（一句话）</a>
+      <a href="#t1">1 · 三维化影响矩阵（分层难度）</a>
+      <a href="#t2">2 · “维度无关” vs “2D 硬编码” 边界表</a>
+      <a href="#t3">3 · 分层细节分析</a>
+      <a class="lvl2" style="padding-left:16px" href="#t3-1">3.1 运动学（SE(3) FK + 6×N 雅可比）</a>
+      <a class="lvl2" style="padding-left:16px" href="#t3-2">3.2 障碍几何（球/胶囊 vs OBB/网格）</a>
+      <a class="lvl2" style="padding-left:16px" href="#t3-3">3.3 价值函数（SO(3) 角度度量）</a>
+      <a class="lvl2" style="padding-left:16px" href="#t3-4">3.4 搜索层（结构不变但引用 2D）</a>
+      <a class="lvl2" style="padding-left:16px" href="#t3-5">3.5 学习层（特征编码是瓶颈）</a>
+      <a class="lvl2" style="padding-left:16px" href="#t3-6">3.6 接口/任务模型（6DoF target）</a>
+      <a class="lvl2" style="padding-left:16px" href="#t3-7">3.7 顶层闭环（SE(3) 手眼 + 目标 KF）</a>
+      <a class="lvl2" style="padding-left:16px" href="#t3-8">3.8 误差/鲁棒 · GUI · 测试</a>
+      <a href="#t4">4 · 难点与坑（问题清单）</a>
+      <a href="#t5">5 · 推荐演进路线与优先级</a>
+      <a href="#t6">6 · 结论</a>
+    </div>
+  </section>
+
+  <!-- 0 -->
+  <section class="card" id="t0">
+    <h2><span class="no">0</span>核心判断</h2>
+    <div class="note danger" style="font-size:15px"><strong>一句话：</strong>本项目的“维度无关”是<strong>设计意图正确、但没落到底</strong>。真正与维度无关的是：<code>RRT*/graph</code> 的<strong>搜索骨架</strong>（选父/re wire/A*/回溯）、<code>demo-v1</code> 数据 schema、<code>cvaePolicyDeploy</code> 的<strong>回退结构</strong>、以及统一的 <code>info</code> 契约。但<strong>价值函数、全部求解器、仿真后处理、学习部署、评估、任务采样、顶层估计</strong>都直接硬编码调用 <code>planarFK_L / planarJac_L / obsDist* / getEndEffectorAngle_L</code> 等平面函数——共 <b>≈30 个文件</b>。所以三维化是<strong>把“手臂与几何”抽成一个可替换抽象层</strong>的问题，而不是“换几个嵌套函数的小改”。</div>
+    <div class="grid2">
+      <div>
+        <h4>搜索骨架 / 数据 —— 已预留</h4>
+        <ul class="tight">
+          <li><code>method_rrtstar</code>：核心（choose-parent/rewire/代价）维度无关，只有 <code>isFree/fkEnd/goalDist/edgeFree</code> 4 个嵌套函数是 2D。</li>
+          <li><code>method_graph</code>：走廊图 + A* + 回溯逻辑无关；走廊节点只存“末端位置”，3D 只改维度。</li>
+          <li><code>method_multilayer</code>：LGM 连通层（<code>buildConnectivityGraph</code> 骨架/PRM + <code>graphPaths</code>）只算“工作空间走廊能否连通”，<strong>臂无关、维度无关</strong>（骨架化/连通概念对 3D 体素网格同样成立）；其<strong>逐段求解</strong>仍走 <code>simulateMotion</code>（臂相关）。</li>
+          <li>数据 <code>demo-v1</code>：<code>traj=[T×D]</code>，D 由采样器决定。</li>
+          <li>部署回退结构：<code>cvaePolicyDeploy → method_auto → refineRandomGreedy</code> 骨架不变。</li>
+        </ul>
+      </div>
+      <div>
+        <h4>数学 / 损失 / 碰撞 / 接口 —— 全部硬编码 2D</h4>
+        <ul class="tight">
+          <li><code>planarFK_L / planarJac_L / planarJacPoint_L / jacEndAngle_L / getEndEffectorAngle_L</code> —— 平面运动学（关节全绕 Z）。</li>
+          <li><code>obsDistAll / obsDistGradAll / seg*DistGrad / point*DistGrad</code> —— 平面障碍几何。</li>
+          <li><code>armValue / armGradient</code>（L1）、<code>method_momentum/sa/rrt/rrtstar/graph/multilayer(逐段)/prm</code>、<code>simulateMotion</code> 后处理、<code>refineRandomGreedy</code>、<code>rlRollout</code>。</li>
+          <li><code>projectTo2D / taskToSegments / runTopLevel / handEyeEstimate2D / kalmanTarget2D / ArmSimApp</code>。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1 影响矩阵 -->
+  <section class="card" id="t1">
+    <h2><span class="no">1</span>三维化影响矩阵（分层难度）</h2>
+    <p class="desc">哪层难、哪层容易，哪层是“白赚”。难度是“<b style="color:#fff">改后是否有既有结构托底</b>”，而不是行数。</p>
+    <table>
+      <tr><th>层</th><th>现状</th><th>3D 要什么</th><th>难度</th><th>性质</th></tr>
+      <tr><td><b>L3 运动学</b></td><td>平面 FK + 2×N 雅可比（关节全绕 Z）</td><td>SE(3) FK + 6×N 空间雅可比；关节轴可变；选姿态参数化</td><td><span class="tag hard">最硬</span></td><td>重新实现</td></tr>
+      <tr><td><b>L3 障碍几何</b></td><td>圆/旋转矩形解析距离+梯度</td><td>球/胶囊 vs OBB/网格；可微碰撞（GJK/EPA 或近似）</td><td><span class="tag hard">最硬</span></td><td>重新实现</td></tr>
+      <tr><td><b>L1 价值函数</b></td><td>位置误差 + wrap 角度</td><td>位置误差(3D) + SO(3) 姿态距离；屏障逻辑不变</td><td><span class="tag mid">中</span></td><td>改角度度量</td></tr>
+      <tr><td><b>L0 接口/任务模型</b></td><td>projectTo2D 丢 z、只用 yaw；lift 为平面后撤</td><td>保留 6DoF target；真实 +Z 提升；地面抓放→空间抓放</td><td><span class="tag mid">中</span></td><td>改语义</td></tr>
+      <tr><td><b>L2 搜索层</b></td><td>结构无关，但方法体硬调 planar 函数</td><td>改走 fk/geom 抽象层（几乎白赚）</td><td><span class="tag easy">易</span></td><td>抽引用</td></tr>
+      <tr><td><b>L4 误差/鲁棒</b></td><td>errorModel 每关节；feedbackCorrect 用 2D 雅可比</td><td>6×N 雅可比；其余逻辑不变</td><td><span class="tag mid">中</span></td><td>改雅可比</td></tr>
+      <tr><td><b>学习层</b></td><td>64×64 2D 栅格特征</td><td>体素/PointNet 特征；3D 示范生成重训</td><td><span class="tag hard">较硬</span></td><td>特征瓶颈</td></tr>
+      <tr><td><b>顶层闭环</b></td><td>2D 手眼估计 + 2D 目标 KF</td><td>SE(3) 手眼标定(AX=XB) + 3D 目标 KF</td><td><span class="tag hard">较硬</span></td><td>新估计栈</td></tr>
+      <tr><td><b>GUI</b></td><td>2D 渲染</td><td>3D 渲染（plot3/mesh/3D viewer）</td><td><span class="tag mid">中</span></td><td>新渲染</td></tr>
+      <tr><td><b>测试</b></td><td>2D 梯度/几何对照</td><td>3D 解析梯度对照（旋转参数化/奇异更复杂）</td><td><span class="tag mid">中</span></td><td>扩测试</td></tr>
+    </table>
+    <div class="note"><strong>“白赚”的层：</strong>搜索层（RRT*/graph/auto）、部署回退、数据 schema、评估框架 <code>evaluatePolicy</code>、<code>errorModel</code>、<code>assessRobustness</code> 的逻辑。只要把<strong>运动学 + 碰撞</strong>做成可替换抽象，这些层几乎零改动。</div>
+  </section>
+
+  <!-- 2 边界表 -->
+  <section class="card" id="t2">
+    <h2><span class="no">2</span>“维度无关” vs “2D 硬编码” 边界表</h2>
+    <p class="desc">逐项标注：已维度无关 / 硬编码 2D / 部分。这是三维化工作量的“清单式定位”。</p>
+    <div class="grid2">
+      <div>
+        <h4>已维度无关（无需改或仅微调接口）</h4>
+        <ul class="tight">
+          <li><code>method_auto</code>、<code>method_rrtstar</code>/<code>method_rrt</code>/<code>method_graph</code> 的<strong>图/树/A*/回溯核心</strong>与<strong>代价定义</strong>。</li>
+          <li><code>method_auto</code> 调度、<code>detectLocalMin</code>、<code>adaptiveBudget</code> 逻辑。</li>
+          <li><code>evaluatePolicy</code>（策略句柄 → 统一指标）、<code>verifyPolicy</code>。</li>
+          <li><code>errorModel</code>（逐关节）、<code>assessRobustness</code> 逻辑。</li>
+          <li>数据 schema <code>demo-v1</code>、增量表示 Δ、<code>cvaePolicyFromFile</code> 的潜空间优化。</li>
+          <li>任务状态机 / 文件桥 / <code>exportMotorCmd</code> / <code>taskWriteStatus</code>（契约与几何无关）。</li>
+        </ul>
+      </div>
+      <div>
+        <h4>硬编码 2D（需改 / 需抽象）</h4>
+        <ul class="tight">
+          <li>运动学基元：<code>planarFK_L · planarJac_L · planarJacPoint_L · jacEndAngle_L · getEndEffectorAngle_L</code>（自身）。</li>
+          <li>障碍几何：<code>obsDistAll · obsDistGradAll · segCircleDistGrad · segRectDistGrad · segSegDistGrad · pointCircleDistGrad · pointRectSignedDist</code>。</li>
+          <li>价值/损失：<code>armValue · armGradient</code>（直接调 planar FK + 障碍梯度）。</li>
+          <li>方法体：<code>method_momentum · method_sa · method_rrt · method_rrtstar · method_prm · method_graph · refineRandomGreedy · rlRollout</code>（都直接调 planar 函数）。</li>
+          <li>仿真/后处理：<code>simulateMotion</code>（vel/safety/终态都用 obsDist*）。</li>
+          <li>学习部署/评估：<code>cvaePolicyDeploy · cvaePolicyFromFile · bcPolicyFromFile · evaluatePolicy · generateDemonstrations · sampleTask2D · optimizeTraj</code>。</li>
+          <li>接口/任务/估计：<code>projectTo2D · taskToSegments · runTopLevel · handEyeEstimate2D · kalmanTarget2D · feedbackCorrect · detectLocalMin(内调 FK) · ArmSimApp</code>。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note deep"><strong>关键洞察：</strong>真正“只需要换几何”的是<strong>搜索骨架</strong>；真正“必须重写数学”的是<strong>运动学 + 障碍梯度</strong>；剩下的是<strong>把散落在所有方法里的 <code>planarFK_L/obsDist*</code> 调用收敛到一个 fk/geom 抽象</strong>的改引用工作。</div>
+  </section>
+
+  <!-- 3 分层细节 -->
+  <section class="card" id="t3">
+    <h2><span class="no">3</span>分层细节分析</h2>
+
+    <h3 id="t3-1">3.1 运动学：SE(3) FK + 6×N 空间雅可比 <span class="sub">最硬</span></h3>
+    <div class="fn" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:14px 0">
+      <pre>现状（planarFK_L）：θ_sum ← Σ q_i；绕 <b>Z 轴</b>；全在 X-Y 平面。
+  M_i = P_{i-1} + L_i·[cosθ_sum, sinθ_sum]          <span class="c">% 只有 2 个平动 dof</span>
+  P'_i = M_i + rod_off_i·[−sinθ_sum, cosθ_sum]
+
+3D（SE(3)）：每个关节绕<b>自己的轴</b>（修正 DH / 铰链轴 a_i），
+  用齐次变换 T_{i} = T_{i-1}·Rotz(θ_i)·Trans·Rotx(α_i) 或通用轴角。
+  末端位姿 → p(3) + R(3×3)（或四元数）。
+雅可比：2×N 位置雅可比 → <b>6×N 空间雅可比</b>（平移 + 角速度）；姿态部分要选参数化。</pre>
+      <ul class="tight">
+        <li><strong>关键变化：</strong>关节轴从“全绕 Z”变成“逐关节任意轴”。蛇形臂通常是<strong>垂直交替轴</strong>（Z/Y/Z/Y…），这在平面下退化、在 3D 下才体现“蛇形”。</li>
+        <li><strong>姿态参数化选择：</strong>四元数 vs 旋转矩阵 vs Euler。Euler 有<strong>万向锁</strong>；四元数双覆盖；旋转矩阵 9 维冗余。建议用四元数或旋转矩阵做度量，Euler 只作输入。</li>
+        <li><strong>末端姿态误差度量：</strong>2D 用 <code>wrap(θ_t−θ)</code>，3D 用 <code>‖Log(R_t^T R)‖</code>（旋转矩阵对数 / 轴角）或 <code>‖q_t − q‖</code>（四元数）或 <code>‖R_t − R‖_F</code>。不同度量对梯度/收敛影响大。</li>
+        <li><strong>奇异位形：</strong>3D 蛇臂有更丰富的奇异（打直/折叠/手臂等），雅可比降秩。2D 的经验不能直接照搬。</li>
+      </ul>
+    </div>
+
+    <h3 id="t3-2">3.2 障碍几何：球/胶囊 vs OBB/网格 <span class="sub">最硬</span></h3>
+    <div class="fn" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:14px 0">
+      <pre>现状（2D 解析）：圆 = 点到圆心；矩形(绕 Z 旋转) = 旋转坐标下 max(|lx|−w/2,|ly|−h/2)；
+  机械臂段 = 平面线段；距离/梯度<b>解析、快速</b>。
+
+3D：机械臂每节 → <b>胶囊/圆柱/OBB</b>；障碍 → <b>球 / OBB / 三角网格</b>。
+  球-段距离仍解析（点到线段）。
+  OBB-胶囊 / 网格-胶囊 → <b>GJK/EPA</b>（凸体）或 AABB/网格近似（非凸），<b>成本高</b>。
+  → 透过碰撞检测的<b>梯度</b>：GJK/EPA 非光滑，解析梯度难；需<b>数值微分或光滑近似</b>。</pre>
+      <ul class="tight">
+        <li><strong>难点 1：成本。</strong>RRT* 每步要多次 <code>isFree/edgeFree</code>；3D 每次碰撞是凸体距离（GJK 迭代），比 2D 解析贵 1–2 个数量级。整个采样层变慢。</li>
+        <li><strong>难点 2：可微碰撞。</strong>价值函数的屏障项要 <code>∇d</code>。2D 有解析 <code>∇d</code>；3D 的 GJK/EPA 距离不光滑，需要用<strong>光滑近似（如胶囊-球/盒的解析距离）或数值梯度</strong>。这<strong>直接决定价值函数梯度能否继续用</strong>。</li>
+        <li><strong>建议降级策略：</strong>先只支持<strong>球 + 胶囊（解析距离/梯度）</strong>，把 OBB/网格作为第二层（GJK 用于碰撞检查，数值梯度用于屏障）。这样最快可用、保留解析梯度。</li>
+      </ul>
+    </div>
+
+    <h3 id="t3-3">3.3 价值函数：SO(3) 角度度量</h3>
+    <div class="fn" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:14px 0">
+      <pre>V(q) = w_pos·‖p − X_t‖² + w_ang·<b>d_R(R, R_t)</b>² + w_obs·屏障 + w_var + w_acc
+  d_R = ‖Log(R_t^T R)‖   <span class="c">% 旋转矩阵对数（轴角）→ 无万向锁、黎曼正确</span>
+  (或 ‖q_t − q‖ 四元数 / ‖R_t − R‖_F)</pre>
+      <ul class="tight">
+        <li>位置项直接从 2D→3D 向量即可；屏障项的 <code>g_eff</code> 逻辑不变，只是 <code>d_k</code> 是 3D 距离。</li>
+        <li><strong>难点：</strong>角度项从标量角度误差变成<strong>姿态距离</strong>，量纲（rad vs Frobenius）需与位置项平衡；且 <code>d_R</code> 的梯度（Log 映射的雅可比 / 左逆）比 <code>wrap</code> 复杂。</li>
+        <li><code>armGradient</code> 里 <code>J_ang</code> 从 1×N 变成 <b>3×N（姿态雅可比）或 6×N</b>，梯度链变长。</li>
+      </ul>
+    </div>
+
+    <h3 id="t3-4">3.4 搜索层：结构不变，但引用要收敛</h3>
+    <div class="fn" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:14px 0">
+      <ul class="tight">
+        <li><code>method_rrtstar</code> 的“2D 适配层”已是正确形态——只需把 <code>fkEnd</code> 换成 3D、<code>isFree/edgeFree</code> 换成 3D 碰撞。这是<strong>全项目最好的三维化模板</strong>。</li>
+        <li>但 <code>method_momentum</code>/<code>method_sa</code>/<code>method_graph</code>/<code>refineRandomGreedy</code>/<code>rlRollout</code> 都<strong>直接调 <code>planarFK_L/obsDistGradAll</code></strong>，没有走适配层。三维化必须<strong>先把它们改成走 <code>fkEnd/obsDist*</code> 抽象</strong>。</li>
+        <li><code>method_graph</code> 的走廊节点是“末端位置 (x,y)”；3D 下可保留位置走廊（只约束位置，末段再处理姿态），与 2D 同思路。</li>
+        <li><code>refineRandomGreedy</code> 的 <code>errFull</code> 直接调 <code>planarFK_L + getEndEffectorAngle_L</code>——是“无梯度精修”里的 2D 硬点，需换成 <code>fkEnd</code>。</li>
+        <li><b>关键动作：</b>抽一个 <code>fkEnd(model,q)→[p(3),R(3×3)]</code> + <code>spatialJac(model,q)→J(6×N)</code> + <code>geomDistGrad(model,q)</code> 的统一抽象，把 30 个文件的引用收敛过来。</li>
+      </ul>
+    </div>
+
+    <h3 id="t3-5">3.5 学习层：特征编码是瓶颈</h3>
+    <div class="fn" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:14px 0">
+      <pre>现状：x = [ occupancy_grid(64×64) | q0 | target ]，d_in ≈ 4096 + N + 3
+3D 选项：
+  A) 体素栅格（如 32³）：d_in ≈ 32768 → <b>维度爆炸</b>，且只在障碍占位处有信息（稀疏）。
+  B) 点云编码（PointNet 式）：障碍表面点集 → 置换不变特征，维度低、容纳任意几何。
+推荐 B；A 需稀疏卷积/3D CNN，重。</pre>
+      <ul class="tight">
+        <li>训练特征变了 → <strong>整条学习链路要重训/重生成</strong>（3D 任务采样 <code>sampleTask2D</code>、3D 障碍、3D 示范）——这不是“改个函数”，是要重新跑一遍数据管线。</li>
+        <li>增量表示 Δ、潜空间优化、部署回退结构都<strong>不变</strong>（已验证的资产可复用）。</li>
+        <li>潜空间优化推理的每次 decoder 前向，因特征/输出维度变大而<strong>更贵</strong>（本来就已 ~1s/候选；3D 特征会更慢）——这正是前文提的“建议蒸馏成单前向”的动机，三维化会放大这个痛点。</li>
+      </ul>
+    </div>
+
+    <h3 id="t3-6">3.6 接口 / 任务模型：6DoF target</h3>
+    <div class="fn" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:14px 0">
+      <pre>现状：TaskCommand 的 pose_camera 已是 6DoF（position + orientation_quat）；
+  但 <code>projectTo2D</code> 丢弃 z、只用 yaw → 2D 目标；<code>lift</code> 是平面后撤。
+3D：保留完整 SE(3) target；<code>projectTo2D</code>/<code>taskToSegments</code> 的 2D 语义需重写；
+  lift = 真实 +Z 提升（而非平面后撤）；夹爪/垂直轴需在新契约里表达。</pre>
+      <ul class="tight">
+        <li>好消息：<strong>上游数据已经带 6DoF</strong>（position + quaternion），丢的只是“投影到 2D”这一步。去掉 <code>projectTo2D</code> 即可拿到完整位姿。</li>
+        <li>任务语义（地面抓放、接近/放置点、抬升高度）要从“平面几何”改成“空间几何”，并与电控/垂直轴约定 z 行为（见架构文档 §7 P0）。</li>
+        <li><code>motorCmd</code> 的 <code>gripper_seq</code> 契约不变，但 <code>t_seq</code> 节拍与“抬升/接近”的三维轨迹要更真实。</li>
+      </ul>
+    </div>
+
+    <h3 id="t3-7">3.7 顶层闭环：SE(3) 手眼标定 + 目标 KF</h3>
+    <div class="fn" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:14px 0">
+      <ul class="tight">
+        <li><code>handEyeEstimate2D</code>（2D：平移 + 偏航）→ 3D 是 <code>AX=XB</code>（或 <code>AX=YBZ</code>）SE(3) 手眼标定——方程更复杂，需<strong>姿态遍历</strong>保证可观测性（当前是 mock 2D 巡视位形，3D 需要合适的 <code>so(3)</code> 遍历）。</li>
+        <li><code>kalmanTarget2D</code>（常速 2D）→ 3D 目标 KF（位置 3 + 姿态）；姿态在流形上做滤波（如 SE(3) 扩展 KF / 四元数 KF）比欧氏难。</li>
+        <li><code>runTopLevel</code> 里的 <code>se2m/inv_se2m</code> → 3D 齐次变换（<code>se3</code>）。</li>
+        <li>这项工作与“真实手眼标定”P0 缺口强耦合——三维化会让它更必要、也更容易暴露（因为没有 2D 投影可逃）。</li>
+      </ul>
+    </div>
+
+    <h3 id="t3-8">3.8 误差/鲁棒 · GUI · 测试</h3>
+    <div class="fn" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:14px 0">
+      <ul class="tight">
+        <li><code>errorModel</code>（逐关节噪声/回差）<strong>不变</strong>；<code>assessRobustness</code> 逻辑不变。</li>
+        <li><code>feedbackCorrect</code> 用 <code>planarJac_L</code>（2×N）→ 需 <b>6×N 空间雅可比</b>（阻尼最小二乘同框架）。</li>
+        <li><code>ArmSimApp</code> 2D 渲染 → 3D（plot3 / mesh / 3D viewer），并支持 3D 障碍编辑/目标拖拽。</li>
+        <li><code>test_gradcheck</code> / <code>test_obstacle_geometry</code> 全 2D 解析对照 → 需 3D 对照。3D 解析梯度校验更复杂（旋转参数化、对数映射雅可比、奇异点）。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 难点与坑 -->
+  <section class="card" id="t4">
+    <h2><span class="no">4</span>难点与坑（问题清单）</h2>
+    <p class="desc">按“是否真难”与“改了会不会连带坑”排序，给出现状、后果与规避建议。</p>
+    <table>
+      <tr><th>#</th><th>难点/坑</th><th>为什么难</th><th>后果</th><th>规避建议</th></tr>
+      <tr><td>1</td><td><b>运动学抽象缺失</b></td><td>~30 文件直接调 <code>planarFK_L/planarJac_L/obsDist*</code>，无统一入口</td><td>改一个函数要动全链路</td><td><b>先抽</b> <code>fkEnd/spatialJac/geomDistGrad</code> 抽象，全链改走它（工作量集中在此）</td></tr>
+      <tr><td>2</td><td><b>可微碰撞 / 屏障梯度</b></td><td>3D 凸体/网格距离（GJK/EPA）<b>非光滑</b>，解析梯度难</td><td>价值函数 <code>∇V</code> 的质量下降，梯度法可能失效</td><td>先只做<strong>球+胶囊（解析梯度）</strong>；OBB/网格用数值梯度或光滑近似</td></tr>
+      <tr><td>3</td><td><b>姿态参数化 / 奇异</b></td><td>Euler 万向锁；旋转矩阵冗余；雅可比在奇异位形降秩</td><td>梯度/数值不稳定、收敛差</td><td>用四元数/旋转矩阵度量；奇异附近用阻尼最小二乘；<code>d_R=‖Log‖</code></td></tr>
+      <tr><td>4</td><td><b>碰撞成本</b></td><td>每次 <code>isFree/edgeFree</code> 变贵（GJK 迭代）</td><td>采样层整体变慢</td><td>先用宽松 AABB 粗筛，再用凸体精确；必要时降采样</td></tr>
+      <tr><td>5</td><td><b>维度诅咒 / 冗余</b></td><td>3D 蛇臂高冗余；任务 6DoF；N 增大时 C-space 维度高</td><td>采样成功率/速度下降</td><td>利用冗余做姿态整定；RRT* 在高维仍适合，但预算要更大</td></tr>
+      <tr><td>6</td><td><b>学习特征爆炸</b></td><td>二值栅格→体素（32³≈3.3 万）或需 PointNet</td><td>网络增大、重训、推理变慢</td><td>用点云/稀疏特征；预留“潜空间优化蒸馏成单前向”</td></tr>
+      <tr><td>7</td><td><b>3D 示范重生成</b></td><td>3D 任务采样器 + 3D 碰撞下的示范生成慢</td><td>数据管线重跑（成本高）</td><td>先复用 2D 采样器思路改 3D；用预算内最优 + 短切（老师天花板）</td></tr>
+      <tr><td>8</td><td><b>手眼标定可观测性</b></td><td>SE(3) AX=XB 需合适 <code>so(3)</code> 遍历；比 2D 难</td><td>手眼估计不收敛/病态</td><td>设计姿态遍历序列；窗内做 SE(3) 估计 + 残差校验</td></tr>
+      <tr><td>9</td><td><b>数值/线性代数依赖</b></td><td>需 <code>rotm2quat/quat2rotm</code>、so(3) 对数映射、SE(3) 变换</td><td>引入新坑（符号/约定/舍入）</td><td>统一四元数符号约定；集中封装工具函数并加对照测试</td></tr>
+      <tr><td>10</td><td><b>任务语义 / 电控契约</b></td><td>地面抓放→空间抓放；z 提升与夹爪/垂直轴需约定</td><td>motorCmd 语义不清、电控无法执行</td><td>先与电控约定 z/姿态契约，再改 <code>taskToSegments</code></td></tr>
+    </table>
+    <div class="note warn"><strong>最大的“坑”其实就是第 1 条：</strong>不要一开始就分散改各方法，而是<strong>先立 <code>fk/geom</code> 抽象，把 30 处引用收敛</strong>。否则你会陷入“改一个、坏一片”，且每个方法重复修。这件事做好了，搜索层几乎白赚。</div>
+  </section>
+
+  <!-- 5 演进路线 -->
+  <section class="card" id="t5">
+    <h2><span class="no">5</span>推荐演进路线与优先级</h2>
+    <table>
+      <tr><th>步</th><th>内容</th><th>优先级</th><th>说明</th></tr>
+      <tr><td><b>0</b></td><td>抽 <code>fkEnd(model,q)→[p,R]</code> + <code>spatialJac</code> + <code>geomDistGrad</code> 抽象，全链改走它</td><td><span class="prio p0">P0</span></td><td>地基；不改行为，只收敛引用（低风险重构）</td></tr>
+      <tr><td><b>1</b></td><td>3D 运动学（SE(3) FK + 6×N 空间雅可比，修正 DH/铰链轴）</td><td><span class="prio p0">P0</span></td><td>攻克“蛇形”本质；数据/model.DH 规格升级</td></tr>
+      <tr><td><b>2</b></td><td>3D 障碍：先球/胶囊（解析梯度），后 OBB/网格（GJK+数值梯度）</td><td><span class="prio p0">P0</span></td><td>让价值函数梯度继续可用</td></tr>
+      <tr><td><b>3</b></td><td>价值函数角度度量：<code>wrap(θ)</code> → <code>d_R=‖Log(R_t^T R)‖</code>，更新 <code>armGradient</code></td><td><span class="prio p1">P1</span></td><td>姿态收敛的关键</td></tr>
+      <tr><td><b>4</b></td><td>接口/任务：去 <code>projectTo2D</code>，保留 6DoF target；重写 <code>taskToSegments</code> 空间语义 + z 契约</td><td><span class="prio p1">P1</span></td><td>打通“视觉 6DoF → 规划”</td></tr>
+      <tr><td><b>5</b></td><td>学习特征：点云/稀疏体素 + 3D 示范生成重训（复用增量/潜空间优化）</td><td><span class="prio p1">P1</span></td><td>学习链路资产可复用，重训数据</td></tr>
+      <tr><td><b>6</b></td><td>顶层闭环：SE(3) 手眼标定 + 3D 目标 KF（替换 handEyeEstimate2D/kalmanTarget2D）</td><td><span class="prio p2">P2</span></td><td>依赖实机/真实感知</td></tr>
+      <tr><td><b>7</b></td><td>3D GUI + 3D 测试（梯度/几何对照）</td><td><span class="prio p2">P2</span></td><td>收尾，保障可维护</td></tr>
+    </table>
+    <div class="note ok"><strong>为什么这个顺序：</strong>先立抽象（Step 0）让你<strong>一次性收敛所有 2D 引用</strong>；之后运动学/碰撞（Step 1-2）是<strong>唯一真正的重活</strong>；一旦 <code>fk/geom</code> 就位，搜索层、价值函数、学习部署、评估框架<strong>全部白赚或只小改</strong>。这也印证了“维度无关的核心是<strong>把手臂与几何抽象出来</strong>”。</div>
+  </section>
+
+  <!-- 6 结论 -->
+  <section class="card" id="t6">
+    <h2><span class="no">6</span>结论</h2>
+    <ul class="tight">
+      <li><strong>三维化不是小改，但也不是推倒重来。</strong>搜索骨架（RRT*/graph/auto）、数据 schema、部署回退结构、统一的 <code>info</code> 契约、评估框架、<code>errorModel</code>——这些<strong>已经维度无关、可直接复用</strong>。</li>
+      <li><strong>真正的硬骨头集中在三层：</strong>① 运动学（SE(3) FK + 6×N 空间雅可比）、② 障碍几何（可微碰撞梯度）、③ 学习特征编码（体素/点云）。其中①② 的“可微性”是<strong>决定价值函数梯度能否继续成立</strong>的关键，是三维化最本质的难点。</li>
+      <li><strong>其余是“收敛引用”的改引用工作。</strong>约 30 个文件直接调用 <code>planarFK_L/planarJac_L/obsDist*</code>——把这些收敛到一个 <code>fk/geom</code> 抽象层（Step 0），是三维化里<strong>性价比最高、也最容易被低估</strong>的一步。</li>
+      <li><strong>一旦抽象就位，搜索层几乎白赚。</strong>因为 <code>method_rrtstar</code> 的“2D 适配层”已经验证了“核心维度无关、只换几何”的模式，把其它方法也改成走同一抽象即可。</li>
+      <li><strong>强耦合的隐藏风险：</strong>三维化会<strong>放大</strong>已存在的痛点（潜空间优化推理变慢、碰撞成本变高、手眼标定更必要、学习特征爆炸），并与“真实手眼标定 / 电控 z 契约”等 P0 外部依赖交织。建议三维化前先把这些契约与外部依赖理清。</li>
+    </ul>
+    <div class="note deep"><strong>一句话收尾：</strong>你的项目在“<strong>搜索与学习骨架</strong>”上已经为三维化留好了很好的口子（维度无关 schema、2D 适配层、增量表示、潜空间优化、部署回退）；三维化的成本几乎全部集中在<strong>把“平面手臂 + 平面几何”抽象成“SE(3) 手臂 + 3D 可微几何”</strong>这一条轴线上。把这条轴线做通了，其余都是顺理成章。</div>
+  </section>
+
+</main>
+
+<footer>
+  平面高冗余蛇形机械臂 IK 求解与仿真平台 · 三维化实现细节与问题分析 · 生成于 2026
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>平面蛇形机械臂 IK 平台 · 系统模块运行图</title>
+<style>
+  :root {
+    --bg: #0e1420;
+    --panel: #161f30;
+    --panel2: #1c2740;
+    --line: #2a3a55;
+    --text: #d7e0ef;
+    --muted: #8aa0bd;
+    --accent: #4da6ff;
+    --accent2: #6fbf6f;
+    --warn: #e0a94d;
+    --danger: #e05a5a;
+    --code-bg: #0a0f1a;
+    --mono: 'Cascadia Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header.hero {
+    padding: 52px 24px 38px;
+    text-align: center;
+    background:
+      radial-gradient(1200px 400px at 50% -120px, rgba(77,166,255,0.18), transparent),
+      linear-gradient(180deg, #131c2e 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--line);
+  }
+  header.hero h1 { margin: 0 0 10px; font-size: 28px; letter-spacing: 1px; font-weight: 700; }
+  header.hero .sub { color: var(--muted); font-size: 16px; max-width: 820px; margin: 0 auto; }
+  header.hero .badges { margin-top: 16px; }
+  .badge {
+    display: inline-block; padding: 3px 12px; margin: 4px; border-radius: 999px;
+    font-size: 12.5px; border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+  }
+  .badge b { color: var(--accent); font-weight: 600; }
+
+  main { max-width: 1120px; margin: 0 auto; padding: 8px 20px 80px; }
+
+  section.card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 26px 28px; margin: 26px 0;
+  }
+  section.card > h2 {
+    margin: 0 0 4px; font-size: 21px; color: #fff; display: flex; align-items: center; gap: 10px;
+  }
+  section.card > h2 .no {
+    display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+    border-radius: 8px; background: linear-gradient(135deg, var(--accent), #2f6fd0); color: #fff;
+    font-size: 14px; font-weight: 700; flex-shrink: 0;
+  }
+  section.card > p.desc { color: var(--muted); margin: 6px 0 18px; }
+  section.card > h3 { margin: 22px 0 10px; font-size: 16px; color: #fff; }
+  section.card > h3 .sub { font-size: 12.5px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+  section.card > h4 { margin: 14px 0 6px; font-size: 14px; color: #cfd9ec; }
+
+  .flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .flow .node {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 15px; flex: 1 1 190px; min-width: 170px;
+  }
+  .flow .node h4 { margin: 0 0 6px; font-size: 14.5px; color: #fff; }
+  .flow .node p { margin: 0; color: var(--muted); font-size: 12.5px; }
+  .flow .node.core { border-color: var(--accent); background: rgba(77,166,255,0.08); }
+  .flow .arrow {
+    display: flex; align-items: center; padding: 0 8px; color: var(--accent);
+    font-size: 20px; font-weight: 700; flex-shrink: 0;
+  }
+  .flow .arrow span { font-size: 11px; color: var(--muted); max-width: 110px; text-align: center; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: top; }
+  th { background: var(--panel2); color: #fff; font-weight: 600; white-space: nowrap; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  td code, p code, li code { font-family: var(--mono); font-size: 12.5px; color: #8fd0ff; }
+
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; font-family: var(--mono);
+    font-size: 13px; line-height: 1.6; color: #c9d6ea;
+  }
+  pre .c { color: #5c708a; } pre .k { color: #e0a94d; }
+
+  .note {
+    border-left: 3px solid var(--accent); background: rgba(77,166,255,0.06);
+    padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; color: var(--muted); font-size: 13.5px;
+  }
+  .note.warn { border-left-color: var(--warn); background: rgba(224,169,77,0.08); }
+  .note.ok   { border-left-color: var(--accent2); background: rgba(111,191,111,0.08); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+  ul.tight { margin: 6px 0; padding-left: 20px; } ul.tight li { margin: 3px 0; }
+
+  .toc { columns: 2; column-gap: 28px; font-size: 13.5px; }
+  .toc a { display: block; padding: 2px 0; }
+  @media (max-width: 560px) { .toc { columns: 1; } }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 6px 0 14px; font-size: 13px; color: var(--muted); }
+  .legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .sw { width: 18px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  .svgwrap { overflow-x: auto; }
+  .svgwrap svg { display: block; margin: 0 auto; }
+
+  .prose {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 20px; margin: 16px 0;
+  }
+  .prose h4 { margin: 16px 0 6px; font-size: 15px; color: #fff; }
+  .prose p { margin: 8px 0; color: var(--text); }
+  .prose b, .prose strong { color: #fff; }
+  .prose code { font-family: var(--mono); font-size: 12.5px; color: #8fd0ff; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 24px; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>平面蛇形机械臂 IK 平台 · 系统模块运行图</h1>
+  <p class="sub">刻画四个运行链路（在线任务执行 / GUI 仿真 / 顶层实时闭环 / 学习训练）如何与<b style="color:#fff">共享求解内核</b>耦合，以及每个子模块的<b style="color:#fff">触发、输入、输出、调用</b>关系。与 <code style="color:#8fd0ff">architecture.html</code> 互补：那页讲“是什么”，本页讲“何时/被谁驱动、数据流到哪”。</p>
+  <div class="badges">
+    <span class="badge">运行链路 <b>4 条</b> + 共享内核</span>
+    <span class="badge">常驻/入口 <b>4 个</b></span>
+    <span class="badge">求解方法 <b>9 种</b> + auto</span>
+    <span class="badge">数据桥 <b>outbox ⇄ inbox</b></span>
+  </div>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2><span class="no">◈</span>目录</h2>
+    <div class="toc">
+      <a href="#r1">1 · 运行总览图（Hub 拓扑）</a>
+      <a href="#r2">2 · 链路 A：在线任务执行（关键路径）</a>
+      <a href="#r3">3 · 链路 B：GUI 仿真</a>
+      <a href="#r4">4 · 链路 C：顶层实时闭环</a>
+      <a href="#r5">5 · 链路 D：学习训练闭环</a>
+      <a href="#r6">6 · 共享求解内核（激活矩阵）</a>
+      <a href="#r7">7 · 子模块运行关系总表</a>
+      <a href="#r8">8 · 状态与错误流转</a>
+      <a href="#r9">9 · 依赖与约束</a>
+    </div>
+  </section>
+
+  <!-- 1. Hub -->
+  <section class="card" id="r1">
+    <h2><span class="no">1</span>运行总览图（Hub 拓扑）</h2>
+    <p class="desc">四个入口/常驻进程从不同数据源被驱动，<strong style="color:#fff">在“求解语义”上汇入同一个共享内核</strong>（<code>simulateMotion → method_auto → 价值/数学</code>），再各自产出下游负载。实线 = 直接调用（运行时同步）；虚线 = 间接/延迟（部署期或离线）。</p>
+    <div class="legend">
+      <span class="lg"><span class="sw" style="background:rgba(77,166,255,0.6)"></span>资源/载体节点</span>
+      <span class="lg"><span class="sw" style="background:rgba(111,191,111,0.8)"></span>运行入口/常驻进程</span>
+      <span class="lg"><span class="sw" style="background:var(--panel2);border:1px solid var(--accent)"></span>共享求解内核</span>
+      <span class="lg"><span class="sw" style="background:var(--warn)"></span>下游负载/落盘</span>
+      <span class="lg"><span class="sw" style="background:var(--line)"></span>数据桥（outbox⇄inbox）</span>
+    </div>
+
+    <div class="svgwrap">
+    <svg viewBox="0 0 1180 700" width="100%" style="max-width:1120px" role="img" aria-label="系统模块运行关系拓扑图">
+      <defs>
+        <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#4da6ff"/>
+        </marker>
+        <marker id="ahd" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#8aa0bd"/>
+        </marker>
+      </defs>
+
+      <!-- 数据源 -->
+      <rect x="340" y="14" width="500" height="56" rx="10" fill="#161f30" stroke="#2a3a55"/>
+      <text x="590" y="34" text-anchor="middle" fill="#d7e0ef" font-size="15" font-weight="700">数据源 / 触发输入</text>
+      <text x="590" y="52" text-anchor="middle" fill="#8aa0bd" font-size="11">视觉 TaskCommand · 电机/相机反馈 · 示范样本 · 用户参数</text>
+
+      <!-- 四个入口 -->
+      <rect x="60"  y="104" width="250" height="66" rx="9" fill="#1c2740" stroke="#2a3a55"/>
+      <rect x="330" y="104" width="250" height="66" rx="9" fill="#1c2740" stroke="#2a3a55"/>
+      <rect x="600" y="104" width="250" height="66" rx="9" fill="#1c2740" stroke="#2a3a55"/>
+      <rect x="870" y="104" width="250" height="66" rx="9" fill="#1c2740" stroke="#2a3a55"/>
+      <text x="185" y="127" text-anchor="middle" fill="#ffffff" font-size="13.5" font-weight="700">runTaskLoop</text>
+      <text x="185" y="146" text-anchor="middle" fill="#8aa0bd" font-size="11">常驻轮询（任务队列）</text>
+      <text x="455" y="127" text-anchor="middle" fill="#ffffff" font-size="13.5" font-weight="700">ArmSimApp</text>
+      <text x="455" y="146" text-anchor="middle" fill="#8aa0bd" font-size="11">交互 GUI（用户驱动）</text>
+      <text x="725" y="127" text-anchor="middle" fill="#ffffff" font-size="13.5" font-weight="700">runTopLevel</text>
+      <text x="725" y="146" text-anchor="middle" fill="#8aa0bd" font-size="11">实时闭环估计</text>
+      <text x="995" y="127" text-anchor="middle" fill="#ffffff" font-size="13.5" font-weight="700">train_cvae.py</text>
+      <text x="995" y="146" text-anchor="middle" fill="#8aa0bd" font-size="11">离线训练（Python）</text>
+
+      <!-- 共享求解内核 -->
+      <rect x="325" y="252" width="530" height="236" rx="12" fill="#1c2740" stroke="#4da6ff" stroke-width="1.6"/>
+      <text x="590" y="278" text-anchor="middle" fill="#4da6ff" font-size="14.5" font-weight="700">共享求解内核（L1–L3 语义层）</text>
+      <text x="352" y="305" fill="#d7e0ef" font-size="12.5" font-family="Cascadia Code, Consolas, monospace">simulateMotion</text>
+      <text x="352" y="325" fill="#8aa0bd" font-size="13">└─ method_auto → momentum / RRT* / graph / PRM / SA / rl　·　另: multilayer（LGM 工作空间连通，独立方法）</text>
+      <text x="352" y="344" fill="#8aa0bd" font-size="13">　　└─ armValue · armGradient（单一势 + 解析梯度）</text>
+      <text x="352" y="363" fill="#8aa0bd" font-size="13">　　　└─ L3 数学：planarFK_L · planarJac_L · obsDistGradAll</text>
+      <text x="352" y="382" fill="#8aa0bd" font-size="13">　　　　　　　　 · seg*DistGrad · point*DistGrad（碰撞几何）</text>
+      <text x="352" y="404" fill="#8aa0bd" font-size="12">后处理：vel_ok / safety_ok / 终态碰撞(error_code=9)</text>
+      <text x="352" y="422" fill="#5c708a" font-size="11">被 A/B/C 直接调用；D 在部署期经 cvaePolicyDeploy 间接调用（虚线）</text>
+
+      <!-- 四个下游负载 -->
+      <rect x="60"  y="596" width="250" height="66" rx="9" fill="#1c2740" stroke="#2a3a55"/>
+      <rect x="330" y="596" width="250" height="66" rx="9" fill="#1c2740" stroke="#2a3a55"/>
+      <rect x="600" y="596" width="250" height="66" rx="9" fill="#1c2740" stroke="#2a3a55"/>
+      <rect x="870" y="596" width="250" height="66" rx="9" fill="#1c2740" stroke="#2a3a55"/>
+      <text x="185" y="619" text-anchor="middle" fill="#ffffff" font-size="12.5" font-weight="700">motor_cmd → 导出 → dSPACE</text>
+      <text x="185" y="638" text-anchor="middle" fill="#8aa0bd" font-size="11">.mat / .csv 离线加载</text>
+      <text x="455" y="619" text-anchor="middle" fill="#ffffff" font-size="12.5" font-weight="700">轨迹回放 / 电机文件导出</text>
+      <text x="455" y="638" text-anchor="middle" fill="#8aa0bd" font-size="11">GUI 展示 + 手动机器输出</text>
+      <text x="725" y="619" text-anchor="middle" fill="#ffffff" font-size="12.5" font-weight="700">目标估计 → 任务规划</text>
+      <text x="725" y="638" text-anchor="middle" fill="#8aa0bd" font-size="11">final_tgt 触发 simulateMotion</text>
+      <text x="995" y="619" text-anchor="middle" fill="#ffffff" font-size="12.5" font-weight="700">policy_cvae_*.mat → 部署</text>
+      <text x="995" y="638" text-anchor="middle" fill="#8aa0bd" font-size="11">cvaePolicyDeploy 推理</text>
+
+      <!-- Bus 1: 数据源 → 入口 -->
+      <path d="M590,70 V88" stroke="#2a3a55" stroke-width="1.6"/>
+      <path d="M185,88 H995" stroke="#2a3a55" stroke-width="1.6"/>
+      <path d="M185,88 V104" stroke="#4da6ff" stroke-width="1.6" marker-end="url(#ah)"/>
+      <path d="M455,88 V104" stroke="#4da6ff" stroke-width="1.6" marker-end="url(#ah)"/>
+      <path d="M725,88 V104" stroke="#4da6ff" stroke-width="1.6" marker-end="url(#ah)"/>
+      <path d="M995,88 V104" stroke="#8aa0bd" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ahd)"/>
+
+      <!-- Bus 2: 入口 → 内核 -->
+      <path d="M185,170 V196" stroke="#4da6ff" stroke-width="1.6"/>
+      <path d="M455,170 V196" stroke="#4da6ff" stroke-width="1.6"/>
+      <path d="M725,170 V196" stroke="#4da6ff" stroke-width="1.6"/>
+      <path d="M995,170 V196" stroke="#8aa0bd" stroke-width="1.6" stroke-dasharray="4 3"/>
+      <path d="M185,196 H995" stroke="#4da6ff" stroke-width="1.6"/>
+      <path d="M590,196 V252" stroke="#4da6ff" stroke-width="1.6" marker-end="url(#ah)"/>
+
+      <!-- Bus 3: 内核 → 下游 -->
+      <path d="M590,488 V520" stroke="#4da6ff" stroke-width="1.6"/>
+      <path d="M185,520 H995" stroke="#4da6ff" stroke-width="1.6"/>
+      <path d="M185,520 V596" stroke="#4da6ff" stroke-width="1.6" marker-end="url(#ah)"/>
+      <path d="M455,520 V596" stroke="#4da6ff" stroke-width="1.6" marker-end="url(#ah)"/>
+      <path d="M725,520 V596" stroke="#4da6ff" stroke-width="1.6" marker-end="url(#ah)"/>
+      <path d="M995,520 V596" stroke="#8aa0bd" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ahd)"/>
+
+      <text x="590" y="212" text-anchor="middle" fill="#8aa0bd" font-size="11">委托求解（传 model/q0/target）</text>
+      <text x="590" y="546" text-anchor="middle" fill="#8aa0bd" font-size="11">info → 组装/导出</text>
+    </svg>
+    </div>
+
+    <div class="note warn"><strong>读图要点：</strong>①四个链路的“汇合点”只在<strong>求解语义</strong>，各链路承载的数据与下游不同（A 出 motor_cmd、B 出回放、C 出目标估计、D 出策略）。②<code>train_cvae.py</code> 到内核是<strong>虚线</strong>：它离线产策略，运行期经 <code>cvaePolicyDeploy</code> 才可能回退到内核。③链路 A 是<strong>唯一关键路径</strong>（常驻真实伺服前导出），其余为离线/仿真/演示用途。</div>
+  </section>
+
+  <!-- 2. 链路 A -->
+  <section class="card" id="r2">
+    <h2><span class="no">2</span>链路 A：在线任务执行（关键路径）</h2>
+    <p class="desc">常驻进程 <code>runTaskLoop</code> 轮询 outbox → 单任务原子单元 <code>taskExecute</code> 展开 + 逐段求解 + 组装 motor_cmd → 导出给 dSPACE、回写状态给视觉 UI。这是<strong style="color:#fff">唯一进实时伺服前置</strong>的链路。</p>
+
+    <div class="flow">
+      <div class="node"><h4>visual UI</h4><p>下发 TaskCommand JSON → <code>data/outbox/CMD-*.json</code></p></div>
+      <div class="arrow">▶<span>文件桥</span></div>
+      <div class="node"><h4>runTaskLoop</h4><p>常驻轮询 · 按 timestamp 取任务 · 处理完改名 <code>.done</code></p></div>
+      <div class="arrow">▶<span>cmd</span></div>
+      <div class="node"><h4>taskExecute</h4><p>安全校验 → ACCEPTED → PLANNING → 展开 → 逐段求解</p></div>
+      <div class="arrow">▶<span>segs</span></div>
+      <div class="node core"><h4>共享求解内核</h4><p>simulateMotion → method_auto/X → armValue/Gradient → L3 数学</p></div>
+      <div class="arrow">▶<span>info</span></div>
+      <div class="node"><h4>组装 motor_cmd</h4><p>q_seq + t_seq + gripper_seq（段末动作）</p></div>
+      <div class="arrow">▶</div>
+      <div class="node"><h4>exportMotorCmd</h4><p>.mat / .csv → dSPACE；taskWriteStatus → inbox</p></div>
+    </div>
+
+    <h3>2.0 白话讲解：一次任务是怎么跑完的<span class="sub">先看故事，再看接口</span></h3>
+    <div class="prose">
+      <p>把整套系统想象成一家<strong>自动化“分拣与搬运”小车间</strong>。下面用大白话把一次任务从头到尾走一遍——你不必先懂任何代码，就能明白每步在干什么。术语会先出现在括号里，后面接口小节再讲字段。</p>
+
+      <h4>① 任务单来了 —— 视觉系统下单</h4>
+      <p>上层的视觉模块（SpaceSnakeVisionUI）用相机看到目标（比如桌上的一个零件），在“相机视角”下算出它的位置和朝向，然后写下一张<strong>任务单</strong>（TaskCommand）。这张单子不是直接塞给机器人的，而是以一个 <code>.json</code> 小文件（<code>CMD-xxx.json</code>）放进一个共享<strong>收件文件夹</strong>（outbox）。好比把订单投进了“任务邮箱”。</p>
+
+      <h4>② 守门人常驻 —— runTaskLoop 一直盯着邮箱</h4>
+      <p>叫 <code>runTaskLoop</code> 的程序<strong>一直醒着</strong>，每隔 1 秒看一眼邮箱。一看到新单子，就把“文件”读成“程序能处理的格式”（jsondecode）。要是单子坏了读不出来，就把它丢到一边（改名 <code>.bad</code>）继续等下一单，绝不卡住。</p>
+
+      <h4>③ 拆单 —— taskExecute 把“一件事”拆成“一串动作”</h4>
+      <p>拿到单子，<code>taskExecute</code> 先做三件<strong>安全检查</strong>：整机是否被急停（estop）？是否被明确禁止执行（allow_execute）？目标识别够不够可信（置信度）？任何一条不满足就<strong>直接拒单</strong>（REJECTED），绝不启动。没问题后，它把任务<strong>拆成若干小步骤（段）</strong>。比如“抓起来再放到别处”（pick_and_place）会拆成 5 段：靠近 → 抓 → 抬 → 挪到放置位置 → 松开。</p>
+
+      <h4>④ 翻译位置 —— taskToSegments / projectTo2D</h4>
+      <p>视觉给的是“相机视角下的 3D 坐标”，可机械臂是在<strong>水平平面</strong>上工作的。所以先把坐标<strong>翻译</strong>成平面的 <code>[x, y, 朝向角]</code>，再算出“预抓取点”（目标后 0.15 m 处先停一下）和“放置预取点”，让动作更稳、不容易碰。</p>
+
+      <h4>⑤ 真正的难题：求解每个段 —— simulateMotion + 共享内核</h4>
+      <p>对每个小步骤，程序要算出<strong>每个电机该转多少度</strong>，才能让机械臂末端走到那个位置（这就是逆运动学 IK）。这是整个链路里<strong>计算最重、最容易失败</strong>的部分。它先试最快的梯度法；走不通（被障碍挡住、卡在局部最优）就换更聪明的采样法（RRT*、图引导等），由 <code>auto</code> 调度，每个段最多重试 3 次。</p>
+      <p>这里的“<strong>共享求解内核</strong>”就是<strong>所有链路共用的同一个“大脑”</strong>——不管你是真实任务、仿真界面，还是顶层闭环，只要说“帮我解一个目标”，都进同一个求解器，得到同一套关节角。这样保证“仿真里能走通的，真实任务也走通”。</p>
+
+      <h4>⑥ 拼成“整车命令” —— 组装 motor_cmd</h4>
+      <p>每个段都解出一小段“关节角快照”。程序把它们<strong>首尾拼接</strong>成一条完整轨迹：每一行代表某一时刻所有 6 个关节的角度，旁边再配一列“夹爪”指令（在每段的<strong>末尾</strong>决定张开还是闭合）。这条东西叫 <code>motor_cmd</code>，是给电控的“动作说明书”。</p>
+
+      <h4>⑦ 交给下游 —— exportMotorCmd</h4>
+      <p>把说明书存成 <code>.mat</code> 或 <code>.csv</code> 文件。真正的电控（dSPACE）离线加载后<strong>按时间轴匀速插值</strong>去驱动电机。注意：复杂的 IK 求解<strong>不会</strong>放进实时循环——一次性离线算好，电控只做“确定性回放”。</p>
+
+      <h4>⑧ 全程“报进度” —— taskWriteStatus</h4>
+      <p>上面每一步，系统都会把“进行到哪、到没到”写回另一个文件夹（inbox），生成一个状态文件。视觉界面轮询这个文件，就能给用户实时显示进度条和当前步骤（比如“正在抓取”）。</p>
+
+      <h4>⑨ 收尾 —— 防止重复做</h4>
+      <p>任务处理完后，<code>runTaskLoop</code> 会把原单改名成 <code>.done</code>，意思是“这单我处理过了”。这样即使程序重启或重复轮询，也不会把同一个任务做两遍。</p>
+
+      <div class="note ok" style="margin-top:12px"><strong>为什么只说这条是“关键路径”？</strong>因为只有这一条链路的最终产物（<code>motorCmd</code>）会真实驱动电控执行。GUI 仿真、顶层闭环、学习训练都算“在大脑里演练”，只有链路 A 是“真正动手”。</div>
+    </div>
+
+    <h3>逐步运行逻辑<span class="sub">A-1 → A-9</span></h3>
+    <table>
+      <tr><th>#</th><th>触发/条件</th><th>动作</th><th>输入 → 输出</th><th>调用</th></tr>
+      <tr><td>A-1</td><td>outbox 有 <code>*.json</code></td><td>读文件 + <code>jsondecode</code></td><td><code>CMD-*.json</code> → <code>cmd</code> struct</td><td>—</td></tr>
+      <tr><td>A-2</td><td>解析失败</td><td>隔离坏文件</td><td><code>*.bad</code></td><td>—</td></tr>
+      <tr><td>A-3</td><td>取得 cmd</td><td>调 taskExecute</td><td><code>cmd</code> → <code>info</code></td><td>taskExecute</td></tr>
+      <tr><td>A-4</td><td>cmd 就绪</td><td>安全校验 + 置信度门槛</td><td>→ REJECTED 或继续</td><td>taskWriteStatus</td></tr>
+      <tr><td>A-5</td><td>通过校验</td><td>展开任务段</td><td><code>cmd</code> → <code>segs</code></td><td>taskToSegments, projectTo2D</td></tr>
+      <tr><td>A-6</td><td>逐段循环</td><td>每段 <code>simulateMotion</code>（失败重试 ≤3）</td><td><code>q, seg.target</code> → <code>si</code></td><td>simulateMotion</td></tr>
+      <tr><td>A-7</td><td>段失败/异常</td><td>终止任务</td><td>FAILED error_code=8/10</td><td>taskWriteStatus</td></tr>
+      <tr><td>A-8</td><td>全部段成功</td><td>拼接轨迹 + 段末夹爪 + 时间偏移</td><td><code>seg_infos</code> → <code>motor_cmd</code></td><td>—</td></tr>
+      <tr><td>A-9</td><td>完成/出错</td><td>回写状态、导出、统计</td><td>COMPLETED / .done / stats</td><td>taskWriteStatus, exportMotorCmd</td></tr>
+    </table>
+
+    <div class="note ok"><strong>关键点：</strong>①任务展开在 <code>taskToSegments</code> 完成，各 <code>command_type</code> 展开成不同段（见 architecture.html §5）。②段级失败自带 3 次重试（采样类随机性），段异常会直接终止任务避免“半状态任务”。③夹爪事件在<strong>段末快照</strong>执行（<code>gripper_seq(end)=动作</code>）。</div>
+
+    <h3>2.1 任务运作情景<span class="sub">同一任务在不同判定下走向哪条分支</span></h3>
+    <p class="desc">一条任务从「接收」到「完成/终止」，会因<strong style="color:#fff">安全校验 → 展开 → 逐段求解 → 急停</strong>四个阶段的结果走向不同分支。下表按执行顺序列出全部判定点与产物。<code>error_code=0</code> 只代表“成功走完”，其余码分别映射到不同终止态。</p>
+    <table>
+      <tr><th>情景</th><th>触发 / 判定点</th><th>判定条件</th><th>结果状态</th><th>error_code</th><th>下游/产物</th></tr>
+
+      <tr><td><strong>S1 正常成功</strong></td><td>逐段循环结束（A-8）</td><td>所有段 <code>si.success=true</code></td><td><code>COMPLETED</code></td><td><code>0</code></td><td>组装 <code>motor_cmd</code> → 导出；outbox 改名 <code>.done</code></td></tr>
+      <tr><td><strong>S2 急停拒单</strong></td><td>安全校验（A-4）</td><td><code>cmd.safety.estop_active=true</code></td><td><code>REJECTED</code></td><td><code>6</code></td><td>不下发；写状态</td></tr>
+      <tr><td><strong>S3 禁止执行</strong></td><td>安全校验（A-4）</td><td><code>cmd.safety.allow_execute=false</code></td><td><code>REJECTED</code></td><td><code>6</code></td><td>不下发；写状态</td></tr>
+      <tr><td><strong>S4 置信度不足</strong></td><td>安全校验（A-4）</td><td><code>cmd.selected_target.confidence&lt;0.5</code></td><td><code>REJECTED</code></td><td><code>6</code></td><td>不下发；写状态</td></tr>
+      <tr><td><strong>S5 展开异常</strong></td><td>任务展开（A-5）</td><td><code>taskToSegments</code> 抛出（如未知 <code>command_type</code>）</td><td><code>FAILED</code></td><td><code>7</code></td><td>写状态；异常消息回写</td></tr>
+      <tr><td><strong>S6 目标被障碍吞没</strong></td><td>逐段预检（A-6 前）</td><td>某段目标距最近障碍 <code>d_tgt &lt; rho0</code></td><td><code>FAILED</code></td><td><code>10</code></td><td>写状态；任务不可达</td></tr>
+      <tr><td><strong>S7 段求解异常</strong></td><td>逐段循环（A-6）</td><td><code>simulateMotion</code> 抛出异常</td><td><code>FAILED</code></td><td><code>8</code></td><td>写状态；终止任务（防“半状态任务”）</td></tr>
+      <tr><td><strong>S8 段失败·重试耗尽</strong></td><td>逐段循环（A-6）</td><td>3 次尝试后 <code>si.success</code> 仍为 false</td><td><code>FAILED</code></td><td>取 <code>si.error_code</code>（2/3/…）</td><td>写状态；本段目标/夹爪已记录</td></tr>
+      <tr><td><strong>S9 运行中急停</strong></td><td>逐段循环（每段前）</td><td><code>estop()</code> 返回 true</td><td><code>ESTOP_TRIGGERED</code></td><td><code>6</code></td><td>写状态 + progress；终止</td></tr>
+      <tr><td><strong>S10 坏文件隔离</strong></td><td>轮询（A-1，runTaskLoop 层）</td><td><code>jsondecode</code> 解析失败</td><td>（无任务态）</td><td>—</td><td>outbox 文件改名 <code>.bad</code>，跳过继续轮询</td></tr>
+      <tr><td><strong>S11 正常消费</strong></td><td>处理完成（S1 或各终止态后）</td><td>任务已被 <code>taskExecute</code> 消费</td><td>（无任务态）</td><td>随 S1–S9</td><td>outbox 文件改名 <code>.done</code> 防重复处理</td></tr>
+    </table>
+    <div class="note warn"><strong>状态机边界：</strong><code>taskExecute</code> 自身只产生 <code>COMPLETED / FAILED / REJECTED / ESTOP_TRIGGERED</code> 四个终态；<code>RECEIVED</code> 由视觉 UI 侧标记、<code>CANCELED</code> 是视觉 UI 可覆盖显示的外部终态，二者<strong>不经过</strong>taskExecute。运行期的取消通过 <code>simulateMotion</code> 的 <code>'Cancel'</code> 回调与 <code>runTaskLoop</code> 的 <code>estop</code> 传递，而非直接写 CANCELED。</div>
+
+    <div class="prose">
+      <h4>这些情景，用大白话怎么理解？</h4>
+      <p><strong>S1 正常成功：</strong>一路绿灯，每个段都解出来了，于是拼好轨迹、存文件、上报“完成”。这是最理想的情况，也是绝大多数任务走的路。</p>
+      <p><strong>S2–S4 被拒绝：</strong>系统在<strong>还没动手之前</strong>就把单子退了。可能是“整机被急停按钮按下”、可能是“有人明确说这个动作不许执行”、也可能是“视觉识别得太没把握（置信度低于 0.5）”。<strong>拒单是好事——宁可不做，也不乱动</strong>。</p>
+      <p><strong>S5 展开异常：</strong>走到“拆单”这一步，发现“这个任务类型我不认识”（比如 <code>command_type</code> 打错了）。程序承认自己处理不了，报一个“展开异常”就终止。</p>
+      <p><strong>S6 目标被障碍吞没：</strong>拆单后先检查每个小目标<strong>是否安全可达</strong>。万一目标点落在障碍物内部（离障碍太近、小于安全距离），就算数学上能解，物理上也够不着，于是直接判“不可达”——而不是硬着头皮去凑。</p>
+      <p><strong>S7 段求解异常：</strong>某个段在运行里真的<strong>崩了</strong>（程序抛出错误），而不是“没解出来”。为了防止任务做到一半不知道自己在哪，系统立刻终止，把这一单标成失败。</p>
+      <p><strong>S8 段失败·重试耗尽：</strong>某个段试了 3 次都解不出（比如被障碍困住、陷入局部最优）。系统如实上报“这一步没搞定”，并带着这一步的失败码结束。</p>
+      <p><strong>S9 运行中急停：</strong>正在执行中，操作员按下急停。系统<strong>每段开始前</strong>都查一次急停信号，一旦触发立即 STOP——绝不把这一段动作继续做完。</p>
+      <p><strong>S10 / S11：</strong>这两条发生在“守门人”那一层，跟具体任务内容无关——一个是“单子是坏的，扔一边”，一个是“处理好、标记已做，别重复”。</p>
+    </div>
+    <p class="desc" style="margin-top:6px">此外，不同 <code>command_type</code> 会展开成<strong>不同段数/夹爪动作</strong>，这本身就是一种“任务变体情景”。以 <code>pick_and_place</code> 为例（<code>approach_dist=0.15</code>，<code>lift_h=0.10</code>，<code>θ</code> 为段目标朝向角）：</p>
+    <table>
+      <tr><th>#</th><th>段名</th><th>目标位姿 <code>[x,y,θ]</code></th><th>gripper</th><th>含义</th></tr>
+      <tr><td>1</td><td><code>MOVING_TO_PREGRASP</code></td><td><code>tgt − 0.15·[cosθ, sinθ, 0]</code></td><td><code>0</code></td><td>退到预抓取点（沿目标朝向反方向）</td></tr>
+      <tr><td>2</td><td><code>GRASPING</code></td><td><code>tgt</code></td><td><code>2</code></td><td>到目标 / 段末<strong>闭合</strong></td></tr>
+      <tr><td>3</td><td><code>LIFTING</code></td><td><code>tgt − 0.10·[cosθ, sinθ, 0]</code></td><td><code>0</code></td><td>后撤“抬离”（平面内沿末端朝向，垂直抬离由电控/垂直轴处理）</td></tr>
+      <tr><td>4</td><td><code>MOVING_TO_PLACE</code></td><td><code>dest − 0.15·[cosθ, sinθ, 0]</code></td><td><code>0</code></td><td>退到放置预取点</td></tr>
+      <tr><td>5</td><td><code>RELEASING</code></td><td><code>dest</code></td><td><code>1</code></td><td>到放置点 / 段末<strong>张开</strong></td></tr>
+    </table>
+    <div class="note"><code>dest</code> 缺省为 <code>tgt + [0.6, 0, 0]</code>（目标旁 0.6m），否则取 <code>cmd.destination.pose_base</code> 经 <code>projectTo2D</code> 投影。其余 <code>command_type</code> 段数见 architecture.html §5（<code>move_near_target</code> 1 段、<code>pick_target</code> 3 段、<code>dock_to_interface</code> 2 段、<code>home</code> 1 段）。</div>
+
+    <h3>2.2 模块间交互与接口格式<span class="sub">每条交互边的调用签名与参数格式</span></h3>
+    <p class="desc">以下是链路 A 中<strong style="color:#fff">每一条跨模块边界</strong>的真实接口约定（字段名与值源自源码）。</p>
+    <div class="note ok">其实每一条“接口”就是<strong style="color:#fff">两个模块之间传递信息的“规矩”</strong>：用什么字段名、什么格式、谁给谁。看下面的代码块时，你只需要抓住三件事——<strong>谁 → 谁</strong>（方向）、<strong>传的是什么</strong>（数据内容）、<strong>长什么样</strong>（字段与格式）。</div>
+
+    <h4>E1 · 视觉 UI → outbox：TaskCommand JSON（<code>jsondecode</code> 为 <code>cmd</code> struct）</h4>
+    <pre>{
+  "command_id": "CMD-20260826-0001",
+  "command_type": "pick_and_place",
+  "selected_target": {
+    "pose_camera": {
+      "position":          { "x": 1.82, "y": 0.35, "z": 0.0 },
+      "orientation_quat":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 }   <span class="c">% 或 orientation_euler.yaw</span>
+    },
+    "confidence": 0.92
+  },
+  "destination": {
+    "pose_base": {
+      "position":          { "x": 2.42, "y": 0.35, "z": 0.0 },
+      "orientation_quat":  { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 }
+    }
+  },
+  "motion_params": { "approach_distance_m": 0.15 },
+  "safety": { "allow_execute": true, "estop_active": false }
+}</pre>
+    <p class="desc" style="margin:4px 0 12px"><code>taskExecute</code> 实际消费的字段：<code>command_type</code>（展开）、<code>selected_target.pose_camera</code>（→ <code>projectTo2D</code>）、<code>selected_target.confidence</code>（&lt;0.5 拒）、<code>destination.pose_base</code>（可选）、<code>safety.estop_active/allow_execute</code>。三维位姿在 <code>taskToSegments</code> 内经 <code>projectTo2D</code> 转为 <code>[x,y,yaw]</code>，θ = 偏航角。</p>
+
+    <h4>E2 · runTaskLoop → taskExecute：<code>info = taskExecute(model, cmd, opts)</code></h4>
+    <pre>opts = struct( ...
+  'inbox',          'data/inbox',   <span class="c">% TaskStatus 回写目录（空则不回写）</span>
+  'method',         'auto',         <span class="c">% momentum|sa|rrt|rrtstar|graph|prm|rl|multilayer|auto</span>
+  'snapshot_m',     10,             <span class="c">% 快照间隔（电机指令节拍）</span>
+  'approach_dist',  0.15,           <span class="c">% 预抓取/放置退距 m</span>
+  'estop',          @() estop_flag);<span class="c">% 急停检查 @() bool（每段前触发）</span></pre>
+    <p class="desc" style="margin:4px 0 12px">outbox 读取：<code>d=dir(outbox/'*.json')</code>，按 <code>datenum</code>（timestamp）升序取第一个，<code>jsondecode(fileread(fn))</code>。解析失败 → 改名 <code>.bad</code> 隔离；处理完 → 改名 <code>.done</code>。</p>
+
+    <h4>E3 · taskExecute → taskWriteStatus：<code>taskWriteStatus(inbox, cmd, status, 'Progress', p, 'Step', s, 'Msg', m, 'JointPos', q)</code></h4>
+    <pre>inbox/CMD-20260826-0001_status.json  <span class="c">% 每次状态切换写一帧</span>
+{
+  "schema_version": "1.0",
+  "command_id":     "CMD-20260826-0001",
+  "timestamp":      1785222000,       <span class="c">% posixtime</span>
+  "status":         "EXECUTING",
+  "current_step":   "GRASPING",
+  "progress":       0.4,              <span class="c">% (s-1)/n_seg …→1</span>
+  "message":        "段 2/5: GRASPING",
+  "robot_state": { "state": "EXECUTING", "end_effector_pose_base": [],
+                   "joint_positions": [...], "message": "段 2/5: GRASPING" }
+}</pre>
+
+    <h4>E4 · taskToSegments → taskExecute：<code>segs</code>（struct 数组）</h4>
+    <pre>segs = struct('target', cell(1,K), 'gripper', cell(1,K), 'name', cell(1,K));
+segs(k).target  <span class="c">% [1×3] 段目标位姿 [x,y,θ]</span>
+segs(k).gripper <span class="c">% 0=保持  1=张开  2=闭合（在段末快照触发）</span>
+segs(k).name    <span class="c">% 'MOVING_TO_PREGRASP' | 'GRASPING' | 'LIFTING' | ...</span></pre>
+
+    <h4>E5 · taskExecute → simulateMotion（逐段）：<code>si = simulateMotion(model, method, q, segs(s).target, 'Snapshot', snapshot_m)</code></h4>
+    <pre>q  = model.cfg.q_init;                     <span class="c">% 任务起点（第 1 段用 q_init）</span>
+for s = 1:n_seg
+  si = [];                                  <span class="c">% 段级重试 ≤3（采样类随机性）</span>
+  for attempt = 1:3
+    si = simulateMotion(model, method, q, segs(s).target, 'Snapshot', snapshot_m);
+    if si.success, break; end
+  end
+  q = si.q_final;                           <span class="c">% 下一段的起始构型</span>
+end</pre>
+    <p class="desc" style="margin:4px 0 12px">返回 <code>si</code>（info）：<code>q_snapshot</code> [K×N]、<code>t_seq</code> [1×K]、<code>V_hist</code>、<code>q_final</code>、<code>success</code>、<code>error_code</code>、<code>vel_ok</code>、<code>safety_ok</code>、<code>method_used</code>、<code>stats</code>、<code>meta</code>。<code>simulateMotion</code> 会把 <code>opts</code> 全量透传给方法层。</p>
+
+    <h4>E6 · taskExecute 组装 motor_cmd（逐段拼接 + 段末夹爪 + 时间偏移）</h4>
+    <pre>motor_cmd = struct( 'q_seq',       q_seq,        <span class="c">% [K×N] 段间拼接</span>
+                     't_seq',       t_seq,        <span class="c">% [1×K] 段内相对时间归零，段间 +1 保证严格递增</span>
+                     'gripper_seq', gripper_seq,  <span class="c">% [1×K] 每段末快照=该段 gripper（0/1/2）</span>
+                     'success',     true,  'error_code', 0, 'q_final', q );</pre>
+    <p class="desc" style="margin:4px 0 12px">夹爪规则：<code>gs=zeros(1,Ks); gs(end)=segs(s).gripper</code>（段末触发）。时间偏移：<code>t_off=t_off+ts(end)+1</code>。</p>
+
+    <h4>E7 · → exportMotorCmd（dSPACE 可加载文件）</h4>
+    <pre>exportMotorCmd(motor_cmd, 'traj_CMD-..._motor.mat', 'GripperSeq', gs, 'Meta', meta);
+<span class="c">% 输出字段：q_seq / t_seq / gripper_seq / dq_max / vel_ok / safety_ok / success / error_code / q_final / meta
+% 兼容输入：taskExecute 的 .motor_cmd 或 simulateMotion 返回的 info（q_snapshot/t_seq…自动归一）
+% .mat  = save -struct；.csv 列头 = t,q1,q2,...,qN,gripper（6 位小数）</span></pre>
+
+    <h4>E8 · runTaskLoop → 统计：<code>stats</code></h4>
+    <pre>stats = struct( 'processed', 0, 'completed', 0, 'failed', 0, ...
+                 'rejected', 0, 'esstopped', 0, ...
+                 'tasks', struct('id', cell(1,0), 'status', cell(1,0)) );</pre>
+    <p class="desc" style="margin:4px 0 12px"><code>.tasks</code> 逐个追加 <code>struct('id', cmd.command_id, 'status', info.status)</code>；<code>info.status</code> 来自 taskExecute，只有四种终态。</p>
+  </section>
+
+  <!-- 3. 链路 B -->
+  <section class="card" id="r3">
+    <h2><span class="no">3</span>链路 B：GUI 仿真</h2>
+    <p class="desc"><code>ArmSimApp</code>（用户驱动）编辑模型/障碍/目标 → 一次或多次委托内核求解 → 动画回放 / 手动导出；也可走完整任务链路（构造 TaskCommand → taskExecute）。</p>
+
+    <div class="flow">
+      <div class="node"><h4>用户</h4><p>模型参数 · 障碍编辑 · 目标拖拽 · 任务类型</p></div>
+      <div class="arrow">▶</div>
+      <div class="node"><h4>ArmSimApp</h4><p>createArmModel 构建 model · 实时可视化</p></div>
+      <div class="arrow">▶<span>model/q0/target</span></div>
+      <div class="node core"><h4>共享求解内核</h4><p>simulateMotion（9 方法 + auto，含 multilayer/LGM）</p></div>
+      <div class="arrow">▶<span>info</span></div>
+      <div class="node"><h4>回放 / 导出</h4><p>动画 · exportMotorCmd 存图/曲线</p></div>
+    </div>
+    <div class="grid2">
+      <div>
+        <h4>可触发的两种活动</h4>
+        <ul class="tight">
+          <li><strong>单次求解</strong>：选方法 + 目标 → <code>simulateMotion</code> → 回放轨迹。</li>
+          <li><strong>模拟视觉任务</strong>：选任务类型 → 构造 TaskCommand → <code>taskExecute</code> 走完整链路 → 逐段动画 + 状态流显示 + 导出 motorCmd。</li>
+        </ul>
+      </div>
+      <div>
+        <h4>依赖</h4>
+        <ul class="tight">
+          <li>调 <code>createArmModel</code>、<code>simulateMotion</code>、<code>taskExecute</code>、<code>taskToSegments</code>、<code>exportMotorCmd</code>。</li>
+          <li>可选填 outbox/inbox 目录演示真实文件桥闭环。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 链路 C -->
+  <section class="card" id="r4">
+    <h2><span class="no">4</span>链路 C：顶层实时闭环</h2>
+    <p class="desc"><code>runTopLevel</code> 模拟“读电控关节角 → FK → 相机观测 → 手眼在线估计 → 目标 Kalman → 任务触发”的<strong style="color:#fff">估计-执行闭环</strong>。手眼标定前仅为仿真（mock 反馈）。</p>
+
+    <div class="flow">
+      <div class="node"><h4>读电控反馈</h4><p>关节角 + 编码器噪声（mock 巡视位形）</p></div>
+      <div class="arrow">▶<span>q</span></div>
+      <div class="node"><h4>FK</h4><p>planarFK_L + getEndEffectorAngle_L → 末端位姿</p></div>
+      <div class="arrow">▶<span>pose_ee</span></div>
+      <div class="node"><h4>相机观测</h4><p>末位姿 + 手眼真值反算目标到相机系 + 视觉噪声</p></div>
+      <div class="arrow">▶<span>obs</span></div>
+      <div class="node"><h4>手眼在线估计</h4><p>handEyeEstimate2D（滑动窗口）</p></div>
+      <div class="arrow">▶<span>Xh</span></div>
+      <div class="node"><h4>目标 Kalman</h4><p>kalmanTarget Update/Predict → 目标基座系估计</p></div>
+      <div class="arrow">▶<span>final_tgt</span></div>
+      <div class="node core"><h4>共享求解内核</h4><p>simulateMotion 触发任务</p></div>
+    </div>
+    <ul class="tight" style="margin-top:12px">
+      <li>核心调用：<code>planarFK_L</code>、<code>getEndEffectorAngle_L</code>、<code>handEyeEstimate2D</code>、<code>kalmanTarget2D/Update/Predict</code>、末帧 <code>simulateMotion</code>。</li>
+      <li>返回 <code>top</code>：手眼/目标估计轨迹 + 误差 + 收敛帧号 + <code>.task</code>（simulateMotion info）+ 日志。</li>
+      <li>手眼收敛判据：误差 &lt; 0.05 且 <code>stats.resid_med &lt; 0.02</code>。</li>
+    </ul>
+  </section>
+
+  <!-- 5. 链路 D -->
+  <section class="card" id="r5">
+    <h2><span class="no">5</span>链路 D：学习训练闭环</h2>
+    <p class="desc">离线“教学”阶段用共享内核的 RRT* 生成<strong style="color:#fff">预算内最优示范</strong>，训练/CVAE 蒸馏成毫秒级策略，部署期再回退内核兜底。</p>
+
+    <div class="flow">
+      <div class="node"><h4>① 示范生成 <span style="color:#8aa0bd">MATLAB</span></h4><p>sampleTask2D 采样 → <code>generateDemonstrations</code> → RRT*（预算内最优）+ optimizeTraj 短切</p></div>
+      <div class="arrow">▶<span>demo_*.mat</span></div>
+      <div class="node"><h4>② CVAE 训练 <span style="color:#8aa0bd">Python</span></h4><p>栅格化 + 增量表示 Δ → <code>train_cvae.py</code>（多模态）</p></div>
+      <div class="arrow">▶<span>policy_*.mat</span></div>
+      <div class="node"><h4>③ 部署闭环 <span style="color:#8aa0bd">MATLAB</span></h4><p>cvaePolicyDeploy：直出 → 穿障回退 → 终点无梯度精修</p></div>
+      <div class="arrow">▶<span>out</span></div>
+      <div class="node core"><h4>共享内核（兜底）</h4><p>method_auto（max_samples=2500）</p></div>
+    </div>
+    <ul class="tight" style="margin-top:12px">
+      <li>示范调用：<code>sampleTask2D</code> → <code>method_rrtstar</code> → <code>optimizeTraj</code>（随机短切 + 滑动平滑，保持无碰撞）。</li>
+      <li>部署调用：<code>cvaePolicyDeploy</code> → <code>method_auto</code>（穿障/质量差即回退）→ <code>refineRandomGreedy</code>（终态 ≤0.008 精修）。</li>
+      <li>关键设计：增量表示（traj = q0 + cumsum(Δ)）；潜空间优化推理（多候选 z + 中心差分）；预算内最优示范（老师天花板 = 学生天花板）。</li>
+    </ul>
+  </section>
+
+  <!-- 6. 共享内核 -->
+  <section class="card" id="r6">
+    <h2><span class="no">6</span>共享求解内核（激活矩阵）</h2>
+    <p class="desc">内核是四个链路在“求解语义”上的汇合点：<code>simulateMotion</code> 统一入口 + 方法分派 + 后处理；内部再落到 <code>method_auto</code>/<code>method_*</code>，值函数与数学基元为基座。</p>
+
+    <h3>谁能激活内核、以什么方法<span class="sub">调用方 → 方法 → 语义</span></h3>
+    <table>
+      <tr><th>调用方</th><th>默认方法</th><th>语义</th><th>后处理</th></tr>
+      <tr><td><code>taskExecute</code>（链路 A）</td><td><code>auto</code></td><td>逐段求解 + 3 次重试</td><td>vel_ok / safety_ok / 终态碰撞</td></tr>
+      <tr><td><code>ArmSimApp</code>（链路 B）</td><td>用户选（含 auto）</td><td>单次或任务式</td><td>同内核</td></tr>
+      <tr><td><code>runTopLevel</code>（链路 C）</td><td>‘auto’</td><td>末帧触发一次</td><td>同内核</td></tr>
+      <tr><td><code>cvaePolicyDeploy</code>（链路 D）</td><td><code>auto</code>(回退)</td><td>直出质量差才触发</td><td>同内核</td></tr>
+    </table>
+
+    <h3>内核内部调用链<span class="sub">simulateMotion 分派明细</span></h3>
+    <table>
+      <tr><th>method</th><th>实际进入的函数</th><th>对价值/数学的依赖</th></tr>
+      <tr><td><code>'auto'</code></td><td><code>method_auto</code></td><td>先 momentum 快路径；失败 <code>detectLocalMin</code></td></tr>
+      <tr><td><code>'momentum'</code></td><td><code>method_momentum</code></td><td>armValue/armGradient + 回溯线搜索</td></tr>
+      <tr><td><code>'rrtstar'</code></td><td><code>method_rrtstar</code></td><td>2D 适配层（isFree/fkEnd/goalDist/edgeFree）</td></tr>
+      <tr><td><code>'graph'</code></td><td><code>method_graph</code></td><td>走廊图 + A* + 逐段 rrtstar</td></tr>
+      <tr><td><code>'prm'</code></td><td><code>method_prm</code></td><td>路线图 + A* + 终点 refineRandomGreedy</td></tr>
+      <tr><td><code>'sa'</code></td><td><code>method_sa</code></td><td>Metropolis，侵入样本硬拒绝</td></tr>
+      <tr><td><code>'rl'</code></td><td><code>method_rl</code></td><td>OpenAI-ES + residual（θ=0 不劣于纯梯度）</td></tr>
+      <tr><td><code>'multilayer'</code></td><td><code>method_multilayer</code></td><td>LGM 连通图 + graphPaths 候选 + 逐段求解（快速 momentum → 稳健 rrt 回退）</td></tr>
+    </table>
+    <div class="note"><strong>后处理（simulateMotion 对任意方法统一做）</strong>：<code>vel_ok</code>（快照最大增量 ≤ 步长·dq_max）、<code>safety_ok</code>（快照 + 行间插值 3 点复查）、终态安全（<code>min(obsDistAll(q_final)) &lt; rho0</code> ⇒ error_code=9）。这就是为什么所有 <code>method_*</code> 仍返回统一 <code>info</code> 结构。</div>
+  </section>
+
+  <!-- 7. 子模块关系总表 -->
+  <section class="card" id="r7">
+    <h2><span class="no">7</span>子模块运行关系总表</h2>
+    <p class="desc">给每个模块标注<strong style="color:#fff">触发来源 / 主要输入 / 主要输出 / 调用与被调</strong>，即“何时跑、喂什么、吐什么、拉谁”。</p>
+    <table>
+      <tr><th>模块</th><th>运行类型</th><th>触发来源</th><th>主要输入</th><th>主要输出</th><th>调用</th><th>被调</th></tr>
+
+      <tr><td><code>runTaskLoop</code></td><td>常驻进程</td><td>outbox 出现 <code>*.json</code>（每 <code>poll_interval</code> 秒）</td><td>outbox JSON、opts</td><td>stats；修改 <code>.done</code></td><td>taskExecute</td><td>用户/GUI 启动</td></tr>
+      <tr><td><code>ArmSimApp</code></td><td>入口 GUI</td><td>用户操作</td><td>模型/障碍/目标/任务类型</td><td>回放、motorCmd 文件</td><td>createArmModel、simulateMotion、taskExecute、taskToSegments、exportMotorCmd</td><td>用户</td></tr>
+      <tr><td><code>runTopLevel</code></td><td>入口（帧循环）</td><td>启动（<code>n_frames</code> 帧）</td><td>mock 反馈、真值</td><td>top（估计轨迹 + task）</td><td>planarFK_L、handEyeEstimate2D、kalmanTarget*、simulateMotion</td><td>脚本/用户</td></tr>
+      <tr><td><code>train_cvae.py</code></td><td>离线（Python）</td><td>命令行</td><td>demonstrations_*/*.mat</td><td>policy_cvae_*.mat</td><td>—（Python 侧）</td><td>用户/管线</td></tr>
+
+      <tr><td><code>taskExecute</code></td><td>原子单元</td><td>runTaskLoop / GUI 下发 cmd</td><td>cmd、opts</td><td>info、motor_cmd</td><td>taskToSegments、simulateMotion、taskWriteStatus</td><td>runTaskLoop、ArmSimApp</td></tr>
+      <tr><td><code>taskToSegments</code></td><td>展开器</td><td>taskExecute</td><td>cmd、model、approach_dist</td><td>segs（target/gripper/name）</td><td>projectTo2D</td><td>taskExecute</td></tr>
+      <tr><td><code>taskWriteStatus</code></td><td>回写器</td><td>taskExecute / 各状态切换点</td><td>inbox、cmd、status、progress…</td><td>inbox/*_status.json</td><td>—</td><td>taskExecute、runTaskLoop</td></tr>
+
+      <tr><td><code>simulateMotion</code></td><td>内核入口</td><td>taskExecute / GUI / runTopLevel</td><td>model、method、q0/target</td><td>info（q_snapshot/t_seq/q_final…）</td><td>method_*、inverseKinPose、obsDistAll/GradAll</td><td>taskExecute、ArmSimApp、runTopLevel、cvaePolicyDeploy</td></tr>
+      <tr><td><code>method_auto</code></td><td>调度器</td><td>simulateMotion（method=‘auto’）</td><td>model、q0、target、opts</td><td>info + method_used</td><td>momentum、detectLocalMin、rrtstar(×2)、graph、prm、sa</td><td>simulateMotion、cvaePolicyDeploy</td></tr>
+      <tr><td><code>method_momentum</code></td><td>求解器</td><td>method_auto / 用户直选</td><td>model、q0、target、opts</td><td>info（含 stalled/conv_type）</td><td>armValue、armGradient、obsDistGradAll、planarFK_L</td><td>method_auto、method_rrtstar/seeds、method_prm/seeds</td></tr>
+      <tr><td><code>method_rrtstar</code></td><td>求解器</td><td>method_auto / 用户直选</td><td>model、q0、target、opts</td><td>info + stats.cost_path</td><td>armValue/armGradient、refineRandomGreedy、obsDist*</td><td>method_auto、method_graph、generateDemonstrations</td></tr>
+      <tr><td><code>method_graph</code></td><td>求解器</td><td>method_auto</td><td>model、q0、target、opts</td><td>info + 图 stats</td><td>method_rrtstar（逐段）</td><td>method_auto</td></tr>
+      <tr><td><code>method_prm</code></td><td>求解器</td><td>method_auto</td><td>model、q0、target、opts</td><td>info + stats.nodes</td><td>method_momentum（种子）、refineRandomGreedy</td><td>method_auto</td></tr>
+      <tr><td><code>method_sa</code></td><td>求解器</td><td>method_auto / 用户直选</td><td>model、q0、target、opts</td><td>info + T_final</td><td>armValue、refineRandomGreedy</td><td>method_auto</td></tr>
+      <tr><td><code>method_rl</code></td><td>求解器</td><td>simulateMotion（method=‘rl’）</td><td>model、q0、target、opts</td><td>info + stats.theta</td><td>rlRollout、armValue</td><td>simulateMotion</td></tr>
+      <tr><td><code>method_multilayer</code></td><td>求解器（LGM）</td><td>simulateMotion（method=‘multilayer’）/ 用户直选</td><td>model、q0、target、opts</td><td>info + stats（图叠加）+ candidates</td><td>buildConnectivityGraph、graphPaths、simulateMotion（逐段）、refineRandomGreedy</td><td>simulateMotion</td></tr>
+      <tr><td><code>buildConnectivityGraph</code></td><td>LGM 建图</td><td>method_multilayer</td><td>obstacles、start、goal、opts</td><td>graph（nodes/edges/edges）、info.start_goal_reachable</td><td>bwskel、bwmorph、lineFree、chamferDist</td><td>method_multilayer</td></tr>
+      <tr><td><code>graphPaths</code></td><td>候选搜索</td><td>method_multilayer</td><td>graph、K、maxSeg</td><td>paths（cell，节点序列）</td><td>—（DFS 简单路径枚举）</td><td>method_multilayer</td></tr>
+      <tr><td><code>refineRandomGreedy</code></td><td>精修器</td><td>rrtstar/prm/sa/cvaePolicyDeploy/multilayer</td><td>model、q0、target、opts</td><td>q_best、pos_err、ang_err</td><td>planarFK_L、obsDistAll</td><td>method_rrtstar、method_prm、method_sa、method_multilayer、cvaePolicyDeploy</td></tr>
+      <tr><td><code>detectLocalMin</code></td><td>判定器</td><td>method_auto</td><td>model、q、target、tol_grad</td><td>is_min、grad_norm、dist_end</td><td>armGradient、planarFK_L</td><td>method_auto</td></tr>
+
+      <tr><td><code>armValue</code></td><td>价值基元</td><td>armGradient / method_* / 各步更新</td><td>model、q</td><td>V（标量）</td><td>planarFK_L、getEndEffectorAngle_L、obsDistGradAll</td><td>method_momentum、method_sa、method_rl</td></tr>
+      <tr><td><code>armGradient</code></td><td>梯度基元</td><td>method_momentum / detectLocalMin</td><td>model、q</td><td>∇V（1×N）</td><td>planarFK_L、planarJac_L、jacEndAngle_L、obsDistGradAll</td><td>method_momentum、detectLocalMin、test_gradcheck</td></tr>
+      <tr><td><code>planarFK_L</code></td><td>运动学基元</td><td>armValue/Gradient、planarJac_L、obsDist*、method_*</td><td>q、DH、rod</td><td>p_all、p_end</td><td>—</td><td>几乎全部求解路径</td></tr>
+      <tr><td><code>planarJac_L</code>/<code>planarJacPoint_L</code></td><td>运动学基元</td><td>armGradient / obsDistGradAll / seg*DistGrad</td><td>q、DH、rod</td><td>J（2×N）</td><td>planarFK_SimpleNode</td><td>armGradient、obsDistGradAll、segSegDistGrad</td></tr>
+      <tr><td><code>getEndEffectorAngle_L</code>/<code>jacEndAngle_L</code></td><td>运动学基元</td><td>armValue/Gradient、method_*、runTopLevel</td><td>q、DH、rod</td><td>θ_end / J_ang</td><td>planarFK_L</td><td>armValue、armGradient、simulateMotion、runTopLevel</td></tr>
+      <tr><td><code>obsDistAll</code></td><td>几何基元</td><td>simulateMotion（碰撞）、isFree、检查</td><td>model、q</td><td>g_all（K×1）</td><td>seg*DistGrad、point*DistGrad</td><td>simulateMotion、method_*、isFreeTraj、assessRobustness</td></tr>
+      <tr><td><code>obsDistGradAll</code></td><td>几何基元</td><td>armValue/Gradient、method_*</td><td>model、q</td><td>g_all、dg_all</td><td>planarJacPoint_L、seg*DistGrad</td><td>armValue、armGradient、simulateMotion</td></tr>
+      <tr><td><code>adaptiveBudget</code></td><td>预算启发式</td><td>method_auto</td><td>model、q0、target</td><td>预算整数</td><td>planarFK_L</td><td>method_auto</td></tr>
+
+      <tr><td><code>projectTo2D</code></td><td>转换器</td><td>taskToSegments</td><td>pose3d（视觉结构）</td><td>[x,y,yaw]</td><td>—</td><td>taskToSegments</td></tr>
+      <tr><td><code>errorModel</code></td><td>误差注入</td><td>assessRobustness</td><td>model、q_cmd、q_prev</td><td>q_actual</td><td>—</td><td>assessRobustness</td></tr>
+      <tr><td><code>assessRobustness</code></td><td>鲁棒性评估</td><td>用户/脚本</td><td>model、q、target、n_mc</td><td>rep（误差分布/碰撞概率）</td><td>errorModel、planarFK_L、obsDistAll</td><td>用户/脚本</td></tr>
+      <tr><td><code>feedbackCorrect</code></td><td>反馈修正</td><td>用户/闭环</td><td>model、q、X_measured、X_target、Kp</td><td>dq</td><td>planarJac_L</td><td>用户/闭环</td></tr>
+      <tr><td><code>sampleTask2D</code></td><td>任务采样</td><td>generateDemonstrations</td><td>opts（N/L/difficulty/seed）</td><td>model、q0、target、obs_desc</td><td>createArmModel、planarFK_L、obsDistAll</td><td>generateDemonstrations</td></tr>
+      <tr><td><code>generateDemonstrations</code></td><td>示范生成</td><td>用户/脚本</td><td>opts（n_demo/预算/平滑）</td><td>demo_*.mat、manifest.mat、stats</td><td>sampleTask2D、method_rrtstar、optimizeTraj</td><td>用户/脚本</td></tr>
+      <tr><td><code>optimizeTraj</code></td><td>路径后处理</td><td>generateDemonstrations</td><td>model、traj、opts</td><td>traj、stats</td><td>obsDistAll</td><td>generateDemonstrations</td></tr>
+      <tr><td><code>cvaePolicyFromFile</code>/<code>cvaePolicyDeploy</code></td><td>学习部署</td><td>用户/GUI/管线</td><td>mat_file、model、q0、target</td><td>out（traj/q_final/via）</td><td>method_auto、refineRandomGreedy、obsDistAll、planarFK_L</td><td>用户/GUI</td></tr>
+      <tr><td><code>handEyeEstimate2D</code></td><td>估计</td><td>runTopLevel</td><td>pose_base_ee、obs_cam、opts</td><td>X_hand、stats</td><td>—</td><td>runTopLevel</td></tr>
+      <tr><td><code>kalmanTarget2D/Predict/Update</code></td><td>估计</td><td>runTopLevel</td><td>z / dt</td><td>kf.x（目标估计）</td><td>—</td><td>runTopLevel</td></tr>
+
+      <tr><td><code>exportMotorCmd</code></td><td>导出器</td><td>taskExecute 后 / GUI</td><td>motor_cmd/info、filename</td><td>.mat / .csv</td><td>—</td><td>taskExecute、ArmSimApp</td></tr>
+      <tr><td><code>solveIK</code></td><td>快捷入口</td><td>用户/脚本</td><td>X_target、theta、method、N</td><td>q</td><td>createArmModel、simulateMotion</td><td>用户/脚本</td></tr>
+    </table>
+    <div class="note warn"><strong>无环依赖约束：</strong>层间依赖严格单向——L0（接口/桥）→ L1（价值）→ L2（方法）→ L3（数学），学习层/顶层/GUI 只叠加在 L0–L3 之上。唯一“向上”引用是 <code>cvaePolicyDeploy → method_auto</code>（部署兜底），但属于<strong>延迟调用</strong>（非编译期环形），运行时无死锁。</div>
+  </section>
+
+  <!-- 8. 状态与错误流转 -->
+  <section class="card" id="r8">
+    <h2><span class="no">8</span>状态与错误流转</h2>
+    <p class="desc">运行期状态由 <code>taskWriteStatus</code> 逐点写入 inbox；错误码贯穿 <code>simulateMotion → taskExecute → exportMotorCmd</code>。</p>
+    <div class="grid2">
+      <div>
+        <h4>任务状态机</h4>
+        <pre>RECEIVED → ACCEPTED → PLANNING → EXECUTING → COMPLETED
+                ↓                        ↓
+             REJECTED               FAILED / CANCELED / ESTOP_TRIGGERED</pre>
+      </div>
+      <div>
+        <h4>错误码（error_code）</h4>
+        <pre>0 成功        6 取消/急停/拒绝
+2 未收敛      7 卡住/任务展开异常
+3 采样层未达  8 段求解异常
+5 位姿反解失败 9 终态碰撞
+            10 目标被障碍吞没</pre>
+      </div>
+    </div>
+    <h3>错误在哪一层产生、流向哪<span class="sub">按 error_code 定位</span></h3>
+    <table>
+      <tr><th>码</th><th>产生层</th><th>触发场景</th><th>上抛路径</th></tr>
+      <tr><td><code>0</code></td><td>各方法</td><td>达到容差 / 采样类达到可达区域</td><td>info → 组装</td></tr>
+      <tr><td><code>2</code></td><td>method_momentum/sa</td><td>迭代耗尽未达标 / 精修未达标</td><td>方法层 info</td></tr>
+      <tr><td><code>3</code></td><td>采样类</td><td>未找到路径（A* 无解/树未达）</td><td>方法层 info</td></tr>
+      <tr><td><code>5</code></td><td>simulateMotion</td><td>q0 为位姿且反解失败</td><td>直接返回</td></tr>
+      <tr><td><code>6</code></td><td>runTaskLoop/taskExecute</td><td>急停 / allow_execute=false / 置信度不足</td><td>REJECTED/ESTOP_TRIGGERED</td></tr>
+      <tr><td><code>7</code></td><td>momentum / taskExecute</td><td>卡住（无进展早停）/ 任务展开异常</td><td>方法层 / FAILED</td></tr>
+      <tr><td><code>8</code></td><td>taskExecute</td><td>段求解抛出异常</td><td>FAILED（终止任务）</td></tr>
+      <tr><td><code>9</code></td><td>simulateMotion（后处理）</td><td><code>min(obsDistAll(q_final)) &lt; rho0</code></td><td>强制 success=false（保护导出）</td></tr>
+      <tr><td><code>10</code></td><td>taskExecute（预检）</td><td>段目标被障碍吞没（&lt; rho0）</td><td>FAILED（不可达）</td></tr>
+    </table>
+  </section>
+
+  <!-- 9. 依赖与约束 -->
+  <section class="card" id="r9">
+    <h2><span class="no">9</span>依赖与约束</h2>
+    <h3>运行依赖</h3>
+    <ul class="tight">
+      <li><strong>MATLAB R2017b+</strong>（实测 R2026a），依赖 <code>vecnorm</code>、<code>jsondecode</code>；核心无需 Optimization Toolbox。</li>
+      <li><strong>与视觉联调需 Python</strong>（SpaceSnakeVisionUI，D405 mock/实机）——链路 A 的 TaskCommand 来源。</li>
+      <li><strong>训练端 Python</strong>：<code>train_cvae.py / train_policy.py</code>，产出策略 .mat 供部署。</li>
+    </ul>
+    <h3>关键约束</h3>
+    <ul class="tight">
+      <li><strong>障碍仅存在于仿真</strong>（视觉不传障碍）；夹爪为简单状态机（<code>gripper_seq</code> 0/1/2）。</li>
+      <li><strong>IK 迭代求解不进实时循环</strong>——dSPACE 只做确定性插值，一次离线求解、在线回放。</li>
+      <li><strong>文件桥是唯一跨进程边界</strong>：outbox（任务）+ inbox（状态）+ <code>.done</code>/<code>.bad</code>（消费标记）。</li>
+      <li><strong>确定性</strong>：<code>method_rl</code> 用 <code>rng(1)</code> 复现；<code>generateDemonstrations/sampleTask2D</code> 支持 <code>seed</code>。</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  平面高冗余蛇形机械臂 IK 求解与仿真平台 · 系统模块运行图 · 生成于 2026
+</footer>
+
+</body>
+</html>

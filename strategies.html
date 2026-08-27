@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>平面蛇形机械臂 IK 平台 · 搜索策略与数学逻辑</title>
+<style>
+  :root {
+    --bg: #0e1420;
+    --panel: #161f30;
+    --panel2: #1c2740;
+    --line: #2a3a55;
+    --text: #d7e0ef;
+    --muted: #8aa0bd;
+    --accent: #4da6ff;
+    --accent2: #6fbf6f;
+    --warn: #e0a94d;
+    --danger: #e05a5a;
+    --purple: #c39bff;
+    --code-bg: #0a0f1a;
+    --mono: 'Cascadia Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    line-height: 1.65; font-size: 15px;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header.hero {
+    padding: 54px 24px 38px; text-align: center;
+    background:
+      radial-gradient(1200px 400px at 50% -120px, rgba(77,166,255,0.18), transparent),
+      linear-gradient(180deg, #131c2e 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--line);
+  }
+  header.hero h1 { margin: 0 0 10px; font-size: 29px; letter-spacing: 1px; font-weight: 700; }
+  header.hero .sub { color: var(--muted); font-size: 16px; max-width: 860px; margin: 0 auto; }
+  header.hero .badges { margin-top: 16px; }
+  .badge {
+    display: inline-block; padding: 3px 12px; margin: 4px; border-radius: 999px;
+    font-size: 12.5px; border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+  }
+  .badge b { color: var(--accent); font-weight: 600; }
+
+  main { max-width: 1120px; margin: 0 auto; padding: 8px 20px 80px; }
+
+  section.card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 26px 28px; margin: 26px 0;
+  }
+  section.card > h2 {
+    margin: 0 0 4px; font-size: 21px; color: #fff; display: flex; align-items: center; gap: 10px;
+  }
+  section.card > h2 .no {
+    display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+    border-radius: 8px; background: linear-gradient(135deg, var(--accent), #2f6fd0); color: #fff;
+    font-size: 14px; font-weight: 700; flex-shrink: 0;
+  }
+  section.card > p.desc { color: var(--muted); margin: 6px 0 18px; }
+  section.card > h3 { margin: 22px 0 10px; font-size: 16px; color: #fff; }
+  section.card > h3 .sub { font-size: 12.5px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: top; }
+  th { background: var(--panel2); color: #fff; font-weight: 600; white-space: nowrap; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+  td code, p code, li code, h3 code { font-family: var(--mono); font-size: 12.5px; color: #8fd0ff; }
+
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; font-family: var(--mono);
+    font-size: 13px; line-height: 1.6; color: #c9d6ea;
+  }
+  pre .c { color: #5c708a; } pre .k { color: #e0a94d; } pre .v { color: #8fd0ff; }
+
+  .note {
+    border-left: 3px solid var(--accent); background: rgba(77,166,255,0.06);
+    padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; color: var(--muted); font-size: 13.5px;
+  }
+  .note.warn { border-left-color: var(--warn); background: rgba(224,169,77,0.08); }
+  .note.ok   { border-left-color: var(--accent2); background: rgba(111,191,111,0.08); }
+  .note.deep { border-left-color: var(--purple); background: rgba(195,155,255,0.08); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+  ul.tight { margin: 6px 0; padding-left: 20px; } ul.tight li { margin: 4px 0; }
+
+  /* 策略卡片 */
+  .fn {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 12px;
+    margin: 18px 0; overflow: hidden;
+  }
+  .fn > .fn-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+    background: rgba(77,166,255,0.07); border-bottom: 1px solid var(--line); flex-wrap: wrap;
+  }
+  .fn .fn-name { font-family: var(--mono); font-size: 15px; font-weight: 700; color: #fff; }
+  .fn .fn-sig { font-family: var(--mono); font-size: 12.5px; color: var(--accent); overflow-x: auto; }
+  .fn .fn-role {
+    margin-left: auto; padding: 2px 10px; border-radius: 6px; font-size: 11.5px;
+    font-weight: 600; flex-shrink: 0;
+  }
+  .fn .fn-role.grad { background: rgba(77,166,255,0.15); color: var(--accent); }
+  .fn .fn-role.samp { background: rgba(224,169,77,0.16); color: var(--warn); }
+  .fn .fn-role.graph{ background: rgba(111,191,111,0.15); color: var(--accent2); }
+  .fn .fn-role.learn{ background: rgba(195,155,255,0.18); color: var(--purple); }
+  .fn .fn-role.auto { background: rgba(224,170,77,0.2); color: #f2c879; }
+  .fn .fn-body { padding: 15px 18px; }
+  .fn .fn-body > p { color: var(--text); margin: 8px 0; }
+  .fn h4 { margin: 14px 0 6px; font-size: 13.5px; color: #fff; letter-spacing: .3px; }
+  .fn table.fn-params { font-size: 13px; margin: 8px 0 10px; }
+  .fn table.fn-params th { white-space: nowrap; }
+  .fn table.fn-params td.pname { font-family: var(--mono); color: #8fd0ff; white-space: nowrap; }
+  .fn .fn-math { margin: 8px 0; }
+  .fn ul { margin: 6px 0; padding-left: 22px; } .fn ul li { margin: 4px 0; }
+  .fn .fn-talk { color: var(--muted); font-size: 13px; }
+
+  .proscons {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 0;
+  }
+  @media (max-width: 820px) { .proscons { grid-template-columns: 1fr; } }
+  .proscons .pc { padding: 10px 14px; border-radius: 10px; font-size: 13px; }
+  .proscons .pc.pro { background: rgba(111,191,111,0.08); border: 1px solid rgba(111,191,111,0.25); }
+  .proscons .pc.con { background: rgba(224,169,77,0.08); border: 1px solid rgba(224,169,77,0.25); }
+  .proscons .pc b { display: block; margin-bottom: 4px; }
+  .proscons .pc.pro b { color: var(--accent2); }
+  .proscons .pc.con b { color: var(--warn); }
+
+  .toc { columns: 2; column-gap: 28px; font-size: 13.5px; }
+  .toc a { display: block; padding: 2px 0; }
+  @media (max-width: 560px) { .toc { columns: 1; } }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 6px 0 14px; font-size: 13px; color: var(--muted); }
+  .legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .sw { width: 18px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 24px; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>平面蛇形机械臂 IK 平台 · 搜索策略与数学逻辑</h1>
+  <p class="sub">本页把 9 种求解方法（含 <code style="color:#8fd0ff">multilayer</code> 工作空间连通 / LGM）+ <code style="color:#8fd0ff">auto</code> 调度链的<strong style="color:#fff">核心直觉、数学公式、运行步骤、参数与优缺点</strong>逐一拆开讲清楚。所有公式都来自 <code style="color:#8fd0ff">ArmSimulator2D/</code> 的源码，不做文学化加工。</p>
+  <div class="badges">
+    <span class="badge">覆盖 <b>9 方法</b> + auto</span>
+    <span class="badge">范式 <b>梯度 · 采样 · 图引导 · 工作空间连通 · 学习</b></span>
+    <span class="badge">统一价值 <b>V(q) + ∇V</b></span>
+    <span class="badge">结果 <b>共享 info</b></span>
+  </div>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2><span class="no">◈</span>目录</h2>
+    <div class="toc">
+      <a href="#f1">1 · 五种范式总览</a>
+      <a href="#f2">2 · 共享数学基础（价值/梯度/运动学/障碍）</a>
+      <a href="#f3">3 · momentum：梯度局部精修</a>
+      <a href="#f4">4 · sa：模拟退火</a>
+      <a href="#f5">5 · rrt：概率完备采样</a>
+      <a href="#f6">6 · rrtstar：渐近最优</a>
+      <a href="#f7">7 · prm：路线图</a>
+      <a href="#f8">8 · graph：图引导分层</a>
+      <a href="#f9">9 · rl：OpenAI-ES 强化学习</a>
+      <a href="#f10">10 · cvae：学习层</a>
+      <a href="#f11">11 · auto：调度链 + 局部最优检测</a>
+      <a href="#f12">12 · multilayer：工作空间连通（LGM）</a>
+      <a href="#f13">13 · 收敛性与最优性讨论</a>
+      <a href="#f14">14 · 横向对比与选择指南</a>
+    </div>
+  </section>
+
+  <!-- 1. 范式总览 -->
+  <section class="card" id="f1">
+    <h2><span class="no">1</span>五种范式总览</h2>
+    <p class="desc">所有方法都解同一个问题：给机械臂一组关节角 <code>q</code>，让末端位置/角度到目标 <code>[X_t, θ_t]</code>，且不碰障碍。区别只在“怎么在这个高维关节空间里搜索”。</p>
+    <div class="legend">
+      <span class="lg"><span class="sw" style="background:var(--accent)"></span>梯度局部精修</span>
+      <span class="lg"><span class="sw" style="background:var(--warn)"></span>采样全局</span>
+      <span class="lg"><span class="sw" style="background:var(--accent2)"></span>图引导</span>
+      <span class="lg"><span class="sw" style="background:var(--accent2)"></span>工作空间连通</span>
+      <span class="lg"><span class="sw" style="background:var(--purple)"></span>学习加速</span>
+    </div>
+    <table>
+      <tr><th>范式</th><th>方法</th><th>走</th><th>优点</th><th>代价</th></tr>
+      <tr><td><b>梯度局部精修</b></td><td><code>momentum</code></td><td>沿 <code>−∇V</code> 走</td><td>毫秒级、精度高</td><td>只到局部最优；容易被障碍势阱困住</td></tr>
+      <tr><td><b>采样全局</b></td><td><code>rrt</code>/<code>rrtstar</code>/<code>prm</code>/<code>sa</code></td><td>在关节空间随机撒点</td><td>无局部最优概念，概率完备</td><td>慢（秒级）；结果是“粗达”</td></tr>
+      <tr><td><b>图引导</b></td><td><code>graph</code></td><td>先建走廊图再分段搜</td><td>窄通道/多障碍逃逸</td><td>建图开销；只针对末端位置走廊</td></tr>
+      <tr><td><b>工作空间连通</b></td><td><code>multilayer</code></td><td>先建 LGM 连通图再取候选逐段求解</td><td>臂无关（图可跨臂复用）；候选集供复杂情形选择</td><td>连通图不含可行性，需下游 C-space 求解器兜底</td></tr>
+      <tr><td><b>学习加速</b></td><td><code>rl</code>/<code>cvae</code></td><td>学过经验直接出</td><td>毫秒级、可绕过势阱</td><td>需离线训练；泛化受限</td></tr>
+      <tr><td><b>调度</b></td><td><code>auto</code></td><td>失败逐层升级</td><td>快慢组合、鲁棒</td><td>最坏要跑完整调度链</td></tr>
+    </table>
+    <div class="note ok">背后共同的<strong>唯一事实来源</strong>是价值函数 <code>V(q)</code> 与其解析梯度 <code>∇V(q)</code>（§2）。采样类方法也用 <code>V</code> 作为“目标达成度”来判定成功，但<strong>不靠它寻路</strong>（避免被势阱吸引）。</div>
+  </section>
+
+  <!-- 2. 共享数学基础 -->
+  <section class="card" id="f2">
+    <h2><span class="no">2</span>共享数学基础</h2>
+    <p class="desc">下面是所有方法的“地基”。先把记号统一：<code>q∈R^N</code> 关节角、<code>p(q)</code> 末端位置、<code>θ(q)</code> 末端朝向、<code>X_t/θ_t</code> 目标、<code>d_k(q)</code> 到第 <code>k</code> 个障碍的距离。</p>
+
+    <h3>2.1 统一价值函数 <code>V(q)</code></h3>
+    <div class="fn">
+      <div class="fn-body">
+        <pre>V(q) = w_pos·‖p(q) − X_t‖²                          <span class="c">% 末端位置误差</span>
+     + w_ang·wrap(θ(q) − θ_t)²                      <span class="c">% 末端角度误差</span>
+     + w_obs·Σ_k [ log(r_bar) − log(g_eff,k) ]       <span class="c">% 障碍对数屏障（仅 g_eff,k &lt; r_bar）</span>
+            + w_obs·barrier_C·(d_safe − d_k)          <span class="c">% 侵入线性惩罚（仅 d_k &lt; d_safe）</span>
+     + w_var·Σ_j (q_j − μ_j)² / σ_j²                <span class="c">% 关节先验（默认 w_var=0）</span>
+     + w_acc·‖v − v_prev‖²                          <span class="c">% 加速度平滑（仅 w_acc&gt;0，动量法置 0）</span></pre>
+        <p>其中 <code>g_eff,k = max(d_k − d_safe, g_min)</code>（防除零/防 log 负）、<code>d_safe = rho0 + safe_margin</code>、<code>r_bar = barrier_range</code>。</p>
+        <div class="note deep"><strong>为什么这样写</strong>①位置/角度两项是<strong>最小二乘</strong>，梯度是闭环的；②屏障用 <code>−log(g_eff)</code>：障碍越近 <code>g_eff→0</code> 时 <code>V→+∞</code>，把臂“推开”；③<code>barrier_range</code> 让障碍远时势为 0（避免远处 <code>−log</code> 变负势干扰位置收敛）；④侵入后叠加线性项，压过位置项（否则 RL/SA 这类非梯度法会停在侵入态）。</div>
+      </div>
+    </div>
+
+    <h3>2.2 解析梯度 <code>∇V(q)</code></h3>
+    <div class="fn">
+      <div class="fn-body">
+        <pre>∇V = −2·w_pos·e_pos·J − 2·w_ang·e_ang·J_ang                  <span class="c">% e_pos=X_t−p, e_ang=wrap(θ_t−θ)</span>
+   − w_obs·Σ_k [ clip(1/g_eff,k, 0, barrier_C) · ∇d_k ]          <span class="c">% 屏障梯度（幅值截断）</span>
+   + 2·w_var·(q−μ) ⊘ σ²
+   + 2·w_acc·(v−v_prev)</pre>
+        <p><code>J = ∂p/∂q</code>（2×N）是末端位置雅可比、<code>J_ang = ∂θ/∂q</code>（1×N）是角度雅可比。</p>
+        <div class="note deep"><strong>关键点：</strong>屏障幅值用 <code>g_eff</code> 截断（<code>clip(1/g_eff, 0, barrier_C)</code>），但<strong>方向始终用真实 <code>∇d</code></strong>（推离方向）——这就是“侵入后仍保持最大恒排斥（D5）”。梯度解析 + 机器精度校验（<code>test_gradcheck</code> 中心差分 &lt; 1e-5）。</div>
+      </div>
+    </div>
+
+    <h3>2.3 运动学正解与雅可比</h3>
+    <div class="fn">
+      <div class="fn-body">
+        <pre>正解（planarFK_L）：θ_sum ← θ_sum + q_i
+  M_i  = P_{i−1} + L_i·[cos θ_sum, sin θ_sum]        <span class="c">% 第 i 段段端</span>
+  P'_i = M_i + rod_off_i·[−sin θ_sum, cos θ_sum]     <span class="c">% 垂直偏移点</span>
+
+几何雅可比（planarJac_L）：J(1,i) = −(y_end − y_i)；J(2,i) = (x_end − x_i)
+  （旋转中心 = 段端节点；rod_off=0 时精确，否则忽略二阶耦合）
+
+末端朝向角：θ_end = atan2( M_N − P'_{N−1} )           <span class="c">% 最后一段方向</span></pre>
+        <p>注意这里 <code>θ_end</code> 取“末端段<strong>指向</strong>方向”，而非旧版反向——否则全零构型（臂沿 +X）会得到 <code>θ=π</code> 而非 <code>0</code>。</p>
+      </div>
+    </div>
+
+    <h3>2.4 障碍几何（带符号距离 + 屏障）</h3>
+    <div class="fn">
+      <div class="fn-body">
+        <pre>点-圆：g = ‖p − c‖ − r                    <span class="c">% 侵入为负</span>
+段-圆：最近点 = 圆心在段上的投影（g = ‖投影−c‖ − r）
+段-段：双参数 (ta,tb) 最近点；退化（点/平行）有分支防除零
+点-矩形：g = max(|lx|−w/2, |ly|−h/2)（旋转坐标下）
+
+模式 'seg'：逐杆段检测（默认，最安全）；'point'：仅电机节点（快速，可能漏检穿段）</pre>
+        <p>距离的带符号约定让“屏障”能区分“还在安全区外的接近”与“已经侵入”两种状态。</p>
+      </div>
+    </div>
+
+    <h3>2.5 回溯线搜索 + 局部最优检测</h3>
+    <div class="fn">
+      <div class="fn-body">
+        <pre>线搜索（momentum 内）：q_try = q + v；若 V(q_try) &gt; V(q) + 1e-12 ⇒ v ← 0.5·v（重试 ≤6）
+
+局部最优（detectLocalMin）：‖∇V‖ &lt; localmin_tol_grad（1e-3）且 dist_end &gt; tol_pos ⇒ 困于势阱</pre>
+        <p>线搜索保证 <code>V</code> 单调下降、防震荡/伪平衡；局部最优判定是 <code>auto</code> 决定“是否升级到采样层”的依据。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. momentum -->
+  <section class="card" id="f3">
+    <h2><span class="no">3</span>momentum：梯度局部精修<span class="sub">快路径</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">method_momentum</span>
+        <span class="fn-sig">info = method_momentum(model, q0, target, opts)</span>
+        <span class="fn-role grad">梯度局部精修</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>把 <code>V(q)</code> 看作一片“山谷”，末端的误差在山谷底最小。梯度 <code>−∇V</code> 指向“更快下降”的方向，于是沿反梯度一步步走。动量就是“惯性”：如果这几步一直朝一个方向，就冲得更快；方向反复横跳时，惯性被抵消。</p>
+        <div class="fn-math">
+          <h4>数学逻辑</h4>
+          <pre>v_{k+1} = β_k·v_k + (1 − β_k)·(−∇V(q_k))              <span class="c">% 动量累积</span>
+β_k = β·erf( dist_end / (√2 · 0.05) )                 <span class="c">% 近目标衰减：dist→0 时 β→0，消末端震荡</span>
+若 min g &lt; rho_critical：v ← v / max(1, rho_critical / max(min g, g_min))   <span class="c">% 近障碍降速</span>
+v ← v · min(1, dq_max / max|v|)                        <span class="c">% 步长上限</span>
+q_{k+1} = clip(q_k + v_k, q_min, q_max)                 <span class="c">% 限位 + 回溯线搜索</span></pre>
+        </div>
+        <h4>两阶段权重调度（打破位置-角度互消）</h4>
+        <pre>dist_end &gt; 0.08：w_ang ← 0.2·w_ang；w_pos ← 1.0·w_pos        <span class="c">% 远：先让臂“到位”（位置主导）</span>
+dist_end ≤ 0.08：s2 = min(1, dist_end/0.08)                    <span class="c">% 近：用冗余自由度“调姿”</span>
+               w_ang ← w_ang·(0.2 + 3.8·(1 − s2))；w_pos ← w_pos·(0.3 + 0.7·s2)</pre>
+        <h4>运行步骤</h4>
+        <ul>
+          <li>从 <code>q0</code> 出发，逐步算 <code>armGradient</code> → 更新动量 → 限幅 → 回溯线搜索。</li>
+          <li>收敛判据：<code>dist&lt;tol_pos(1e-4)</code> 且 <code>|e_ang|&lt;tol_ang(1e-3)</code>（硬达标）；<code>strict=false</code> 时用“逐项贡献 &lt;0.001 连续 5 步”动态收敛。</li>
+          <li>无进展早停：每 30 步记一个窗口误差，近 3 窗口 vs 前 3 窗口无实质改善（&gt;1e-4）⇒ 卡住，error_code=7。</li>
+        </ul>
+        <h4>关键参数</h4>
+        <table class="fn-params">
+          <tr><th>参数</th><th>值</th><th>作用</th></tr>
+          <tr><td class="pname">momentum_beta</td><td>0.85</td><td>动量系数</td></tr>
+          <tr><td class="pname">dq_max</td><td>0.15</td><td>单步最大关节增量 rad</td></tr>
+          <tr><td class="pname">tol_pos / tol_ang</td><td>1e-4 / 1e-3</td><td>硬达标容差</td></tr>
+          <tr><td class="pname">rho_critical</td><td>0.15</td><td>邻近障碍降速临界距离</td></tr>
+          <tr><td class="pname">max_iter</td><td>800</td><td>迭代上限</td></tr>
+        </table>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>毫秒级；无障碍/简单场景直接收敛到高精度（1e-4/1e-3）；也常被采样法用作“多起点小精修”。</div>
+          <div class="pc con"><b>局限</b>只到<strong>局部最优</strong>——被障碍势阱困住就出不来；对障碍屏障的非凸性敏感。</div>
+        </div>
+        <div class="note">在 <code>auto</code> 中它永远先跑：快路径一成功就立刻返回，不做任何多余开销。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. sa -->
+  <section class="card" id="f4">
+    <h2><span class="no">4</span>sa：模拟退火<span class="sub">逃逸兜底</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">method_sa</span>
+        <span class="fn-sig">info = method_sa(model, q0, target, opts)</span>
+        <span class="fn-role samp">采样全局</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>高温时像“乱撞”一样允许接受较差解，从而翻过小山包（逃离局部最优）；随着温度降低，越来越只接受更好的解，最终落入一个好山谷。</p>
+        <div class="fn-math">
+          <h4>数学逻辑（Metropolis + 几何冷却）</h4>
+          <pre>T_0 = max(V(q0), 1e-3)                    <span class="c">% 初始温度自适应</span>
+每步：σ_k = σ_0·√(T_k / T_0)                 <span class="c">% 扰动幅度随温度收缩</span>
+  q_p = q + σ_k·randn(N)；q_p = clip(...)     <span class="c">% 高斯扰动</span>
+  若 min g(q_p) &lt; rho0 ⇒ 直接拒绝（冷却后 continue）     <span class="c">% 侵入硬拒绝</span>
+  ΔV = V(q_p) − V(q)
+  accept if ΔV &lt; 0 OR rand &lt; exp(−ΔV / T_k)     <span class="c">% Metropolis 准则</span>
+T_{k+1} = α·T_k                              <span class="c">% 几何冷却（α=0.995）</span></pre>
+        </div>
+        <h4>运行步骤</h4>
+        <ul>
+          <li>迭代直到 <code>max_iter</code> 或收敛；始终记录 <code>q_best</code>（历史最优）。</li>
+          <li>收敛检查基于 <code>q_best</code> 的末端误差 &lt; <code>tol_pos/tol_ang</code>。</li>
+          <li>结束若未收敛，用 <code>refineRandomGreedy</code>（layers=4, steps=250）做<strong>无梯度终点精修</strong>兜底。</li>
+        </ul>
+        <div class="note warn"><strong>安全约束是硬性的：</strong>扰动样本一旦侵入障碍（<code>min g &lt; rho0</code>）就<strong>直接拒绝</strong>，不进入 Metropolis——防止高温把臂“推”进屏障。这是 SA 与“软屏障势”方法的本质区别。</div>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>翻越局部最优；对非光滑/有障碍势阱的场景有效；实现简单。</div>
+          <div class="pc con"><b>局限</b>慢（~2000 迭代）；只能达“接近”（≈0.02 再精修）；冷却参数敏感。</div>
+        </div>
+        <div class="note">在 <code>auto</code> 中是<strong>最后兜底</strong>（max_iter 被降到 600 以实时约束）。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. rrt -->
+  <section class="card" id="f5">
+    <h2><span class="no">5</span>rrt：概率完备采样<span class="sub">采样层（对比）</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">method_rrt</span>
+        <span class="fn-sig">info = method_rrt(model, q0, target, opts)</span>
+        <span class="fn-role samp">采样全局</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>在关节空间“乱撒点”，从起点长出一棵树，每次把新点连到离它最近的树节点上，只要这条边不碰障碍。样本越多，树越能绕过障碍、逼近目标。</p>
+        <div class="fn-math">
+          <h4>数学逻辑（RRT）</h4>
+          <pre>采样 q_rand：30% 从目标种子附近扰动（σ_seed=0.05+0.2·(1−min(1,best_err))），否则均匀
+最近邻：q_near = argmin_i ‖q_rand − q_i‖                    <span class="c">% 加权欧氏</span>
+steer：q_new = q_near + min(1, max_step/‖Δ‖)·Δ；clip 到限位
+边检查：edgeFree = 沿边插值 n_chk=max(3,ceil(‖Δ‖/0.4)) 点逐点查碰撞（防穿段漏检）</pre>
+        </div>
+        <h4>运行步骤</h4>
+        <ul>
+          <li>多起点动量种子（6 个随机初值跑 30 步动量，取末端误差最小者作目标种子）绕开势阱。</li>
+          <li>目标区域判定参数化：位置 <code>goal_eps</code>（0.02）+ 角度 <code>goal_ang</code>（0.1）。</li>
+          <li>粗达（末端 &lt; 0.4）即触发 <code>refineRandomGreedy</code> 精修，达标则成功；否则继续扩展。</li>
+          <li>失败返回最近可达节点（warm start，error_code=3）。</li>
+        </ul>
+        <div class="note deep"><strong>为什么“无梯度局部最优”：</strong>障碍只是<strong>采样拒绝条件</strong>，不构造势场。所以 RRT 不会被 <code>V</code> 的势阱“吸住”——它天然能绕过障碍。</div>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>概率完备（样本→∞ 找到概率→1）；无梯度局部最优；实现简单。</div>
+          <div class="pc con"><b>局限</b>路径未必最优（会绕路）；慢；只能“粗达 + 精修”。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. rrtstar -->
+  <section class="card" id="f6">
+    <h2><span class="no">6</span>rrtstar：渐近最优<span class="sub">采样层（主）</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">method_rrtstar</span>
+        <span class="fn-sig">info = method_rrtstar(model, q0, target, opts)</span>
+        <span class="fn-role samp">采样全局</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>相比 RRT，它多做了两件事：<strong>选父</strong>（新节点在半径内找“根代价最小”的节点接上去，而不是最近邻）和<strong>重连</strong>（半径内邻居若“经过新节点”更短就改接）。这两步让树的路径代价单调不增，从而<b>渐近最优</b>。</p>
+        <div class="fn-math">
+          <h4>数学逻辑（RRT*，Karaman &amp; Frazzoli 2011）</h4>
+          <pre>代价 c(q) = 根到节点的加权 C-space 路径长度                <span class="c">% 渐近最优的目标</span>
+rewire 半径 r = min( γ·(log m / m)^(1/N) , max_step·3 )     <span class="c">% 随节点数收缩</span>
+
+② choose-parent：q_new 在半径 r 内选 根代价 + 边代价 最小且边无碰撞的父（非最近邻）
+③ rewire：半径内邻居 j，若 c(new)+dist(new,j) &lt; c(j) 且边无碰撞 ⇒ 改接 parent(j)=new
+
+采样引导：8% 从种子扰动（高比例偏置会破坏渐近最优收敛），其余均匀</pre>
+        </div>
+        <h4>运行步骤</h4>
+        <ul>
+          <li>q0 邻域先铺 64 个自由种子（贴障碍起点的可扩展锥极窄）。</li>
+          <li>每次采样 → 最近邻扩展 → choose-parent → 加入树 → rewire；粗达候选（预算内最优，最多 8 个）入候选池。</li>
+          <li>精确命中（&lt;<code>goal_eps</code> 且 &lt;<code>goal_ang</code>）提前返回；否则循环结束后对候选逐个 <code>refineRandomGreedy</code> 精修，并校验“树末节点→精修点”无碰撞，取总代价最小达标者。</li>
+        </ul>
+        <h4>关键参数</h4>
+        <table class="fn-params">
+          <tr><th>参数</th><th>值</th><th>作用</th></tr>
+          <tr><td class="pname">rrt_max_samples</td><td>6000</td><td>最大采样数</td></tr>
+          <tr><td class="pname">rrt_max_step</td><td>0.3</td><td>单步延伸 rad</td></tr>
+          <tr><td class="pname">rrt_gamma</td><td>2.5</td><td>rewire 半径常数 γ</td></tr>
+          <tr><td class="pname">goal_eps / goal_ang</td><td>0.02 / 0.1</td><td>达标区域容差</td></tr>
+          <tr><td class="pname">cost_weights</td><td>ones(1,N)</td><td>C-space 代价权重</td></tr>
+        </table>
+        <div class="note deep"><strong>2D 适配层：</strong>这个方法的“核心”是纯关节空间、维度无关的；只有 <code>isFree</code>/<code>fkEnd</code>/<code>goalDist</code>/<code>edgeFree</code> 四个嵌套函数是 2D 特有的。3D 演进只需替换这四个而不动核心。</div>
+        <div class="note warn"><strong>“渐近最优”与实现有一处保留：</strong>代码保留了 <b>8% 目标种子引导</b>采样，目标偏置会<strong>拖慢</strong>渐近最优收敛。因此更准确的说法是“<strong>带引导的近似最优</strong>”，并靠 <code>mean_gap</code> 实测路径质量。若要严格宣称渐近最优，需去掉该偏置（会明显变慢）。</div>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>路径质量优于 RRT；auto 链默认主方法（“带引导的近似最优”）。</div>
+          <div class="pc con"><b>局限</b>比 RRT 慢；仍是采样类，只能“粗达 + 精修”；预算不足会失败（靠 auto 升档 ×2 重试）。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. prm -->
+  <section class="card" id="f7">
+    <h2><span class="no">7</span>prm：路线图<span class="sub">采样层（辅）</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">method_prm</span>
+        <span class="fn-sig">info = method_prm(model, q0, target, opts)</span>
+        <span class="fn-role samp">采样全局</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>先一次性建好一张“路网”，再用 A* 在上面找路。与 RRT 的区别：RRT 一边长树一边找，PRM 先建完整个图再搜——适合“多起点/多目标”或反复查询。</p>
+        <div class="fn-math">
+          <h4>数学逻辑（PRM，固定连接半径路线图）</h4>
+          <pre>节点：起点 + 目标种子 + 无碰随机点（30% 种子引导，保证目标区域稠密）
+连接：节点对距离 ≤ rad 且 edgeFree（边插值检查）则连边
+A*：起点=1，目标种子=2，启发 h = 到种子的欧元距离；重建路径
+终点：无梯度 refineRandomGreedy（layers=4, steps=200）</pre>
+        <div class="note warn"><strong>命名说明：</strong>这里是<strong>固定连接半径</strong>（<code>rad</code>，默认 <code>cfg.prm_rad=1.2</code>），<strong>不是</strong> PRM* 的收缩半径公式；节点数默认取 <code>cfg.prm_n_nodes</code>。因此宜称“PRM（固定半径路线图）”，避免与 PRM* 混淆。</div>
+        </div>
+        <div class="note">失败（A* 无路径）返回最近可达节点（warm start，error_code=3）；精修未达标返回路径终点（error_code=2）。</div>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>静态路网可复用；与 RRT* 采样互补；A* 给出较优路径。</div>
+          <div class="pc con"><b>局限</b>建图开销 O(n²)；高维关节空间路线图稀疏；同样只能“粗达 + 精修”。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. graph -->
+  <section class="card" id="f8">
+    <h2><span class="no">8</span>graph：图引导分层<span class="sub">窄通道/多障碍逃逸</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">method_graph</span>
+        <span class="fn-sig">info = method_graph(model, q0, target, opts)</span>
+        <span class="fn-role graph">图引导</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>RRT/PRM 在“多障碍、窄通道”里像无头苍蝇。图引导先在工作空间里找出“障碍之间的缝隙/绕行点”，建一张<strong>走廊图</strong>，再用 A* 给出一条“该往哪走”的序列，最后<strong>逐段</strong>用 RRT* 在关节空间去实现。</p>
+        <div class="fn-math">
+          <h4>数学逻辑（走廊图 + A* + 逐段 RRT*）</h4>
+          <pre>膨胀：障碍外扩 (rho0 + margin)（圆半径 +d；矩形宽高 +2d）
+节点：圆-圆/圆-矩/矩-矩 缝隙中点 + 每障碍 4 方向绕行点 + 起终点 + 随机自由点
+边：pipelineFree —— 末端沿直线走，半径 rho0 的圆不碰膨胀障碍（管道检查）
+A*：起点→终点走廊序列；坏边软惩罚 ×5（仍可作最后手段）
+逐段：走廊段 RRT* 末端到节点（角度保持上一段终态）；最后一段到 target（含角度，精修达标）
+回溯：段规划失败 ⇒ 标记坏边 ×5 重搜换路；同段反复失败 &gt;1e4 则封死（inf）</pre>
+        </div>
+        <h4>关键参数</h4>
+        <table class="fn-params">
+          <tr><th>参数</th><th>值</th><th>作用</th></tr>
+          <tr><td class="pname">max_samples</td><td>800（auto 里 500）</td><td>段内 RRT* 预算</td></tr>
+          <tr><td class="pname">margin</td><td>0.1</td><td>膨胀额外边距 m</td></tr>
+          <tr><td class="pname">gap_max</td><td>1.0</td><td>缝隙宽度阈值（超过可直连）</td></tr>
+          <tr><td class="pname">max_iters</td><td>8</td><td>回溯迭代上限</td></tr>
+          <tr><td class="pname">total_budget</td><td>12000</td><td>全任务累计样本预算</td></tr>
+        </table>
+        <div class="note deep"><strong>维度无关：</strong>走廊节点只含末端位置 (x,y)（走廊语义）。3D 演进只改 <code>fkEnd</code> 输出维度与障碍几何（球/盒），A* 与回溯逻辑不变。</div>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>窄通道/多障碍逃逸成功率高于单 RRT*；给出“该往哪走”的结构化引导。</div>
+          <div class="pc con"><b>局限</b>建图开销；走廊只约束末端位置（不约束姿态），最后一段才处理角度。</div>
+        </div>
+        <div class="note">在 <code>auto</code> 中位于 RRT* 之后、PRM 之前——它是“采样层打不过才上”的进阶。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. rl -->
+  <section class="card" id="f9">
+    <h2><span class="no">9</span>rl：OpenAI-ES 强化学习<span class="sub">经验加速</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">method_rl</span>
+        <span class="fn-sig">info = method_rl(model, q0, target, opts)</span>
+        <span class="fn-role learn">学习加速</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>不显式建模，而是学一个“给点状态就输出关节增量”的小策略。用进化策略（ES）在任务里扰动策略参数、看哪次表现好，就往好方向更新——这是一种<strong>黑箱参数搜索</strong>，不依赖梯度可导。</p>
+        <div class="fn-math">
+          <h4>数学逻辑（OpenAI-ES 参数扰动 + residual 集成）</h4>
+          <pre>状态特征 s = [ e_pos归范(2), e_ang/π, min_g归范, q归范 ] ∈ R^D，D = 2+1+1+N
+策略 π_θ(s) = θ·s'  ∈ R^N           <span class="c">% 线性策略</span>
+动作 dq = −0.05·∇V' + λ·π_θ(s)      <span class="c">% residual 集成：动量梯度 + 学习项</span>
+
+ES 更新：扰动 ε_p ~ N(0, σ²)；奖励 R_p = −(dist_end + 0.1·ang)
+  R 归一化；grad_θ = (ε' · R) / (n_pop · σ)；θ ← θ + 0.5·grad_θ</pre>
+        </div>
+        <h4>关键参数</h4>
+        <table class="fn-params">
+          <tr><th>参数</th><th>值</th><th>作用</th></tr>
+          <tr><td class="pname">n_pop / n_gen</td><td>16 / 20</td><td>种群数 / 进化代数</td></tr>
+          <tr><td class="pname">sigma_es</td><td>0.2</td><td>扰动标准差</td></tr>
+          <tr><td class="pname">lambda</td><td>0.3</td><td>residual 权重</td></tr>
+          <tr><td class="pname">max_rollout</td><td>60</td><td>rollout 步数</td></tr>
+        </table>
+        <div class="note deep"><strong>为什么 θ=0 起点不劣于纯梯度：</strong>当 <code>θ=0</code> 时 <code>π_θ=0</code>，动作退化为纯动量梯度。所以 residual 设计的收益是“只会更好，不会更差”。</div>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>可学到规避策略；不依赖梯度可导；θ 可导出复用（<code>stats.theta</code>）。</div>
+          <div class="pc con"><b>局限</b>任务内训练开销；线性策略表达受限；只在目标附近有效。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. cvae -->
+  <section class="card" id="f10">
+    <h2><span class="no">10</span>cvae：学习层（CVAE 条件变分自编码器）<span class="sub">毫秒直出</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">cvaePolicyFromFile / cvaePolicyDeploy</span>
+        <span class="fn-sig">out = cvaePolicyDeploy(mat_file, model, q0, target)</span>
+        <span class="fn-role learn">学习加速</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>把“离线全局最优规划（RRT*）”<strong>蒸馏</strong>成一次前向网络就能出轨迹。网络条件在“当前障碍布局 + 起点 + 目标”上，输出一段关节<strong>增量</strong>（而不是绝对角），从而天然锚定起点、保证连接。</p>
+        <div class="fn-math">
+          <h4>数学逻辑（增量表示 + 潜空间优化推理）</h4>
+          <pre>增量表示：traj = q0 + cumsum(Δ, 1)，Δ 为网络输出（按 y_std·y + y_mean 反归一）
+编码 x = [栅格化障碍, (q0−q_mean)/q_std, (target−t_mean)/t_std]     <span class="c">% 行主序 flatten</span>
+解码：3 层 MLP（ReLU）→ Δ；终态误差 err = ‖p−X_t‖ + 0.1·|wrap(θ−θ_t)|
+
+潜空间优化：对 n_cand 个 z~N(0,I)，做 z ← z − lr·g，g 用中心差分 ∇_z err
+  （解决 KL 塌缩下“训练后验 vs 部署先验”不匹配；CPU 下 ~1s/候选）</pre>
+        </div>
+        <h4>部署闭环（cvaePolicyDeploy）</h4>
+        <ul>
+          <li>CVAE 潜空间优化生成粗轨迹（毫秒~数百 ms）。</li>
+          <li>逐帧 <code>obsDistAll</code> 碰撞检查；穿障或质量差（<code>err&gt;0.08</code>）⇒ 回退 <code>method_auto</code>（可靠兜底）。</li>
+          <li>终点无梯度 <code>refineRandomGreedy</code>（layers=3, steps=120）精修 ≤0.008。</li>
+        </ul>
+        <div class="note"><strong>为什么用增量而不是绝对角：</strong>轨迹 = <code>q0 + cumsum(Δ)</code>，起点被锚定在 q0，避免网络“从别处开始”。</div>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>毫秒~数百 ms 直出；可绕过势阱；多模态（多候选 z）处理不同绕行。</div>
+          <div class="pc con"><b>局限</b>需离线训练与示范数据；泛化受限；可靠性靠安全层回退保证。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. auto -->
+  <section class="card" id="f11">
+    <h2><span class="no">11</span>auto：调度链 + 局部最优检测<span class="sub">默认推荐</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">method_auto</span>
+        <span class="fn-sig">info = method_auto(model, q0, target, opts)</span>
+        <span class="fn-role auto">调度</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>没有单一方法通吃所有场景。auto 按“<b>先快后稳</b>”的顺序调用各方法：快路径（梯度毫秒级）→ 采样层（概率完备）→ 图引导（窄通道）→ 兜底（SA），<strong>上一层失败才触发下一层</strong>，全部失败则取末端误差最小者。</p>
+        <div class="fn-math">
+          <h4>调度链与细分预算</h4>
+          <pre>0) momentum（快路径，精度 tol_pos/tol_ang）
+1) RRT*（adaptiveBudget 自适应 + 失败升档 ×2 重试）
+2) graph（max_samples=500, total_budget=2500）
+3) PRM（n_nodes=100, max_samples=100）
+4) SA（max_iter=600）
+   全失败 ⇒ 取这几个候选里 dist_end 最小者；method_used='auto(全部失败)'</pre>
+          <h4>adaptiveBudget（采样预算启发式）</h4>
+          <pre>无障碍 且 dist&lt;2   ⇒ 1500   <span class="c">% 简单省时（1500 成功率已饱和）</span>
+障碍 ≤ 2          ⇒ 3000   <span class="c">% 中等</span>
+障碍 &gt; 2          ⇒ 6000   <span class="c">% 复杂自动加大</span>
+最终 min(b, rrt_max_samples)        <span class="c">% 受用户上限约束</span></pre>
+          <h4>局部最优检测（决定是否升级）</h4>
+          <pre>detectLocalMin：‖∇V‖ &lt; localmin_tol_grad(1e-3) 且 dist_end &gt; tol_pos ⇒ 势阱 ⇒ 升级到采样层</pre>
+        </div>
+        <div class="note deep"><strong>分层依据：</strong>①梯度层解决<strong>精度</strong>（快且准）；②采样层解决<strong>障碍连通性</strong>（概率完备）；③图引导解决<strong>窄通道/多障碍</strong>（成功率 &gt; RRT*）；④SA 兜底漏网局部坑。预算启发式基于一个关键洞察：<strong>预算只对“样本不足型”失败有效，对“精修卡死型”无效</strong>。</div>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>快慢组合、鲁棒；简单场景毫秒返回，复杂场景也能兜住。</div>
+          <div class="pc con"><b>局限</b>最坏情况要跑完整条链（较慢）；分段预算保守（实时约束）。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. multilayer -->
+  <section class="card" id="f12">
+    <h2><span class="no">12</span>multilayer：工作空间连通（LGM）<span class="sub">臂无关连通层 + 逐段求解</span></h2>
+    <div class="fn">
+      <div class="fn-head">
+        <span class="fn-name">method_multilayer</span>
+        <span class="fn-sig">info = method_multilayer(model, q0, target, opts)</span>
+        <span class="fn-role graph">工作空间连通</span>
+      </div>
+      <div class="fn-body">
+        <p><strong>核心直觉：</strong>graph 的走廊图<strong>还是和臂绑在一起</strong>（可行性由 C-space 求解器逐段决定），而 <code>multilayer</code> 把“<strong>工作空间能不能连通</strong>”这一层独立出来做成 LGM（layering guidance model）：<strong>骨架化</strong>自由空间的“通道中线”成一张连通图，节点 = 走廊中心，边 = 连通性。图上搜出一条或多条候选路径，再交给下游 C-space 求解器一段一段实现。</p>
+        <div class="fn-math">
+          <h4>数学逻辑（LGM 连通图 + 候选路径 + 逐段求解）</h4>
+          <pre>LGM 建图：bwskel（骨架线）→ 交点/端点/走廊中点(0.20R) → 节点；bwlabel 分支 → 边
+          （也可 skeleton=false 走 PRM 型随机图）
+候选集：graphPaths 枚举 DFS 简单路径（上限 4000）→ 按节点距离代价排序 → 取 k-最短路
+逐段：目标 θ = 当前末端角（角度放开）；快速 momentum → 稳健 rrt 回退
+      段成功判据 = 不碰障(safety_ok) + 在空间内 + 位置宽松(&lt;waypoint_eps=0.4)
+末尾：refineRandomGreedy 精确微调，dist_end&lt;0.03 判成功（角度仅报告）</pre>
+        </div>
+        <h4>关键参数</h4>
+        <table class="fn-params">
+          <tr><th>参数</th><th>值</th><th>作用</th></tr>
+          <tr><td class="pname">use_multilayer</td><td>true</td><td>开关；false → 快速单段兜底 fallbackSolve</td></tr>
+          <tr><td class="pname">k_paths</td><td>2</td><td>候选路径数（k-最短路）</td></tr>
+          <tr><td class="pname">max_segments</td><td>9</td><td>路径段数上限</td></tr>
+          <tr><td class="pname">seg_method_fast / _rob</td><td>momentum / rrt</td><td>段快速 / 稳健回退</td></tr>
+          <tr><td class="pname">waypoint_eps</td><td>0.4</td><td>中间路点位置宽松容差 m</td></tr>
+          <tr><td class="pname">GRID</td><td>64</td><td>连通图分辨率</td></tr>
+          <tr><td class="pname">candidate_idx</td><td>0</td><td>&gt;0：只求解候选集第 idx 条</td></tr>
+        </table>
+        <div class="note deep"><strong>臂无关设计（可跨臂复用）：</strong>LGM 图里<strong>没有任何机械臂参数</strong>（不存臂长/关节/可达半径），只描述“走廊能走通”。拿一张 LGM 图，可以给任意臂、任意 N 复用；可行性判断被下放到逐段 C-space 求解器（momentum/rrt），实现“<strong>图只管连通，臂只管可行</strong>”的解耦。</div>
+        <div class="proscons">
+          <div class="pc pro"><b>优点</b>臂无关、可复用；候选集（<code>info.candidates</code>）为复杂运动情形“多留几条路供选择”；输入 0.4m 宽放 + 末尾精修，中间松、终点准。</div>
+          <div class="pc con"><b>局限</b>建图要看场景（骨架需 Image Processing Toolbox）；连通图不含可行性，需下游求解器兜底（可能整条候选失败 → fallback）。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. 收敛性与最优性 -->
+  <section class="card" id="f13">
+    <h2><span class="no">13</span>收敛性与最优性讨论</h2>
+    <p class="desc">不同策略的“保证”级别不同——这是选型的关键。</p>
+    <table>
+      <tr><th>策略</th><th>保证级别</th><th>能到达</th><th>前提/代价</th></tr>
+      <tr><td><code>momentum</code></td><td>局部收敛</td><td>最近的局部最优</td><td>需 <code>V</code> 可微、无障碍势阱</td></tr>
+      <tr><td><code>rrt</code></td><td>概率完备</td><td>只要存在路径，样本→∞ 找到概率→1</td><td>足够样本预算</td></tr>
+      <tr><td><code>rrtstar</code></td><td>概率完备 + 渐近最优</td><td>路径代价 → 最优下界</td><td>choose-parent + rewire + 半径收缩</td></tr>
+      <tr><td><code>prm</code></td><td>概率完备（图连通）</td><td>路网上的可行路径</td><td>节点足够多、连接半径够大</td></tr>
+      <tr><td><code>graph</code></td><td>启发式（走廊可行）</td><td>走廊序列 + 逐段可达</td><td>走廊连通、逐段 RRT* 成功</td></tr>
+      <tr><td><code>multilayer</code></td><td>启发式（走廊连通）</td><td>候选最短路段序列 + 逐段可达</td><td>LGM 连通、逐段 C-space 求解成功</td></tr>
+      <tr><td><code>sa</code></td><td>概率渐近收敛</td><td>全局最优（温度趋于 0 时）</td><td>冷却足够慢（现实中折中）</td></tr>
+      <tr><td><code>rl</code></td><td>—（经验）</td><td>目标附近策略直出</td><td>训练过类似场景</td></tr>
+      <tr><td><code>cvae</code></td><td>—（经验 + 安全层）</td><td>直出粗轨迹 + 精修</td><td>需要示范数据，回退保底</td></tr>
+    </table>
+    <div class="note"><strong>为什么采样类都“先粗达再精修”：</strong>RRT*/PRM 保证“能连过去”，但不保证末端的<strong>精确角度</strong>。所以它们都在达标区域内用 <code>refineRandomGreedy</code>（无梯度随机贪心）做<strong>终点精修</strong>——绕开梯度势阱，把位置/角度磨到目标容差。</div>
+  </section>
+
+  <!-- 14. 对比与选择 -->
+  <section class="card" id="f14">
+    <h2><span class="no">14</span>横向对比与选择指南</h2>
+    <table>
+      <tr><th>方法</th><th>范式</th><th>速度</th><th>精度</th><th>最优性</th><th>反向依赖</th></tr>
+      <tr><td><code>momentum</code></td><td>梯度</td><td>毫秒</td><td>高（1e-4/1e-3）</td><td>局部</td><td>需可微 + 无障碍势阱</td></tr>
+      <tr><td><code>sa</code></td><td>采样</td><td>秒</td><td>≈0.02 + 精修</td><td>概率渐近</td><td>冷启动</td></tr>
+      <tr><td><code>rrt</code></td><td>采样</td><td>秒</td><td>粗达 + 精修</td><td>概率完备</td><td>采样预算</td></tr>
+      <tr><td><code>rrtstar</code></td><td>采样</td><td>较慢</td><td>粗达 + 精修</td><td>渐近最优</td><td>预算、rewire</td></tr>
+      <tr><td><code>prm</code></td><td>采样</td><td>较慢</td><td>粗达 + 精修</td><td>概率完备</td><td>建图</td></tr>
+      <tr><td><code>graph</code></td><td>图引导</td><td>中</td><td>粗达 + 精修</td><td>启发式</td><td>走廊连通</td></tr>
+      <tr><td><code>multilayer</code></td><td>工作空间连通</td><td>中</td><td>不碰障+在空间内（宽松）→ 精修&lt;0.03</td><td>启发式</td><td>LGM 连通、逐段可行</td></tr>
+      <tr><td><code>rl</code></td><td>学习</td><td>毫秒（θ 已知）</td><td>目标附近</td><td>经验</td><td>离线训练</td></tr>
+      <tr><td><code>cvae</code></td><td>学习</td><td>毫秒~数百 ms</td><td>≤0.01</td><td>经验</td><td>示范 + 安全层</td></tr>
+      <tr><td><code>auto</code></td><td>调度</td><td>随场景</td><td>取各层</td><td>对应实际用到的层</td><td>全链兜底</td></tr>
+    </table>
+
+    <h3>怎么选<span class="sub">一句话决策</span></h3>
+    <div class="grid2">
+      <div>
+        <ul class="tight">
+          <li><strong>无障碍 / 目标易达</strong> → 直接 <code>momentum</code>（最快）。</li>
+          <li><strong>有障碍 / 不确定</strong> → 用 <code>auto</code>（自动分层，最省心）。</li>
+          <li><strong>看重路径最优</strong> → <code>rrtstar</code>（渐近最优）。</li>
+          <li><strong>窄通道 / 多个障碍</strong> → <code>graph</code>（图引导逃逸）。</li>
+          <li><strong>要看“有哪几条路可走” / 想给复杂运动留候选</strong> → <code>multilayer</code>（LGM 连通 + 候选集）。</li>
+          <li><strong>要毫秒级在线</strong> → <code>cvae</code>（离线训练，在线直出）。</li>
+          <li><strong>只想看效果</strong> → GUI 里的方法下拉，逐个试。</li>
+        </ul>
+      </div>
+      <div>
+        <div class="note ok"><strong>一次记住的要点：</strong>梯度法负责“快与准”，采样法负责“能连过去”，图引导负责“知道往哪绕”，学习法则把前者的经验<strong>压缩成一次前向</strong>。auto 把它们排成一条“越来越稳、也越来越慢”的备用链。</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  平面高冗余蛇形机械臂 IK 求解与仿真平台 · 搜索策略与数学逻辑 · 生成于 2026
+</footer>
+
+</body>
+</html>

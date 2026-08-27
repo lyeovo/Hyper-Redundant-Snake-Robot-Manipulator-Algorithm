@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>平面高冗余蛇形机械臂 IK 平台 · 项目介绍（总览）</title>
+<style>
+  :root {
+    --bg: #0e1420; --panel: #161f30; --panel2: #1c2740; --line: #2a3a55;
+    --text: #d7e0ef; --muted: #8aa0bd; --accent: #4da6ff; --accent2: #6fbf6f;
+    --warn: #e0a94d; --danger: #e05a5a; --purple: #c39bff;
+    --code-bg: #0a0f1a;
+    --mono: 'Cascadia Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,'Segoe UI','Microsoft YaHei','PingFang SC',sans-serif; line-height:1.65; font-size:15px; }
+  a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+
+  header.hero {
+    padding:54px 24px 38px; text-align:center;
+    background:
+      radial-gradient(1200px 420px at 50% -120px, rgba(77,166,255,0.20), transparent),
+      radial-gradient(800px 300px at 85% 0%, rgba(195,155,255,0.10), transparent),
+      linear-gradient(180deg,#131c2e 0%, var(--bg) 100%);
+    border-bottom:1px solid var(--line);
+  }
+  header.hero h1 { margin:0 0 10px; font-size:29px; letter-spacing:1px; font-weight:700; }
+  header.hero .sub { color:var(--muted); font-size:16px; max-width:900px; margin:0 auto; }
+  header.hero .badges { margin-top:16px; }
+  .badge { display:inline-block; padding:3px 12px; margin:4px; border-radius:999px; font-size:12.5px; border:1px solid var(--line); background:var(--panel); color:var(--muted); }
+  .badge b { color:var(--accent); font-weight:600; }
+  .badge.k b { color:var(--accent2); }
+
+  main { max-width:1120px; margin:0 auto; padding:8px 20px 80px; }
+
+  section.card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:26px 28px; margin:26px 0; }
+  section.card > h2 { margin:0 0 4px; font-size:21px; color:#fff; display:flex; align-items:center; gap:10px; }
+  section.card > h2 .no {
+    display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px;
+    border-radius:8px; background:linear-gradient(135deg,var(--accent),#2f6fd0); color:#fff; font-size:14px; font-weight:700; flex-shrink:0;
+  }
+  section.card > h2 .no.v { background:linear-gradient(135deg,var(--accent2),#3f9f4f); }
+  section.card > h2 .no.w { background:linear-gradient(135deg,var(--warn),#b5721f); }
+  section.card > h2 .no.p { background:linear-gradient(135deg,var(--purple),#8a5fd0); }
+  section.card > p.desc { color:var(--muted); margin:6px 0 18px; }
+  section.card > h3 { margin:22px 0 10px; font-size:16px; color:#fff; }
+  section.card > h3 .sub { font-size:12.5px; color:var(--muted); font-weight:400; margin-left:8px; }
+  section.card > h4 { margin:14px 0 6px; font-size:14px; color:#cfd9ec; }
+
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th,td { border:1px solid var(--line); padding:8px 11px; text-align:left; vertical-align:top; }
+  th { background:var(--panel2); color:#fff; font-weight:600; white-space:nowrap; }
+  tr:nth-child(even) td { background:rgba(255,255,255,0.015); }
+  td code, p code, li code, h3 code { font-family:var(--mono); font-size:12.5px; color:#8fd0ff; }
+
+  pre { background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow-x:auto; font-family:var(--mono); font-size:13px; line-height:1.6; color:#c9d6ea; }
+  pre .c { color:#5c708a; } pre .k { color:#e0a94d; }
+
+  .note { border-left:3px solid var(--accent); background:rgba(77,166,255,0.06); padding:10px 14px; border-radius:0 8px 8px 0; margin:14px 0; color:var(--muted); font-size:13.5px; }
+  .note.ok   { border-left-color:var(--accent2); background:rgba(111,191,111,0.08); }
+  .note.warn { border-left-color:var(--warn); background:rgba(224,169,77,0.08); }
+  .note.deep { border-left-color:var(--purple); background:rgba(195,155,255,0.08); }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:820px){ .grid2{grid-template-columns:1fr;} }
+  ul.tight { margin:6px 0; padding-left:20px; } ul.tight li { margin:4px 0; }
+  ol.tight { margin:6px 0; padding-left:22px; } ol.tight li { margin:4px 0; }
+
+  .toc { columns:2; column-gap:28px; font-size:13.5px; } .toc a { display:block; padding:2px 0; }
+  @media (max-width:560px){ .toc{columns:1;} }
+  .toc .lvl2 { padding-left:16px; color:var(--muted); }
+  .toc .lvl2 a { color:var(--muted); }
+
+  /* 跳转到详细文档的卡片 */
+  .xref { display:flex; align-items:center; gap:12px; border:1px solid var(--line); background:var(--panel2); border-radius:10px; padding:12px 16px; margin:12px 0; }
+  .xref .f { font-family:var(--mono); font-size:13px; color:var(--accent); font-weight:600; white-space:nowrap; flex-shrink:0; }
+  .xref .t { font-size:13.5px; } .xref .t b { color:#fff; } .xref .t span { color:var(--muted); }
+
+  /* 结构树 */
+  .tree { font-family:var(--mono); font-size:13px; line-height:1.75; color:#c9d6ea; background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow-x:auto; }
+  .tree .grp { color:var(--accent); } .tree .dim { color:var(--muted); } .tree .file { color:var(--accent2); }
+
+  .prio { padding:2px 9px; border-radius:6px; font-size:11.5px; font-weight:600; white-space:nowrap; }
+  .prio.p0 { background:rgba(224,90,90,0.18); color:#ff8a8a; }
+  .prio.p1 { background:rgba(224,169,77,0.16); color:var(--warn); }
+  .prio.p2 { background:rgba(111,191,111,0.15); color:var(--accent2); }
+
+  footer { text-align:center; color:var(--muted); font-size:12.5px; padding:24px; border-top:1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>平面高冗余蛇形机械臂 IK 平台 · 项目介绍</h1>
+  <p class="sub">面向地面（水平平面）夹取/放置任务的超冗余蛇形机械臂<strong style="color:#fff">运动学求解、任务执行、仿真与学习</strong>中间模块。本页是<strong style="color:#fff">总览入口</strong>：§1–§4 整合四份深度文档的要点并导航，§5–§10 补充“架构之外、展示与交接所需”的内容（结果、验证、边界、对比、工程、路线图）。</p>
+  <div class="badges">
+    <span class="badge">语言 <b>MATLAB</b> 核心 + <b>Python</b> 训练/视觉</span>
+    <span class="badge">机械臂 <b>6 节 × 1043.93 mm</b></span>
+    <span class="badge">求解 <b>9 方法</b> + auto</span>
+    <span class="badge">学习 <b>BC · CVAE · RL</b></span>
+    <span class="badge k">软件核心完成度 <b>≈ 90%</b></span>
+  </div>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2><span class="no">◈</span>目录与阅读指引</h2>
+    <div class="toc">
+      <a href="#g0">0 · 项目全景（一句话 + 技术栈 + 链路）</a>
+      <a href="#g1">1 · 系统架构与分层</a>
+      <a class="lvl2" href="#g1-1">1.1 系统定位 · 1.2 分层 · 1.3 接口契约</a>
+      <a href="#g2">2 · 运行机制与四条链路</a>
+      <a class="lvl2" href="#g2-1">2.1 共享内核 · 2.2 链路 A–D</a>
+      <a href="#g3">3 · 求解策略与数学</a>
+      <a class="lvl2" href="#g3-1">3.1 范式 · 3.2 八方法 · 3.3 auto</a>
+      <a href="#g4">4 · 学习策略与部署</a>
+      <a class="lvl2" href="#g4-1">4.1 路线 · 4.2 理论 · 4.3 闭环</a>
+      <a href="#g5">5 · 性能结果与基准（补充）</a>
+      <a href="#g6">6 · 验证与正确性（补充）</a>
+      <a href="#g7">7 · 已知局限与边界（补充）</a>
+      <a href="#g8">8 · 与已有方法/文献对比（补充）</a>
+      <a href="#g9">9 · 工程、环境与可复现（补充）</a>
+      <a href="#g10">10 · 路线图与未来工作（补充）</a>
+      <a href="#g11">11 · 文档导航（层级地图）</a>
+    </div>
+    <div class="note ok"><strong>阅读指引：</strong>§1–§4 是<strong>摘要 + 深度文档链接</strong>（想深入看对应专门页）；§5–§10 是<strong>本页新增</strong>，补足“技术人员展示/交接最常追问但现有四份文档没写”的部分。</div>
+  </section>
+
+  <!-- 0. 全景 -->
+  <section class="card" id="g0">
+    <h2><span class="no">0</span>项目全景</h2>
+    <p class="desc">用一句话、一条链路、一块技术栈，让第一次接触的人 30 秒建立整体认知。</p>
+
+    <div class="note deep" style="font-size:15px"><strong>一句话：</strong>这是一个“<strong>视觉任务 → 运动学求解 + 仿真 → 电机指令导出</strong>”的中间模块。它不负责视觉感知，也不做实时伺服，只做三件事——<strong>任务展开、运动规划、离线轨迹导出</strong>；并把“离线全局最优规划”进一步蒸馏成毫秒级学习策略。</div>
+
+    <h3>端到端任务链</h3>
+    <pre>视觉感知(SpaceSnakeVisionUI)          <span class="c">% YOLO 识别 + 白点 6DoF 定位（Python/独立仓库）</span>
+   │ TaskCommand JSON（outbox ⇄ inbox 文件桥）
+   ▼
+[ 本模块 · 规划与仿真 ]
+   任务桥：runTaskLoop → taskExecute → taskToSegments（展开运动段）
+   运动规划：simulateMotion → 9 方法 + auto（含 multilayer/LGM，共享价值函数/障碍几何）
+   学习层：示范生成 → CVAE 训练 → 部署闭环（毫秒直出 + 安全回退）
+   ▼
+motorCmd（.mat / .csv：q_seq + t_seq + gripper_seq）
+   ▼
+电控 dSPACE：离线加载 → 按 t_seq 实时插值 → 关节伺服 + 夹爪状态机 + 安全监控</pre>
+
+    <h3>技术栈</h3>
+    <table>
+      <tr><th>层</th><th>语言</th><th>关键组件</th><th>说明</th></tr>
+      <tr><td>运动学 / 规划 / 任务 / 仿真</td><td>MATLAB</td><td><code>ArmSimulator2D/</code>（58 个 .m）+ 根目录任务桥</td><td>核心求解器，纯函数分层</td></tr>
+      <tr><td>训练端</td><td>Python</td><td><code>rl_pipeline/</code>（train_cvae / train_policy / merge_demos）</td><td>PyTorch，导出 .mat 供 MATLAB 手写前向</td></tr>
+      <tr><td>视觉</td><td>Python</td><td>SpaceSnakeVisionUI（独立仓库）</td><td>仅作上游触发源，不参与本模块</td></tr>
+      <tr><td>电控</td><td>dSPACE</td><td>离线加载 motorCmd</td><td>确定性命回放，不做 IK</td></tr>
+    </table>
+    <div class="note warn"><strong>边界（务必先说清）：</strong>障碍<strong>仅存在于仿真</strong>（视觉不传障碍）；夹爪为简单状态机（<code>gripper_seq</code> 0/1/2）；<strong>IK 迭代求解不进实时循环</strong>——dSPACE 只做确定性插值。</div>
+  </section>
+
+  <!-- 1. 架构 -->
+  <section class="card" id="g1">
+    <h2><span class="no">1</span>系统架构与分层</h2>
+    <p class="desc">核心按「接口 → 价值 → 方法 → 数学 → 任务误差」五层组织，依赖单向；学习层与顶层闭环叠加其上。完整函数签名见 <code>architecture.html</code>。</p>
+
+    <div class="grid2">
+      <div>
+        <h3>1.1 系统定位</h3>
+        <p style="color:var(--muted); font-size:14px">接手视觉任务、输出电机指令的<strong style="color:#fff">中间模块</strong>。只负责“任务展开 + 运动规划 + 离线轨迹导出”。</p>
+        <h3>1.2 模块分层（L0–L4）</h3>
+        <table>
+          <tr><th>层</th><th>职责</th><th>代表文件</th></tr>
+          <tr><td><code>L0 接口层</code></td><td>入口/桥/导出</td><td>createArmModel · simulateMotion · taskExecute · runTaskLoop</td></tr>
+          <tr><td><code>L1 价值层</code></td><td>统一势 + 解析梯度</td><td>armValue · armGradient · detectLocalMin</td></tr>
+          <tr><td><code>L2 方法层</code></td><td>9 方法 + auto + 精修</td><td>method_* · refineRandomGreedy</td></tr>
+          <tr><td><code>L3 数学层</code></td><td>运动学/雅可比/障碍几何</td><td>planarFK_L · planarJac_L · obsDist*</td></tr>
+          <tr><td><code>L4 任务误差层</code></td><td>投影/误差/鲁棒/反馈</td><td>projectTo2D · errorModel · assessRobustness</td></tr>
+          <tr><td><code>学习层 + 顶层</code></td><td>蒸馏 / 实时闭环</td><td>cvaePolicyDeploy · runTopLevel</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>1.3 接口契约（外界两条边界）</h3>
+        <p style="color:var(--muted); font-size:14px"><strong style="color:#fff">上游 TaskCommand JSON → 下游 motorCmd</strong>（.mat/.csv）。</p>
+        <pre>上游 TaskCommand：{ command_id, command_type,
+  selected_target:{pose_camera, confidence},
+  destination:{pose_base}, motion_params, safety }
+下游 motorCmd：{ q_seq[K×N], t_seq[1×K], gripper_seq[1×K],
+  dq_max, vel_ok, safety_ok, success, error_code, q_final, meta }</pre>
+        <p style="color:var(--muted); font-size:13px">状态回写：<code>inbox/&lt;command_id&gt;_status.json</code>（schema_version / status / progress / robot_state…）。</p>
+      </div>
+    </div>
+
+    <div class="xref">
+      <span class="f">architecture.html</span>
+      <span class="t"><b>详细章节：</b>系统定位、L0–L4 分层表、价值函数与默认参数表、9 方法表与 auto 调度链、任务生命周期与状态机、接口契约、学习管线、文件结构。<span>（逐函数签名 / 返回值）</span></span>
+    </div>
+  </section>
+
+  <!-- 2. 运行机制 -->
+  <section class="card" id="g2">
+    <h2><span class="no">2</span>运行机制与四条链路</h2>
+    <p class="desc">四个入口/常驻进程都被数据源驱动，在“求解语义”上汇入<strong style="color:#fff">同一个共享内核</strong>，再各自产出下游负载。完整情景与接口格式见 <code>runtime.html</code>。</p>
+
+    <h3>2.1 共享求解内核</h3>
+    <pre>simulateMotion（统一入口 + 方法分派 + 后处理）
+  ├─ method_auto → momentum / RRT* / graph / PRM / SA / rl　·　另: multilayer（LGM，独立方法）
+  └─ armValue · armGradient（单一势 + 解析梯度）
+       └─ L3 数学：planarFK_L · planarJac_L · obsDistGradAll · seg*DistGrad
+后处理：vel_ok / safety_ok / 终态碰撞（error_code=9）</pre>
+
+    <h3>2.2 四条链路</h3>
+    <table>
+      <tr><th>链路</th><th>入口</th><th>驱动</th><th>下游产物</th></tr>
+      <tr><td><b>A 在线任务执行（关键路径）</b></td><td><code>runTaskLoop</code></td><td>outbox 任务单</td><td>motorCmd → dSPACE + 状态回写</td></tr>
+      <tr><td><b>B GUI 仿真</b></td><td><code>ArmSimApp</code></td><td>用户操作</td><td>轨迹回放 / 手动机器文件</td></tr>
+      <tr><td><b>C 顶层实时闭环</b></td><td><code>runTopLevel</code></td><td>帧循环（mock 反馈）</td><td>手眼/目标估计 → 触发任务</td></tr>
+      <tr><td><b>D 学习训练闭环</b></td><td><code>train_cvae.py</code></td><td>示范数据</td><td>policy_*.mat → 部署</td></tr>
+    </table>
+
+    <div class="note"><strong>唯一的“关键路径”是链路 A</strong>：只有它的产物会真实驱动电控执行；B/C/D 都是“在大脑里演练”。链路 A 的任务生命周期：<code>RECEIVED → ACCEPTED → PLANNING → EXECUTING → COMPLETED</code>（并行 REJECTED / FAILED / CANCELED / ESTOP_TRIGGERED）。</div>
+
+    <div class="xref">
+      <span class="f">runtime.html</span>
+      <span class="t"><b>详细章节：</b>运行总览拓扑图、四个链路的逐步逻辑表、任务运作情景（S1–S11）、模块间交互与接口格式（E1–E8）、子模块运行关系总表、状态与错误流转、依赖与约束。</span>
+    </div>
+  </section>
+
+  <!-- 3. 求解策略 -->
+  <section class="card" id="g3">
+    <h2><span class="no">3</span>求解策略与数学</h2>
+    <p class="desc">覆盖<strong style="color:#fff">梯度局部精修 → 采样全局 → 图引导 → 工作空间连通 → 学习加速</strong>五种范式，共享单一价值函数。完整数学推导、公式、参数表见 <code>strategies.html</code>。</p>
+
+    <h3>3.1 五种范式</h3>
+    <table>
+      <tr><th>范式</th><th>方法</th><th>保证</th><th>速度</th><th>精度</th></tr>
+      <tr><td>梯度局部精修</td><td><code>momentum</code></td><td>局部收敛</td><td>毫秒</td><td>高（1e-4/1e-3）</td></tr>
+      <tr><td>采样全局</td><td><code>rrt</code>/<code>rrtstar</code>/<code>prm</code>/<code>sa</code></td><td>概率完备 / 渐近最优</td><td>秒</td><td>粗达 + 精修</td></tr>
+      <tr><td>图引导</td><td><code>graph</code></td><td>启发式（走廊可行）</td><td>中</td><td>粗达 + 精修</td></tr>
+      <tr><td>工作空间连通</td><td><code>multilayer</code></td><td>启发式（走廊连通，臂无关）</td><td>中</td><td>不碰障+在空间内 → 精修&lt;0.03</td></tr>
+      <tr><td>学习加速</td><td><code>rl</code>/<code>cvae</code></td><td>经验</td><td>毫秒~数百 ms</td><td>≤0.01 + 精修</td></tr>
+      <tr><td>调度</td><td><code>auto</code></td><td>随层</td><td>随场景</td><td>对应实际用到的层</td></tr>
+    </table>
+
+    <h3>3.2 统一价值函数（全部方法共享）</h3>
+    <pre>V(q) = w_pos·‖p − X_t‖² + w_ang·wrap(θ − θ_t)²
+     + w_obs·Σ[ log(r_bar) − log(g_eff) ]（屏障；g_eff = max(d−d_safe, g_min)）
+     + w_var·Σ(q−μ)²/σ² + w_acc·‖v−v_prev‖²</pre>
+
+    <h3>3.3 auto 调度链与局部最优</h3>
+    <pre>momentum → RRT*(预算1) → RRT*(×2) → graph → PRM → SA → 取误差最小者
+局部最优判定：‖∇V‖ &lt; tol 且 末端未达 ⇒ 升级到采样层</pre>
+
+    <div class="xref">
+      <span class="f">strategies.html</span>
+      <span class="t"><b>详细章节：</b>共享数学基础（价值/梯度/运动学/障碍）、9 种策略的“直觉 + 公式 + 步骤 + 参数 + 优缺点”、收敛性与最优性讨论、横向对比与选择指南。</span>
+    </div>
+  </section>
+
+  <!-- 4. 学习策略 -->
+  <section class="card" id="g4">
+    <h2><span class="no">4</span>学习策略与部署</h2>
+    <p class="desc">把“离线全局最优规划”蒸馏为<strong style="color:#fff">毫秒级策略直出</strong>。完整理论、损失、导出格式、部署闭环见 <code>learning.html</code>。</p>
+
+    <h3>4.1 三条学习路线</h3>
+    <table>
+      <tr><th>路线</th><th>模型</th><th>损失/目标</th><th>定位</th></tr>
+      <tr><td><b>BC</b></td><td>条件 MLP</td><td>MSE 监督回归</td><td>管线验证/基线</td></tr>
+      <tr><td><b>CVAE</b></td><td>enc→μ,logσ + dec(x,z)</td><td>ELBO = MSE + β·KL</td><td><b>主策略</b>（多模态）</td></tr>
+      <tr><td><b>RL</b></td><td>线性 π_θ(s)=θ·s'</td><td>ES 最大化 −误差</td><td>经验加速 / 现训</td></tr>
+    </table>
+
+    <h3>4.2 关键理论</h3>
+    <ul class="tight">
+      <li><strong>增量表示</strong>：<code>traj = q0 + cumsum(Δ)</code>，起点锚定，网络只学“怎么动”。</li>
+      <li><strong>潜空间优化推理</strong>：部署时把 <code>z</code> 当优化变量，用中心差分数值梯度逼近末端误差最小——解决 KL 塌缩下训练/部署先验不匹配。</li>
+      <li><strong>预算内最优示范</strong>（老师天花板 = 学生天花板）：示范用“预算内最优 RRT* + 短切”，而非早停可行解——这是与 RRT* 拉不开差距的根因。</li>
+    </ul>
+
+    <h3>4.3 部署闭环</h3>
+    <pre>直出(CVAE) → 安全校验 isFreeTraj → 穿障/误差&gt;0.08 回退 method_auto → 终点精修 ≤0.008</pre>
+
+    <div class="xref">
+      <span class="f">learning.html</span>
+      <span class="t"><b>详细章节：</b>为什么学、数据管线与示范生成原理、公共特征编码、BC / CVAE / RL 各自的理论与实现、潜空间优化、模型导出与 MATLAB 手写 forward、部署闭环、评估与验收、模型栈与演进。</span>
+    </div>
+  </section>
+
+  <!-- 5. 性能结果 -->
+  <section class="card" id="g5">
+    <h2><span class="no v">5</span>性能结果与基准 <span class="tag" style="background:rgba(111,191,111,0.15);color:var(--accent2);font-size:12px;margin-left:8px">补充</span></h2>
+    <p class="desc">技术展示的“可信度”来自数字。本平台已内置<strong style="color:#fff">可一键复现的基准工具</strong>（<code>verifyPolicy.m</code> / <code>evaluatePolicy.m</code>），下面是<strong style="color:#fff">评估口径</strong>与<strong style="color:#fff">已记录的验收数据</strong>。</p>
+
+    <h3>5.1 评估口径（如何打分）</h3>
+    <table>
+      <tr><th>指标</th><th>定义 / 阈值</th><th>工具</th></tr>
+      <tr><td>成功率</td><td>终态 ‖p−X_t‖&lt;0.1 且 |θ−θ_t|&lt;0.2</td><td>evaluatePolicy</td></tr>
+      <tr><td>碰撞率</td><td>全程 <code>obsDistAll</code> 侵入障碍比例（应 0）</td><td>同</td></tr>
+      <tr><td>末端位置/角度误差</td><td>mean end_pos / end_ang</td><td>同</td></tr>
+      <tr><td>最优性差距</td><td>(策略代价 − 基线代价)/基线代价；c=Σ‖Δq‖</td><td>同（基线 RRT*）</td></tr>
+      <tr><td>生成耗时</td><td>mean_gen_s（ms）</td><td>同</td></tr>
+    </table>
+    <div class="note"><strong>公平性设计：</strong>策略与 RRT* 基线<strong>同测试集、同预算</strong>（<code>ref_max_samples=1500</code>）；参考侧也做 <code>optimizeTraj</code> 短切（近全局参考），避免“用弱基线衬托”。</div>
+
+    <h3>5.2 已记录的验收数据（来自 README §模仿学习）</h3>
+    <table>
+      <tr><th>版本 / 口径</th><th>成功率</th><th>碰撞率</th><th>最优性差距</th><th>生成耗时</th><th>基准</th></tr>
+      <tr><td><b>v1</b>（0.5m×6，6000 示范）</td><td>78–90%</td><td><b>0%</b></td><td>≈ −3%（与基线同预算）</td><td>~0.5s</td><td>RRT* 基线</td></tr>
+      <tr><td><b>v2/升级版</b>（预算内最优 + 短切，4200 示范）</td><td><b>88%</b> &gt; 参考 69%</td><td><b>0%</b></td><td><b>+86.4% → +20.8%</b></td><td>~3s</td><td>近全局参考（1.5 万样本+优化）</td></tr>
+    </table>
+    <div class="note warn"><strong>注意口径：</strong>两次验收的“最优性差距”基准不同——v1 对齐 RRT* 基线，v2 对齐“近全局参考”。路径约为近全局最优 <b>1.2 倍</b>（即 +20.8%）。这些是<strong>已记录的历史数字</strong>；当前若用新臂长口径（1.04393m×6）需<strong>重新生成 + 重训</strong>（见 §10）。</div>
+
+    <h3>5.3 展示建议——两张图即可讲清“值不值”</h3>
+    <ol class="tight">
+      <li>**“RRT* 基线 vs 部署闭环”** 对比表（<code>verifyPolicy</code> 首屏输出，含成功率/碰撞率/误差/差距/耗时）。</li>
+      <li>**成本-质量趋势**：示范从“早停可行解”→“预算内最优+短切”导致的差距改善（+86% → +21%）。</li>
+    </ol>
+    <div class="note ok"><strong>一键复现：</strong><code>verifyPolicy()</code>（默认 20 例）或 <code>verifyPolicy(struct('n_test',40,'seed',11))</code> 即可打印基线 vs 部署闭环的完整基准表。</div>
+  </section>
+
+  <!-- 6. 验证 -->
+  <section class="card" id="g6">
+    <h2><span class="no v">6</span>验证与正确性 <span style="background:rgba(111,191,111,0.15);color:var(--accent2);font-size:12px;margin-left:8px">补充</span></h2>
+    <p class="desc">展示“为什么可信”：验证不靠口头声明，而是<strong style="color:#fff">可执行的测试套件 + 解析对照 + 数值校验</strong>。</p>
+
+    <div class="grid2">
+      <div>
+        <h3>6.1 核心正确性验证</h3>
+        <table>
+          <tr><th>验证</th><th>方法</th><th>阈值</th></tr>
+          <tr><td>解析梯度正确性</td><td>解析 <code>armGradient</code> vs 中心差分</td><td>&lt; 1e-5（三场景）</td></tr>
+          <tr><td>障碍几何</td><td>解析距离/梯度 vs 数值对照</td><td>一致</td></tr>
+          <tr><td>接口冒烟</td><td>收敛/避障/位姿反解/快照/回调/取消/不可达</td><td>全通</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>6.2 测试覆盖（test_all）</h3>
+        <p style="color:var(--muted);font-size:13.5px">障碍几何解析对照 · 三场景梯度校验 · 接口冒烟 · auto 调度链 · 误差模型 · RL 冒烟 · 任务桥 mock 端到端 · GUI · 顶层闭环。</p>
+        <p style="color:var(--muted);font-size:13.5px">测试文件：<code>testModel / test_createModel / test_errorModel / test_gradcheck / test_gui / test_methodRl / test_obstacle_geometry / test_simulateMotion / test_taskBridge / test_taskLoop / test_topLevel / test_all</code>。</p>
+      </div>
+    </div>
+
+    <h3>6.3 数值防御（为何“稳定”）</h3>
+    <ul class="tight">
+      <li><code>g_min</code> 防除零、<code>barrier_C</code> 幅值截断、<code>wrapAngle</code> 角度连续化。</li>
+      <li>障碍几何退化分支（点/平行段）显式处理防除零（<code>segSegDistGrad</code>）。</li>
+      <li>已修的“隐性 bug”：末端朝向角方向（全零构型 θ=π→0）；RRT 边碰撞只查端点→<strong>沿边插值多采样</strong>防穿段漏检。</li>
+      <li>确定性：<code>method_rl</code> 用 <code>rng(1)</code>，训练 <code>--seed 0</code> + <code>cudnn.deterministic</code>。</li>
+    </ul>
+    <div class="note warn"><strong>诚实声明：</strong>以上是<strong>单元/模块级</strong>验证。目前<strong>没有系统级端到端验收框架</strong>（视觉→任务→执行→回传的整链指标）——这是 P1 缺口（见 §7）。</div>
+  </section>
+
+  <!-- 7. 局限与边界 -->
+  <section class="card" id="g7">
+    <h2><span class="no w">7</span>已知局限与边界 <span style="background:rgba(224,169,77,0.16);color:var(--warn);font-size:12px;margin-left:8px">补充</span></h2>
+    <p class="desc">主动讲清“还没通在哪”，是专业与可信的体现。下面合并<strong style="color:#fff">方法级局限</strong>与<strong style="color:#fff">系统级验收缺口</strong>。</p>
+
+    <h3>7.1 方法级局限</h3>
+    <table>
+      <tr><th>方法</th><th>何时会失败 / 局限</th></tr>
+      <tr><td><code>momentum</code></td><td>只到<strong>局部最优</strong>；被障碍势阱困住出不来；对屏障非凸性敏感</td></tr>
+      <tr><td><code>rrt/rrtstar</code></td><td>慢；只能“粗达+精修”；预算不足会在窄通道失败（靠 auto 升档 ×2）</td></tr>
+      <tr><td><code>graph</code></td><td>走廊只约束末端位置（不约束姿态），最后一段才处理角度</td></tr>
+      <tr><td><code>multilayer</code></td><td>LGM 建图需场景（骨架依赖 Image Processing Toolbox）；连通图不含可行性，候选段可能失败 → fallbackSolve</td></tr>
+      <tr><td><code>sa</code></td><td>慢；只能“接近 + 精修”；冷却参数敏感</td></tr>
+      <tr><td><code>rl</code></td><td>线性策略表达受限；需大量采样；只在目标附近有效</td></tr>
+      <tr><td><code>cvae</code></td><td>需离线示范；<strong>域外/未训练布局</strong>会穿障，靠安全层回退兜底</td></tr>
+      <tr><td>全域</td><td>约 <strong>8.7%</strong> 任务疑似<strong>不可解</strong>（目标被障碍吞没等）——需可解性分类器（P1）</td></tr>
+    </table>
+
+    <h3>7.2 系统级验收缺口（P0，阻真实交付）</h3>
+    <table>
+      <tr><th>优先级</th><th>缺口</th><th>现状</th><th>影响</th></tr>
+      <tr><td><span class="prio p0">P0</span></td><td><b>手眼标定 T_base_camera</b></td><td><code>projectTo2D</code> 直接把相机系当基座系（“标定前仿真模式”）</td><td>相机位姿无法换算到基座系——真实夹取无法定位</td></tr>
+      <tr><td><span class="prio p0">P0</span></td><td><b>真实电机参数</b></td><td>限位默认 ±3rad、零位/方向/速度上限为假设</td><td>规划解可能超出真实行程/方向反</td></tr>
+      <tr><td><span class="prio p0">P0</span></td><td><b>末端几何（夹爪+相机）</b></td><td>运动学末端 = 最后关节</td><td>夹持点/相机光心与末端不重合，有固定偏差</td></tr>
+      <tr><td><span class="prio p0">P0</span></td><td><b>电控执行反馈通道</b></td><td>当前离线下发，dSPACE 执行结果无回传</td><td>状态机断在 EXECUTING，软件不知执行成功/失败</td></tr>
+      <tr><td><span class="prio p1">P1</span></td><td>端到端联调 / 系统级验收框架 / 夹取闭环</td><td>当前为 mock 端到端</td><td>缺整链指标与真实反馈</td></tr>
+      <tr><td><span class="prio p1">P1</span></td><td>L2 臂长重训</td><td>策略/示范是 0.5m×6 口径</td><td>真实 1.04393m×6 需重训</td></tr>
+      <tr><td><span class="prio p2">P2</span></td><td>误差模型实测校准 / 视觉误差传播 / 急停端到端</td><td>参数为默认估计</td><td>鲁棒性精度需实测</td></tr>
+    </table>
+    <div class="note deep"><strong>读法：</strong>软件核心（规划/任务/仿真/策略）完成度约 <b>90%</b>，但系统级集成尚有 4 个 P0 缺口——全部依赖<strong>真实机械臂/相机/电控</strong>现场数据，软件侧可先行准备好（云重训 + mock 验收框架）。</div>
+  </section>
+
+  <!-- 8. 对比 -->
+  <section class="card" id="g8">
+    <h2><span class="no p">8</span>与已有方法/文献对比 <span style="background:rgba(195,155,255,0.18);color:var(--purple);font-size:12px;margin-left:8px">补充</span></h2>
+    <p class="desc">回答“为什么不直接用一个现成算法”——即每个设计选择背后的“对比与权衡”。</p>
+    <table>
+      <tr><th>设计选择</th><th>备选</th><th>为何选当前</th></tr>
+      <tr><td><b>RRT*</b> 而非 RRT</td><td>RRT（更快、简单）</td><td>需要<strong>渐近最优</strong>的路径质量；RRT 会绕路。RRT* 用 choose-parent + rewire + 半径收缩。</td></tr>
+      <tr><td><b>CVAE</b> 而非 BC</td><td>BC（单值回归）</td><td>避障有<strong>多模态</strong>（绕左/绕右）；BC 只输出“平均路径”，可能穿障；CVAE 用潜变量 z 表达分叉。</td></tr>
+      <tr><td><b>residual RL</b></td><td>纯 RL / 纯梯度</td><td>动作 = 梯度 + λ·π_θ(s)；<strong>θ=0 时退化为纯梯度</strong>，保证“不劣于基线”。</td></tr>
+      <tr><td><b>潜空间优化推理</b></td><td>直接采 z</td><td>采样 z 受 KL 塌缩影响（部署先验≠训练后验）；把 z 当优化变量逼近末端误差最小。</td></tr>
+      <tr><td><b>文件桥（outbox⇄inbox）</b></td><td>IPC / 共享内存</td><td>进程解耦、可独立重启、确定性、易日志/回放；代价是轮询延迟。</td></tr>
+      <tr><td><b>离线求解 + 确定性回放</b></td><td>在线 IK 进实时循环</td><td>实时循环只做插值，避免迭代求解的不确定性与耗时。</td></tr>
+      <tr><td><b>单一共享价值函数</b></td><td>各方法各写一套代价</td><td>避免“多套代价互相腐败”，可机器精度校验，一处一事实。</td></tr>
+    </table>
+    <div class="note"><strong>文献锚点：</strong>RRT* 沿 Karaman &amp; Frazzoli (2011)；半径 <code>r = γ·(log n/n)^(1/N)</code>；VAE/CVAE 重参数化训练；OpenAI-ES 参数扰动策略梯度。</div>
+  </section>
+
+  <!-- 9. 工程 -->
+  <section class="card" id="g9">
+    <h2><span class="no v">9</span>工程、环境与可复现 <span style="background:rgba(111,191,111,0.15);color:var(--accent2);font-size:12px;margin-left:8px">补充</span></h2>
+    <div class="grid2">
+      <div>
+        <h3>9.1 运行依赖</h3>
+        <ul class="tight">
+          <li><b>MATLAB R2017b+</b>（实测 R2026a）；依赖 <code>vecnorm</code>、<code>jsondecode</code>；<strong>无需 Optimization Toolbox</strong>。</li>
+          <li><b>Python 训练</b>：<code>torch</code>、<code>scipy</code>、<code>numpy</code>；设备自动选择 <code>cuda / mps / cpu</code>。</li>
+          <li><b>视觉</b>：SpaceSnakeVisionUI（独立仓库，D405 mock/实机）。</li>
+        </ul>
+        <h3>9.2 可复现性</h3>
+        <ul class="tight">
+          <li>训练：<code>torch/numpy/random</code> 三源同种子（<code>--seed 0</code>）+ <code>cudnn.deterministic</code>。</li>
+          <li>数据：<code>sampleTask2D / generateDemonstrations</code> 支持 <code>seed</code>；RL 侧 <code>rng(42)</code>。</li>
+          <li>云/GPU 迁移：见《文档/云训练迁移指南.md》。</li>
+        </ul>
+      </div>
+      <div>
+        <h3>9.3 接线与入口</h3>
+        <pre>addpath('ArmSimulator2D');
+q = solveIK([2.5,1.0]);                 % 快捷入口（无障碍）
+model = createArmModel(struct(...));    % 完整模型
+info = simulateMotion(model,'auto',zeros(1,N),[x,y,th],'Snapshot',10);
+verifyPolicy();                         % 一键基准
+test_all                               % 全量回归
+app = ArmSimApp();                       % 交互 GUI
+stats = runTaskLoop(model, struct('outbox','data/outbox','inbox','data/inbox'));</pre>
+      </div>
+    </div>
+    <div class="note ok"><strong>交接要点：</strong>所有代码在 <code>ArmSimulator2D/</code>（纯函数）+ 根目录任务桥；训练在 <code>rl_pipeline/</code>；断言测试在 <code>test/</code>；评估脚本在 <code>scripts/</code>；设计文档在 <code>文档/</code>。</div>
+  </section>
+
+  <!-- 10. 路线图 -->
+  <section class="card" id="g10">
+    <h2><span class="no w">10</span>路线图与未来工作 <span style="background:rgba(224,169,77,0.16);color:var(--warn);font-size:12px;margin-left:8px">补充</span></h2>
+    <h3>10.1 交付前（可推进）</h3>
+    <ul class="tight">
+      <li><b>云重训</b>：新臂长口径（1.04393m×6）示范生成 + CVAE 重训（<code>GRID=64 / EXTENT(-5,9,-7,7)</code>）。</li>
+      <li><b>系统级验收框架</b>：先建 mock 版“识别→任务→规划→执行→回传”整链指标。</li>
+    </ul>
+    <h3>10.2 交付后（依赖实机）</h3>
+    <ul class="tight">
+      <li><b>P0</b>：手眼标定、真实电机参数、末端几何建模、电控执行反馈闭环。</li>
+      <li><b>P1</b>：端到端联调、夹取成功确认。</li>
+      <li><b>P2</b>：误差模型实测校准、视觉误差传播、急停端到端。</li>
+    </ul>
+    <h3>10.3 策略演进</h3>
+    <table>
+      <tr><th>方向</th><th>目的</th><th>状态</th></tr>
+      <tr><td>可解性分类器（P1）</td><td>毫秒预检“目标是否可达”，不可解直接拒绝（避免 8.7% 失败浪费）</td><td>规划中</td></tr>
+      <tr><td>代价引导网络（P2）</td><td>RRT* 有向采样启发式，回退加速</td><td>可选</td></tr>
+      <tr><td>3D 演进</td><td>网格→体素/点云；FK 输出 SE(3)；几何球/盒</td><td>预留</td></tr>
+      <tr><td>在线微调</td><td>叠加 <code>runTopLevel</code> 真实执行反馈（增量学习）</td><td>预留</td></tr>
+    </table>
+
+    <h3>10.4 技术自我评审 · 改进清单（按“是否难做”区分）</h3>
+    <p class="desc" style="margin:4px 0 10px">这是一次面向技术评审的自我盘点，把可改进项按<b style="color:#fff">完成难度</b>分组：<b style="color:var(--accent2)">已落地</b>、<b style="color:var(--warn)">有张力/需谨慎</b>、<b style="color:var(--danger)">等硬件</b>、<b style="color:var(--purple)">属新课题</b>。</p>
+
+    <h4>① 已落地（低风险维护项，本次已完成）</h4>
+    <table>
+      <tr><th>项</th><th>改动</th></tr>
+      <tr><td>默认参数唯一事实来源</td><td><code>method_prm</code>/<code>method_graph</code> 改为读 <code>model.cfg</code> 默认（<code>prm_n_nodes</code>/<code>prm_rad</code>/<code>graph_*</code> 上收进 <code>modelDefaults</code>）</td></tr>
+      <tr><td>采样可复现 + 种子预跑开关</td><td><code>method_rrt/rrtstar/prm</code> 支持 <code>seed</code> 与 <code>use_prescan</code></td></tr>
+      <tr><td>学习碰撞校验与仿真一致</td><td><code>cvaePolicyDeploy.isFreeTraj</code> 改为逐点+逐段插值检查</td></tr>
+      <tr><td>预算阈值几何自适应</td><td><code>adaptiveBudget</code> “短程”阈值相对可达半径 <code>R=ΣL_seg</code></td></tr>
+      <tr><td>状态写回原子化</td><td><code>taskWriteStatus</code> 临时文件 + <code>movefile</code> 替换</td></tr>
+      <tr><td>标定状态显式化</td><td><code>projectTo2D</code> 增加可选第二输出 <code>calibrated</code>（恒 false，提示“标定前仿真”）</td></tr>
+      <tr><td>清理休眠参数</td><td><code>w_acc</code> 默认置 0 并标注休眠态</td></tr>
+    </table>
+
+    <h4>② 有设计张力 / 需谨慎（改前先权衡）</h4>
+    <table>
+      <tr><th>项</th><th>难在哪（张力）</th><th>建议</th></tr>
+      <tr><td>屏障 <code>C¹</code> 化</td><td>平滑化会弱化“侵入后恒排斥”（D5），可能让非梯度法停在侵入态</td><td>先量化排斥力是否仍够，再决定</td></tr>
+      <tr><td>渐近最优 vs 目标偏置</td><td>去偏置保理论但变慢；留偏置就<strong>别称</strong>渐近最优</td><td>建议改文档措辞，不真去偏置</td></tr>
+      <tr><td>统一成功判据</td><td>梯度法用 <code>V</code>、采样法用 <code>goal_eps</code>；统一可能破坏既有测试/验收数字</td><td>先出判定文档，再评估回归</td></tr>
+      <tr><td>异步 / 可续跑任务</td><td>改整个状态机，且 MATLAB 单线程并发有限；现阻塞设计可能是刻意的</td><td>只加“取消+超时”，别上全异步</td></tr>
+      <tr><td>权重无量纲化</td><td>跨臂长选“特征尺度”需重新验证，且与屏障耦合</td><td>中等，需验证数据集</td></tr>
+    </table>
+
+    <h4>③ 卡在外部硬件 / 数据（现在做不了，等真实机械臂/相机/电控）</h4>
+    <ul class="tight">
+      <li><b>真实电机节拍与段间驻留</b>（<code>t_seq</code> 是归一化代理，非真实时序）——需 dSPACE 速度/时序数据。</li>
+      <li><b>z 抬升/放置契约</b>——需与电控约定控制方，且 z 不在本模块运动学。</li>
+      <li><b>真版系统级验收</b>——需视觉与 dSPACE 接通（现为 mock 端到端）。</li>
+      <li><b>电机参数 / 末端几何 / 手眼标定</b>——本就属现场项（§7 P0）。</li>
+    </ul>
+
+    <h4>④ 本质是新课题（建议独立规划，别混进维护）</h4>
+    <table>
+      <tr><th>项</th><th>为什么难</th><th>建议</th></tr>
+      <tr><td>潜空间优化再蒸馏为单前向</td><td>最优 <code>z*</code> 不唯一（多模态），回归到多值目标是病态；需重训+重新保证 0% 碰撞</td><td>当后续研究迭代，价值在“毫秒直出”</td></tr>
+      <tr><td>跨臂长策略迁移</td><td>输入/输出维度随 <code>N</code> 变，需 size-agnostic 架构</td><td>架构级改动，优先级低</td></tr>
+      <tr><td>在线微调（真实反馈）</td><td>实机探索有安全风险</td><td>叠加 <code>runTopLevel</code> 反馈，预留</td></tr>
+    </table>
+    <div class="note warn"><strong>提醒：</strong>本次“已落地”改动因本地 MATLAB 启动报错未能跑 <code>test_all</code> 验证（环境问题，非代码问题）。请运行 <code>addpath('ArmSimulator2D'); addpath('test'); test_all</code> 确认回归通过。</div>
+  </section>
+
+  <!-- 11. 文档导航 -->
+  <section class="card" id="g11">
+    <h2><span class="no p">11</span>文档导航（层级地图）</h2>
+    <p class="desc">一套有层级的文档体系：本页是<strong style="color:#fff">总览入口</strong>，四份深度文档按领域深耕，补充内容已并入本页。</p>
+    <div class="tree">
+<span class="file">项目介绍.html</span>  ── 总览入口 · 层级索引 · 含补充内容（此页）
+├─ <span class="grp">1 系统架构</span>  <span class="dim">是什么</span>  → <span class="file">architecture.html</span>
+│    <span class="dim">分层 / 价值函数 / 9 方法 / 生命周期 / 接口契约 / 文件结构</span>
+├─ <span class="grp">2 运行机制</span>  <span class="dim">何时·谁驱动</span>  → <span class="file">runtime.html</span>
+│    <span class="dim">运行拓扑 / 4 链路 / 共享内核 / 情景与错误流转 / 模块关系</span>
+├─ <span class="grp">3 求解策略</span>  <span class="dim">算法怎么算</span>  → <span class="file">strategies.html</span>
+│    <span class="dim">9 方法 + auto / 数学公式 / 收敛性与最优性 / 选择指南</span>
+├─ <span class="grp">4 学习策略</span>  <span class="dim">学什么·怎么落地</span>  → <span class="file">learning.html</span>
+│    <span class="dim">BC/CVAE/RL / 理论 / 导出 / 部署闭环 / 评估</span>
+├─ <span class="grp">5–10 补充</span>  <span class="dim">结果 / 验证 / 边界 / 对比 / 工程 / 路线图</span>  <span class="dim">（已并入本页 §5–§10）</span>
+└─ <span class="dim">其他</span>：<span class="file">文档/</span>（实现方案 · 电控对接 · 云训练迁移 · 验收差距分析）  <span class="file">test/</span>（test_all）  <span class="file">scripts/</span>（verifyPolicy 等）
+    </div>
+    <table style="margin-top:16px">
+      <tr><th>文档</th><th>定位</th><th>读者场景</th></tr>
+      <tr><td><a href="项目介绍.html">项目介绍.html</a></td><td>总览入口（本页）</td><td>首次接触 / 汇报 / 交接总览</td></tr>
+      <tr><td><a href="architecture.html">architecture.html</a></td><td>系统架构与函数接口</td><td>理解系统构成</td></tr>
+      <tr><td><a href="runtime.html">runtime.html</a></td><td>运行机制与模块关系</td><td>理解运行时行为</td></tr>
+      <tr><td><a href="strategies.html">strategies.html</a></td><td>搜索策略与数学</td><td>深究算法</td></tr>
+      <tr><td><a href="learning.html">learning.html</a></td><td>学习策略与实现</td><td>深究学习链路</td></tr>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  平面高冗余蛇形机械臂 IK 求解与仿真平台 · 项目介绍总览 · 生成于 2026
+</footer>
+
+</body>
+</html>
