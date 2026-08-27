@@ -85,6 +85,16 @@ function app = ArmSimApp()
         'Value',1,'Units','normalized','Position',[0.05 py-0.012 0.90 0.024], ...
         'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7);
     py = py - 0.028;
+    uicontrol(tabScene,'Style','text','String','逐段宽松度:','Units','normalized', ...
+        'Position',[0.03 py-rH 0.24 rH],'Background',[0.14 0.15 0.18], ...
+        'Foreground',[0.85 0.85 0.95],'FontSize',7,'HorizontalAlignment','left');
+    s.hWpEps = uicontrol(tabScene,'Style','slider','Min',0.1,'Max',1.0,'Value',0.4, ...
+        'Units','normalized','Position',[0.28 py-rH 0.50 0.022], ...
+        'Background',[0.2 0.2 0.3],'Callback',@onWpEpsSlider);
+    s.hWpEpsVal = uicontrol(tabScene,'Style','edit','String','0.40','Units','normalized', ...
+        'Position',[0.79 py-rH 0.16 rH],'Background',[0.2 0.2 0.3], ...
+        'Foreground',[1 1 1],'FontSize',7,'Callback',@onWpEpsEdit);
+    py = py - rH - 0.005;
     uicontrol(tabScene,'Style','text','String','策略文件:','Units','normalized', ...
         'Position',[0.03 py-rH 0.24 rH],'Background',[0.14 0.15 0.18], ...
         'Foreground',[0.85 0.85 0.95],'FontSize',7,'HorizontalAlignment','left');
@@ -515,6 +525,28 @@ function onFitView(src, ~)
     guidata(f, s);
 end
 
+function onWpEpsSlider(src, ~)
+% 逐段宽松度滑条 → 同步数值框
+    f = ancestor(src,'figure');
+    s = guidata(f);
+    if isfield(s,'hWpEpsVal') && ishandle(s.hWpEpsVal)
+        set(s.hWpEpsVal, 'String', sprintf('%.2f', get(src,'Value')));
+    end
+    guidata(f, s);
+end
+
+function onWpEpsEdit(src, ~)
+% 逐段宽松度数值框 → 校验范围后同步滑条
+    f = ancestor(src,'figure');
+    s = guidata(f);
+    v = str2double(get(src,'String'));
+    if isfield(s,'hWpEps') && ishandle(s.hWpEps) && isfinite(v)
+        v = max(get(s.hWpEps,'Min'), min(get(s.hWpEps,'Max'), v));
+        set(s.hWpEps, 'Value', v);
+    end
+    guidata(f, s);
+end
+
 function onParamEdit(src, ~)
     f = ancestor(src,'figure');
     s = guidata(f);
@@ -545,7 +577,8 @@ function onRun(src, ~)
         % 多层：骨架连通图 → 候选路径(k-shortest) → 逐段求解（快速+稳健回退）→ 末尾精修
         % 开关：GUI 勾选“强迫多层(use_multilayer)”控制是否走多层；取消→多层退化为单段兜底
         opts = struct('use_multilayer', get(s.hMulti,'Value'), ...
-            'k_paths', 2, 'max_segments', 9, 'GRID', 64, 'Snapshot', 1);
+            'k_paths', 2, 'max_segments', 9, 'GRID', 64, 'Snapshot', 1, ...
+            'waypoint_eps', getWpEps(s));
         info = method_multilayer(s.model, s.q, target, opts);
     elseif strcmp(m, 'cvae')
         % L2 策略推理（部署闭环：策略优先 + 安全回退）
@@ -1070,4 +1103,10 @@ function v = gnum(s, f, d)
 % gnum 读编辑框数值，非法/非正则回退到默认 d
     v = str2double(get(s.(f),'String'));
     if ~isfinite(v) || v <= 0, v = d; end
+end
+
+function v = getWpEps(s)
+% getWpEps 读「逐段宽松度 waypoint_eps」，非法/非正则回退 0.4（段判据默认）
+    v = str2double(get(s.hWpEpsVal,'String'));
+    if ~isfinite(v) || v <= 0, v = 0.4; end
 end
