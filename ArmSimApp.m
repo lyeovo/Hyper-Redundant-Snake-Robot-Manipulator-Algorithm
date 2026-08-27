@@ -156,6 +156,17 @@ function app = ArmSimApp()
         'Callback',@onParamEdit);
     py = py - rH - 0.016;
 
+    sectionTitle(tabParam, py, '── RRT / RRT* 参数（采样方法专用）──'); py = py - 0.024;
+    [hMst, hGep, py] = twoCol(tabParam, py, rH, '单步延伸:', num2str(s.model.cfg.rrt_max_step), ...
+        '位置容差:', num2str(s.model.cfg.rrt_goal_eps));
+    s.hMaxStep = hMst;  s.hGoalEps = hGep;
+    [hGan, hRf, py] = twoCol(tabParam, py, rH, '角度容差:', num2str(s.model.cfg.rrt_goal_ang), ...
+        'RRT* 精修步:', '150');
+    s.hGoalAng = hGan;  s.hRfSteps = hRf;
+    [hGam, ~, py] = twoCol(tabParam, py, rH, 'RRT* 半径γ:', '2.5', '', '');
+    s.hRGamma = hGam;
+    py = py - 0.004;
+
     sectionTitle(tabParam, py, '── 目标函数权重 ──'); py = py - 0.024;
     [hWp, hWa, py] = twoCol(tabParam, py, rH, 'w_pos:', num2str(s.model.cfg.w_pos), 'w_ang:', num2str(s.model.cfg.w_ang));
     s.hWPos = hWp;  s.hWAng = hWa;
@@ -558,19 +569,20 @@ function onRun(src, ~)
         if info.success, info.error_code = 0; else, info.error_code = 2; end
     else
         % 采样预算：自适应（按场景难度）或用户手动指定
+        rkv = rrtKV(s);   % RRT/RRT* 参数（采样方法专用；对其他方法无害，方法用 of() 自取）
         if isfield(s,'hAdaptive') && ishandle(s.hAdaptive) && get(s.hAdaptive,'Value')
             b0 = adaptiveBudget(s.model, s.q, target);
             info = simulateMotion(s.model, m, s.q, target, 'Snapshot', 1, ...
-                'max_samples', b0, 'strict', get(s.hStrict,'Value'));
+                'max_samples', b0, 'strict', get(s.hStrict,'Value'), rkv{:});
             if ~info.success   % 失败升档（×2 一次）
                 info = simulateMotion(s.model, m, s.q, target, 'Snapshot', 1, ...
                     'max_samples', min(b0*2, s.model.cfg.rrt_max_samples), ...
-                    'strict', get(s.hStrict,'Value'));
+                    'strict', get(s.hStrict,'Value'), rkv{:});
             end
         else
             info = simulateMotion(s.model, m, s.q, target, 'Snapshot', 1, ...
                 'max_samples', max(500, round(str2double(get(s.hSamp,'String')))), ...
-                'strict', get(s.hStrict,'Value'));
+                'strict', get(s.hStrict,'Value'), rkv{:});
         end
     end
     dt = toc(t0);
@@ -1039,4 +1051,23 @@ function s = setLog(s, msg)
     if ~isfield(s,'hLog') || ~ishandle(s.hLog), return; end
     lines = strsplit(msg, sprintf('\n'));
     set(s.hLog, 'String', lines(:), 'Value', numel(lines));   % listbox 自动滚动到底
+end
+
+function kv = rrtKV(s)
+% rrtKV 从「RRT/RRT* 参数」编辑框读取采样方法专用参数，返回 {'Key',val,...} 供 varargin 透传
+%   仅对 rrt / rrtstar（以及内部调它们的 auto/graph）有意义；其它方法用 of() 自行忽略未知键
+    cfg = s.model.cfg;
+    mstep = gnum(s, 'hMaxStep', cfg.rrt_max_step);
+    geps  = gnum(s, 'hGoalEps', cfg.rrt_goal_eps);
+    gan   = gnum(s, 'hGoalAng', cfg.rrt_goal_ang);
+    rf    = gnum(s, 'hRfSteps', 150);
+    gam   = gnum(s, 'hRGamma', 2.5);
+    kv = {'max_step', mstep, 'goal_eps', geps, 'goal_ang', gan, ...
+          'rf_steps', round(rf), 'rrt_gamma', gam};
+end
+
+function v = gnum(s, f, d)
+% gnum 读编辑框数值，非法/非正则回退到默认 d
+    v = str2double(get(s.(f),'String'));
+    if ~isfinite(v) || v <= 0, v = d; end
 end
