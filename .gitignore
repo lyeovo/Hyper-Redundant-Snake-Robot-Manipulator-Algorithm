@@ -20,6 +20,9 @@ datasets/
 .reasonix/
 .buildtool/
 
+# ---- 生成的可视化图 / 中间产物 ----
+viz/
+
 # ---- 视觉模块：独立 git 仓库（自带 origin，参考不改），保持独立不纳入本仓库 ----
 vision/D405_MarkerVision/
 

@@ -62,20 +62,25 @@ function [graph, info] = buildConnectivityGraph(obstacles, start, goal, opts)
     % ---- 3. 二遍 Chamfer 距离场（到最近障碍，工作空间单位）----
     dist = chamferDist(occ) * dx;
 
-    % ---- 4. 走廊中心取点 + 非极大抑制 ----
-    minClear = of(opts,'min_clear',0.10*R);
-    suppR    = of(opts,'suppress_r',0.18*R);
-    nodes = extractCorridorNodes(occ, dist, gx, gy, dx, minClear, suppR);
+    % ---- 4/5. 取点 + 加边：骨架模式(默认，走廊中轴线) 或 PRM 模式 ----
+    skelMode = of(opts,'skeleton', true);
+    if skelMode
+        [nodes, edges] = skeletonGraph(occ, gx, gy, dx, R, opts);
+    else
+        minClear = of(opts,'min_clear',0.10*R);
+        suppR    = of(opts,'suppress_r',0.18*R);
+        connR    = of(opts,'conn_r',0.35*R);
+        knn      = of(opts,'knn',4);
+        nodes = extractCorridorNodes(occ, dist, gx, gy, dx, minClear, suppR);
+        edges = visibilityEdges(nodes, occ, gx, gy, dx, connR, knn);
+    end
 
-    % 起/终节点
+    % 起/终节点 + 用可见性边接进图（最近且直线自由）
     sxy = [gx(si(2)), gy(si(1))];  gxy = [gx(gi(2)), gy(gi(1))];
     nodes = [sxy; gxy; nodes];
     start_i = 1;  goal_i = 2;
-
-    % ---- 5. 可见性加边（无向：直线段全程自由）----
-    connR = of(opts,'conn_r',0.35*R);
-    knn   = of(opts,'knn',4);
-    edges = visibilityEdges(nodes, occ, gx, gy, dx, connR, knn);
+    connR = of(opts,'conn_r',0.45*R);
+    edges = connectEndpoints(edges, nodes, start_i, goal_i, occ, gx, gy, dx, connR);
 
     % ---- 6. 起/终连通性检查（图 BFS/传播）----
     reach = false(1,size(nodes,1));  reach(start_i) = true;  changed = true;
@@ -184,6 +189,85 @@ function ok = lineFree(p1, p2, occ, gx, gy, dx)
         i = max(1, min(GRID, 1 + floor((p(2)-ymin)/dx)));
         if ~occ(i,j), ok = false; return; end
     end
+end
+
+function [nodes, edges] = skeletonGraph(occ, gx, gy, dx, R, opts)
+    % 骨架(中轴线)取点取边：bwskel → 交叉点/端点/走廊中点作节点，分支作边
+    GRID = size(occ,1);
+    skel = bwskel(occ, 'MinBranchLength', 4);
+    neigh = conv2(double(skel), ones(3,3), 'same') - double(skel);
+    nodeMask = (skel & neigh >= 3) | (skel & neigh == 1);   % 交叉点 + 端点
+    % 走廊中点：沿骨架，按 0.20R 间隔，避开已有节点
+    dmin = 0.20*R;
+    [sR,sC] = find(skel);  allSk = [gx(sC).', gy(sR)];   % 仅 gx(行向量被索引)需转置成列
+    [nR,nC] = find(nodeMask);  exN = [gx(nC).', gy(nR)];
+    picked = zeros(0,2);
+    for k = 1:size(allSk,1)
+        p = allSk(k,:);
+        dNodes = sqrt(sum((exN - p).^2,2));
+        if size(picked,1) > 0, dPk = sqrt(sum((picked - p).^2,2)); else, dPk = inf; end
+        if min(dNodes) >= dmin && min(dPk) >= dmin, picked(end+1,:) = p; end %#ok<AGROW>
+    end
+    % nodeIds 映射
+    nodeIds = zeros(GRID,GRID);  nid = 0;
+    for k = 1:numel(nR), nid=nid+1; nodeIds(nR(k),nC(k)) = nid; end
+    for k = 1:size(picked,1)
+        jj = max(1,min(GRID, 1+floor((picked(k,1)-gx(1)+dx/2)/dx)));
+        ii = max(1,min(GRID, 1+floor((picked(k,2)-gy(1)+dx/2)/dx)));
+        if nodeIds(ii,jj) == 0, nid=nid+1; nodeIds(ii,jj) = nid; end
+    end
+    nodes = zeros(nid,2);
+    [r4,c4] = find(nodeIds>0);
+    for k = 1:numel(r4), nodes(nodeIds(r4(k),c4(k)),:) = [gx(c4(k)), gy(r4(k))]; end
+    % 边：分支(骨架减节点)连接其两端节点；相邻节点像素也连
+    branchMask = skel & (nodeIds==0);
+    lab = bwlabel(branchMask,8);  nB = max(lab(:));  edges = zeros(0,2);
+    for b = 1:nB
+        [bR,bC] = find(lab==b);  an = [];
+        for k = 1:numel(bR)
+            for di=-1:1, for dj=-1:1
+                ii=bR(k)+di; jj=bC(k)+dj;
+                if ii>=1&&ii<=GRID&&jj>=1&&jj<=GRID && nodeIds(ii,jj)>0
+                    an(end+1) = nodeIds(ii,jj); %#ok<AGROW>
+                end
+            end,end
+        end
+        an = unique(an);
+        for i = 1:numel(an), for j = i+1:numel(an)
+            edges(end+1,:) = [an(i), an(j)]; end %#ok<AGROW>
+        end
+    end
+    [r5,c5] = find(nodeIds>0);
+    for k = 1:numel(r5)
+        for di=-1:1, for dj=-1:1
+            if di==0 && dj==0, continue; end
+            ii=r5(k)+di; jj=c5(k)+dj;
+            if ii>=1&&ii<=GRID&&jj>=1&&jj<=GRID && nodeIds(ii,jj)>0
+                a=nodeIds(r5(k),c5(k)); b=nodeIds(ii,jj);
+                if a~=b, edges(end+1,:)=[min(a,b),max(a,b)]; end %#ok<AGROW>
+            end
+        end,end
+    end
+    if ~isempty(edges)
+        edges = unique(sort(edges,2),'rows');
+        edges = edges(edges(:,1) ~= edges(:,2), :);
+    end
+end
+
+function edges = connectEndpoints(edges, nodes, start_i, goal_i, occ, gx, gy, dx, connR)
+    % 把起/终节点用可见性边接进图（选最近且直线自由的节点）
+    for t = [start_i, goal_i]
+        p0 = nodes(t,:);  best = 0;  bestD = inf;
+        for k = 1:size(nodes,1)
+            if k == t, continue; end
+            d = norm(p0 - nodes(k,:));
+            if d <= connR && d < bestD && lineFree(p0, nodes(k,:), occ, gx, gy, dx)
+                bestD = d;  best = k;
+            end
+        end
+        if best > 0, edges(end+1,:) = [min(t,best), max(t,best)]; end %#ok<AGROW>
+    end
+    if ~isempty(edges), edges = unique(sort(edges,2),'rows'); end
 end
 
 function v = of(s, f, d)
