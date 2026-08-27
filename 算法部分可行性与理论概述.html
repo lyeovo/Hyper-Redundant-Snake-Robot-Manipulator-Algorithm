@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>算法部分可行性与理论概述</title>
+<style>
+  :root {
+    --bg:#0e1420; --panel:#161f30; --panel2:#1c2740; --line:#2a3a55;
+    --text:#d7e0ef; --muted:#9bb0cb; --accent:#4da6ff; --accent2:#6fbf6f;
+    --warn:#e0a94d; --danger:#e05a5a; --purple:#c39bff; --code-bg:#0a0f1a;
+    --mono:'Cascadia Code','JetBrains Mono',Consolas,'Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI','Microsoft YaHei','PingFang SC',sans-serif;line-height:1.75;font-size:16px;}
+  a{color:var(--accent);text-decoration:none;} a:hover{text-decoration:underline;}
+  header.hero{padding:54px 24px 38px;text-align:center;background:radial-gradient(1200px 420px at 50% -120px,rgba(77,166,255,0.20),transparent),radial-gradient(700px 260px at 90% 0%,rgba(195,155,255,0.10),transparent),linear-gradient(180deg,#121b2c 0%,var(--bg) 100%);border-bottom:1px solid var(--line);}
+  header.hero h1{margin:0 0 10px;font-size:28px;letter-spacing:1px;font-weight:700;}
+  header.hero .sub{color:var(--muted);font-size:15.5px;max-width:900px;margin:0 auto;line-height:1.8;}
+  header.hero .badges{margin-top:16px;}
+  .badge{display:inline-block;padding:3px 12px;margin:4px;border-radius:999px;font-size:12.5px;border:1px solid var(--line);background:var(--panel);color:var(--muted);}
+  .badge b{color:var(--accent);font-weight:600;}
+  main{max-width:1120px;margin:0 auto;padding:8px 20px 80px;}
+  section.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin:26px 0;}
+  section.card>h2{margin:0 0 4px;font-size:21px;color:#fff;display:flex;align-items:center;gap:10px;}
+  section.card>h2 .no{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#2f6fd0);color:#fff;font-size:14px;font-weight:700;flex-shrink:0;}
+  section.card>p.desc{color:var(--muted);margin:6px 0 18px;font-size:15px;}
+  section.card>h3{margin:22px 0 10px;font-size:16px;color:#fff;}
+  section.card>h3 .sub{font-size:12.5px;color:var(--muted);font-weight:400;margin-left:8px;}
+  section.card>h4{margin:14px 0 6px;font-size:14px;color:#cfd9ec;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);color:#fff;font-weight:600;white-space:nowrap;}
+  tr:nth-child(even) td{background:rgba(255,255,255,0.015);}
+  td code,p code,li code,h3 code{font-family:var(--mono);font-size:12.5px;color:#8fd0ff;}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.6;color:#c9d6ea;}
+  pre .c{color:#5c708a;}
+  .note{border-left:3px solid var(--accent);background:rgba(77,166,255,0.06);padding:11px 15px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--muted);font-size:14px;}
+  .note.warn{border-left-color:var(--warn);background:rgba(224,169,77,0.08);}
+  .note.deep{border-left-color:var(--purple);background:rgba(195,155,255,0.08);}
+  .note.ok{border-left-color:var(--accent2);background:rgba(111,191,111,0.08);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr;}}
+  ul.tight{margin:6px 0;padding-left:20px;} ul.tight li{margin:4px 0;}
+  ol.tight{margin:6px 0;padding-left:22px;} ol.tight li{margin:4px 0;}
+  .fn{background:var(--panel2);border:1px solid var(--line);border-radius:12px;margin:15px 0;overflow:hidden;}
+  .fn>.fn-head{display:flex;align-items:center;gap:10px;padding:11px 16px;background:rgba(77,166,255,0.06);border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .fn .fn-name{font-family:var(--mono);font-size:14.5px;font-weight:700;color:#fff;}
+  .fn .fn-body{padding:13px 18px;}
+  .fn .fn-body p{color:var(--text);margin:6px 0;}
+  .fn .fn-body ul{margin:6px 0;padding-left:22px;} .fn .fn-body ul li{margin:4px 0;}
+  .toc{columns:2;column-gap:28px;font-size:13.5px;} .toc a{display:block;padding:2px 0;}
+  @media(max-width:560px){.toc{columns:1;}}
+  .mine{background:rgba(111,191,111,0.07);border:1px solid rgba(111,191,111,0.22);border-radius:10px;padding:11px 15px;margin:12px 0;font-size:13.5px;color:var(--muted);}
+  .mine b{color:var(--accent2);}
+  figure.fig{margin:16px 0;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  figure.fig svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+  figure.fig figcaption{color:var(--muted);font-size:13px;margin-top:10px;text-align:center;line-height:1.6;max-width:820px;margin-left:auto;margin-right:auto;}
+  figure.fig figcaption b{color:#fff;}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:24px;border-top:1px solid var(--line);}
+  nav.sitenav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:12px 24px; background:#101827; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10; }
+  nav.sitenav .brand { font-weight:700; color:var(--accent); margin-right:8px; font-size:14px; }
+  nav.sitenav a { color:var(--muted); padding:3px 10px; border-radius:6px; font-size:13px; }
+  nav.sitenav a:hover { color:#fff; background:rgba(77,166,255,0.12); text-decoration:none; }
+  details { margin:10px 0; border:1px solid var(--line); border-radius:8px; padding:0 16px 8px; background:rgba(255,255,255,0.015); }
+  summary { cursor:pointer; padding:10px 0; font-weight:600; color:var(--accent); }
+  summary::before { content:'▸ 展开 · '; color:var(--muted); font-size:12px; margin-right:4px; }
+  .refbox { margin:18px 0 6px; padding:12px 16px; border:1px dashed var(--line); border-radius:8px; background:rgba(77,166,255,0.05); }
+  .refbox b { color:var(--accent); }
+  .refbox ol { margin:8px 0 0; padding-left:20px; }
+  .refbox li { margin:4px 0; font-size:13.5px; }
+  .keybox { margin:16px 0; padding:14px 18px; border:1px solid rgba(111,191,111,0.35); border-left:5px solid var(--accent2); border-radius:8px; background:rgba(111,191,111,0.08); }
+  .keybox b { color:var(--accent2); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>算法部分 · 可行性与理论概述</h1>
+  <p class="sub">本文系统阐述面向高冗余蛇形机械臂运动规划的算法设计脉络与理论依据：首先说明初始单层梯度求解方案及其固有局限；继而论述"分层引导 + 多类求解器"的设计思想，涵盖空间分治、求解器组、离线训练与若干待验证的演进方向。</p>
+  <div class="badges">
+    <span class="badge">初始方案 <b>单层梯度微分</b>（已否定）</span>
+    <span class="badge">现行方案 <b>分层引导 + 多类求解器</b></span>
+    <span class="badge">离线训练 <b>BC · BC-CVAE · RL</b></span>
+    <span class="badge">核心诉求 <b>规避局部最优</b></span>
+  </div>
+</header>
+
+<nav class="sitenav">
+  <span class="brand">◈ 平面蛇形机械臂 IK 平台</span>
+  <a href="项目介绍.html">项目介绍</a>
+  <a href="架构总览.html">架构总览</a>
+  <a href="运行机制.html">运行机制</a>
+  <a href="求解策略.html">求解策略</a>
+  <a href="学习管线.html">学习管线</a>
+  <a href="三维化分析.html">三维化分析</a>
+  <a href="算法部分可行性与理论概述.html">理论概述</a>
+</nav>
+<main>
+  <div class="keybox"><b>核心结论（终点）</b>：本设计的核心转变 —— 由「以<b>单一连续目标函数</b>并入避障约束」转向「<b>以硬约束建模障碍</b> + <b>空间分治降阶</b> + <b>多类求解器互补</b> + <b>按需引入语义学习策略</b>」。后续 <code>求解策略 / 学习管线 / 三维化分析</code> 所展开的内容均源于此一设计主线。</div>
+
+  <section class="card">
+    <h2><span class="no">◈</span>综述与背景</h2>
+    <p class="desc">本节交代本文所述算法设计的动机与开发背景，作为后续论述的铺垫。</p>
+    <div class="grid2">
+      <div>
+        <h4>开发背景</h4>
+        <ul class="tight">
+          <li><b>8月28–31日</b>：检验并补充与<strong style="color:#fff">视觉</strong>模块的完整联调；协助补充与<strong style="color:#fff">电控</strong>部分的联调（接口已预设，此处需进一步明确具体步骤与接口方法）。</li>
+          <li><b>9月</b>：前期完成算法优化与基础系统集成；后续结合硬件进行测试与优化。</li>
+        </ul>
+      </div>
+      <div>
+        <h4>核心问题</h4>
+        <p style="color:var(--muted);font-size:14px">在带复杂硬约束（障碍）的环境下，高冗余蛇形机械臂的运动规划能否仅通过单一连续目标函数的梯度下降加以求解？经初步验证，该思路存在显著局限，故本设计转而采用分层引导结构。以下 §1–§7 即为该设计逻辑的完整展开。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1 原算法 -->
+  <section class="card">
+    <h2><span class="no">1</span>初始方案：单层梯度微分求解</h2>
+    <p class="desc">初始方案将整项任务压缩为带硬约束的梯度优化问题，后因目标函数复杂不连续及单步成功率低而放弃。</p>
+    <div class="fn">
+      <div class="fn-head"><span class="fn-name">初始方案 · 单层梯度微分</span></div>
+      <div class="fn-body">
+        <p><strong>方法设计：</strong>以<strong style="color:#fff">梯度下降</strong>为主策略，取<strong style="color:#fff">电机相位</strong>（关节角）为自变量，求解带复杂环境硬约束的微分问题。</p>
+        <ul class="tight">
+          <li><b>第一层目标</b>：依据最优下降方向确定运动方向，即沿目标函数的负梯度方向。</li>
+          <li><b>第二层目标</b>：通过向目标函数<strong>施加惩罚项</strong>，将避障等硬约束并入目标函数。</li>
+        </ul>
+        <div class="note warn"><strong>方案的局限：</strong>将硬约束并入目标函数，导致目标函数<strong>复杂且不连续</strong>；求解<strong>耗时较长</strong>；且<strong>单步求解在复杂约束情形下成功率较低</strong>。</div>
+      </div>
+    </div>
+    <div class="note" style="border-left-color:var(--danger);background:rgba(224,90,90,0.08);color:var(--text)"><strong>根因分析：</strong>在该方案中，避障被建模为目标函数的<strong>加性惩罚项</strong>，致使"趋近目标"的吸引项与"避障"的排斥项在局部形成平衡状态（势阱）——梯度趋近于零而末端尚未到达目标，即产生<strong>伪局部最优</strong>。正是这一机制，促使后续方案转向"分层引导 + 多类求解器"，将障碍由<strong>软惩罚</strong>改作<strong>硬约束</strong>。</div>
+
+    <figure class="fig">
+      <svg viewBox="0 0 680 290" width="100%" role="img" aria-label="伪局部最优与目标势阱示意">
+        <!-- 坐标轴 -->
+        <line x1="58" y1="238" x2="640" y2="238" stroke="#3a4a66" stroke-width="1.4"/>
+        <line x1="58" y1="238" x2="58" y2="28" stroke="#3a4a66" stroke-width="1.4"/>
+        <text x="640" y="258" fill="#8aa0bd" font-size="11" text-anchor="end">参数 q （关节角） →</text>
+        <text x="24" y="238" fill="#8aa0bd" font-size="11" text-anchor="middle" transform="rotate(-90 24 238)">V(q)</text>
+        <!-- 势能曲线：浅势阱(局部最小值) + 深势阱(全局最小值) -->
+        <polyline fill="none" stroke="#4da6ff" stroke-width="2.4" stroke-linejoin="round" points="70,72 100,96 130,120 160,140 185,148 200,150 215,147 235,137 255,135 275,139 295,148 315,160 340,175 370,188 400,197 430,202 460,205 490,206 520,205 550,199 580,188 620,168"/>
+        <!-- 起点 -->
+        <circle cx="70" cy="72" r="5" fill="#4da6ff"/>
+        <text x="70" y="58" fill="#8fd0ff" font-size="11" text-anchor="middle">起点 q₀</text>
+        <!-- 浅势阱：伪局部最优 -->
+        <circle cx="200" cy="150" r="6" fill="#e0a94d"/>
+        <text x="200" y="120" fill="#e0a94d" font-size="11" text-anchor="middle" font-weight="600">伪局部最优（势阱）</text>
+        <text x="200" y="134" fill="#8aa0bd" font-size="10.5" text-anchor="middle">∇V ≈ 0，末端未达</text>
+        <line x1="200" y1="150" x2="200" y2="238" stroke="#e0a94d" stroke-width="1" stroke-dasharray="3 3"/>
+        <!-- 障碍屏障凸起 -->
+        <line x1="255" y1="135" x2="255" y2="238" stroke="#e05a5a" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="255" y="252" fill="#e05a5a" font-size="10.5" text-anchor="middle">障碍屏障</text>
+        <!-- 深势阱：目标 -->
+        <circle cx="490" cy="206" r="6" fill="#6fbf6f"/>
+        <text x="490" y="228" fill="#6fbf6f" font-size="11" text-anchor="middle" font-weight="600">目标（全局最小）</text>
+        <line x1="490" y1="206" x2="490" y2="238" stroke="#6fbf6f" stroke-width="1" stroke-dasharray="3 3"/>
+        <!-- 梯度下降轨迹：卡在浅势阱 -->
+        <path d="M70,72 C 120,120 170,150 200,150" fill="none" stroke="#e0a94d" stroke-width="2" stroke-dasharray="6 3"/>
+        <text x="120" y="108" fill="#e0a94d" font-size="10.5" text-anchor="middle">梯度下降到达此处即停止</text>
+      </svg>
+      <figcaption><b>图 1 · 伪局部最优示意</b>——把避障作为目标函数的<strong>加性惩罚项</strong>后，目标势能 <code>V(q)</code> 上会同时出现"深势阱（目标）"与"浅势阱（局部最优）"。梯度下降沿 <code>−∇V</code> 自起点下滑，行至浅势阱处 <code>∇V≈0</code> 即停，无法跨越中间由障碍形成的"屏障凸起"而到达深势阱目标。</figcaption>
+    </figure>
+  </section>
+
+  <!-- 2 新算法总览 -->
+  <section class="card">
+    <h2><span class="no">2</span>现行方案：分层引导构建轨迹 + 多类求解器</h2>
+    <p class="desc">本设计将含障碍空间抽象为<strong style="color:#fff">末端可行连通图</strong>，作为<strong style="color:#fff">第一层语义</strong>以指示总体运动走向；进而将运动分解为若干位于<strong style="color:#fff">无障凸子空间</strong>内的短运动，逐段交由特定求解器；最终以图搜索（如 A*）自起点<strong>逐段验证至终点</strong>。</p>
+    <pre>含障碍空间
+   → 抽象为"末端可行连通图"（第一层语义：总体走向）
+      → 分解为若干无障凸子空间之间的短运动
+         → 每段交由特定求解器（梯度 / 动量 / RRT / PRM）
+            → 以图搜索（A*）自起点逐段验证至终点，取可行路径</pre>
+
+    <figure class="fig">
+      <svg viewBox="0 0 820 200" width="100%" role="img" aria-label="分层引导处理流程">
+        <!-- 5 阶段盒 -->
+        <g>
+          <rect x="16"  y="58" width="140" height="84" rx="10" fill="#1c2740" stroke="#2a3a55"/>
+          <text x="86"  y="92" fill="#fff" font-size="12.5" text-anchor="middle" font-weight="600">含障碍空间</text>
+          <text x="86"  y="110" fill="#8aa0bd" font-size="10.5" text-anchor="middle">（工作空间）</text>
+          <rect x="180" y="58" width="140" height="84" rx="10" fill="#1c2740" stroke="#8a5fd0"/>
+          <text x="250" y="86" fill="#c39bff" font-size="12.5" text-anchor="middle" font-weight="600">末端可行连通图</text>
+          <text x="250" y="104" fill="#8aa0bd" font-size="10.5" text-anchor="middle">第一层语义：总走向</text>
+          <rect x="344" y="58" width="140" height="84" rx="10" fill="#1c2740" stroke="#2a3a55"/>
+          <text x="414" y="86" fill="#fff" font-size="12.5" text-anchor="middle" font-weight="600">凸子段分解</text>
+          <text x="414" y="104" fill="#8aa0bd" font-size="10.5" text-anchor="middle">多段无障短运动</text>
+          <rect x="508" y="58" width="140" height="84" rx="10" fill="#1c2740" stroke="#6fbf6f"/>
+          <text x="578" y="86" fill="#6fbf6f" font-size="12.5" text-anchor="middle" font-weight="600">多类求解器</text>
+          <text x="578" y="104" fill="#8aa0bd" font-size="10.5" text-anchor="middle">梯度/动量/RRT/PRM</text>
+          <rect x="672" y="58" width="140" height="84" rx="10" fill="#1c2740" stroke="#2a3a55"/>
+          <text x="742" y="86" fill="#fff" font-size="12.5" text-anchor="middle" font-weight="600">图搜索验证</text>
+          <text x="742" y="104" fill="#8aa0bd" font-size="10.5" text-anchor="middle">A* 逐段 → 轨迹</text>
+        </g>
+        <!-- 箭头 -->
+        <g stroke="#4da6ff" stroke-width="2">
+          <line x1="156" y1="100" x2="178" y2="100"/>
+          <polygon points="178,95 188,100 178,105" fill="#4da6ff" stroke="none"/>
+          <line x1="320" y1="100" x2="342" y2="100"/>
+          <polygon points="342,95 352,100 342,105" fill="#4da6ff" stroke="none"/>
+          <line x1="484" y1="100" x2="506" y2="100"/>
+          <polygon points="506,95 516,100 506,105" fill="#4da6ff" stroke="none"/>
+          <line x1="648" y1="100" x2="670" y2="100"/>
+          <polygon points="670,95 680,100 670,105" fill="#4da6ff" stroke="none"/>
+        </g>
+      </svg>
+      <figcaption><b>图 2 · 分层引导处理流程</b>——先在高语义层把"含障碍空间"抽象为<strong>末端可行连通图</strong>，指示总走向；再将运动<strong>分解为多段无障凸子空间</strong>内的短运动；每段交由<strong>某类求解器</strong>；最终用<strong>图搜索（A*）逐段验证</strong>到终点并输出轨迹。这条"先语义、再分解、后求解"的流水线，是为了把覆盖多障碍的整体难题<strong>降阶</strong>为每段只涉及局部障碍的子问题。</figcaption>
+    </figure>
+    <div class="grid2">
+      <div>
+        <h4>该结构包含三个可设计的环节</h4>
+        <ul class="tight">
+          <li><b>空间分治</b>：空间凸块化方式与"关键节点"选取，用于构建连通图（§3 列出三种方案）。</li>
+          <li><b>求解器选择</b>：每段求解路径的梯度/动量/RRT/PRM 四类方法，各具速度与最优性权衡（§4）。</li>
+          <li><b>后验反馈</b>：依据实际求解结果，反哺空间切割、路线选择、求解器选择与权重配置，并通过离线训练学习一个高层语义指导模型（§5）。</li>
+        </ul>
+      </div>
+      <div>
+        <div class="mine"><b>工程映射：</b>该设计最终落地为 <code>method_graph</code>（工作空间走廊图 + A* + 逐段 RRT*）与 <code>method_auto</code>（求解器调度）。§3、§4 所列方案与求解器为其原型。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 分层 -->
+  <section class="card">
+    <h2><span class="no">3</span>空间分治：三种可行方案</h2>
+    <p class="desc">为障碍空间构建连通图或关键节点，本节考察三种分治方案，并比较其利弊。</p>
+    <table>
+      <tr><th>方案</th><th>实现方式</th><th>优势</th><th>局限</th></tr>
+      <tr><td><b>方案一 · 单元分解（Cell Decomposition）</b></td><td>以单元分解类算法将空间切分为<strong>若干凸空间</strong>，取<strong>中点相连</strong>构成连通图</td><td>自动化、可量化；切割方法可任选</td><td>需甄选切割方法；凸化粒度影响图质量</td></tr>
+      <tr><td><b>方案二 · 人工关键节点标注</b></td><td>人工标注<strong>带高层语义的路径关键节点</strong></td><td>灵活，可注入经验与常识</td><td>繁琐；<strong>人为定义缺乏量化最优准则</strong></td></tr>
+      <tr><td><b>方案三 · 波纹碰撞 · 复合价值函数</b></td><td>仿照波纹物理碰撞，逐层依据"<strong>避障 + 居中 + 节约距离</strong>"的复合价值函数，按固定段长取点</td><td>自动化；语义明确（避障、居中、省距）</td><td>复合权重需调参；固定段长可能导致过密或欠采样</td></tr>
+    </table>
+    <div class="note"><strong>权衡分析：</strong>方案一追求"自动化与可量化"；方案二依赖人工注入高层语义，但主观且缺乏最优判定；方案三以价值函数自动铺点，语义可量化但需调优权重。三者的共同原则在于——<strong>将覆盖多障碍的整体运动分解为每段仅涉及单个或无需避障的局部运动</strong>，从而降低全局问题的复杂度。</div>
+    <div class="note warn"><strong>与已实现代码的对齐：</strong>文中所列三种分治方案为<strong>设计层面的构想</strong>。本项目<strong>实际落地</strong>的 <code>method_graph</code> 并非对自由空间做"凸单元分解取中点"，而是构建一张<strong>工作空间走廊图</strong>：①先<strong>膨胀障碍</strong>（<code>rho0+margin</code>）；②生成节点——<strong>障碍缝隙中点</strong>（圆-圆、圆-矩形、矩形-矩形的最近点对）、每障碍<strong>四方向绕行点</strong>、起终点与少量随机自由点（均为末端位置）；③边由<strong>末端直线"管道"安全校验</strong>判定（沿连线段取半径 <code>rho0</code> 的圆，检查是否与膨胀障碍相交）；④以 <strong>A*</strong> 求走廊序列；⑤<strong>逐段</strong>用 <code>method_rrtstar</code> 实现（末段到真实目标含角度，其余段末端到走廊节点、角度保持接续）。它更贴近"把有障碍空间视作连通图 + 逐段规划"的意图，可视为方案一思路的一种工程近似。</div>
+
+    <figure class="fig">
+      <svg viewBox="0 0 640 360" width="100%" role="img" aria-label="单元分解与连通图示意">
+        <!-- 工作空间外框 -->
+        <rect x="40" y="36" width="520" height="280" rx="8" fill="#0f1728" stroke="#3a4a66" stroke-width="1.6"/>
+        <!-- 凸子空间（单元分解） -->
+        <polygon points="40,36 200,36 170,160 40,180" fill="#1c2740" stroke="#2a3a55"/>
+        <polygon points="200,36 380,36 320,150 170,160" fill="#1c2740" stroke="#2a3a55"/>
+        <polygon points="380,36 560,36 540,150 320,150" fill="#1c2740" stroke="#2a3a55"/>
+        <polygon points="40,180 170,160 300,260 220,316 40,316" fill="#1c2740" stroke="#2a3a55"/>
+        <polygon points="170,160 320,150 440,250 300,260" fill="#1c2740" stroke="#2a3a55"/>
+        <polygon points="320,150 540,150 520,316 440,250 300,260" fill="#1c2740" stroke="#2a3a55"/>
+        <!-- 障碍（圆 + 矩形） -->
+        <circle cx="150" cy="250" r="40" fill="#2a2030" stroke="#e05a5a" stroke-width="1.4"/>
+        <g transform="rotate(-18 420 110)">
+          <rect x="385" y="80" width="80" height="60" fill="#2a2030" stroke="#e0a94d" stroke-width="1.4"/>
+        </g>
+        <!-- 起始与目标 -->
+        <circle cx="70" cy="70" r="7" fill="#4da6ff"/>
+        <text x="70" y="50" fill="#8fd0ff" font-size="11" text-anchor="middle">起点</text>
+        <circle cx="500" cy="290" r="7" fill="#6fbf6f"/>
+        <text x="500" y="318" fill="#6fbf6f" font-size="11" text-anchor="middle">目标</text>
+        <!-- 单元中点（关键节点）连通图 -->
+        <g fill="#c39bff">
+          <circle cx="118" cy="120" r="4.5"/>
+          <circle cx="250" cy="98"  r="4.5"/>
+          <circle cx="420" cy="92"  r="4.5"/>
+          <circle cx="160" cy="232" r="4.5"/>
+          <circle cx="300" cy="196" r="4.5"/>
+          <circle cx="420" cy="240" r="4.5"/>
+        </g>
+        <g stroke="#c39bff" stroke-width="1.1" opacity="0.65">
+          <line x1="118" y1="120" x2="250" y2="98"/>
+          <line x1="250" y1="98"  x2="420" y2="92"/>
+          <line x1="118" y1="120" x2="160" y2="232"/>
+          <line x1="160" y1="232" x2="300" y2="196"/>
+          <line x1="250" y1="98"  x2="300" y2="196"/>
+          <line x1="420" y1="92"  x2="420" y2="240"/>
+          <line x1="300" y1="196" x2="420" y2="240"/>
+        </g>
+        <!-- A* 路径（高亮） -->
+        <polyline points="70,70 118,120 300,196 420,240 500,290" fill="none" stroke="#e0a94d" stroke-width="2.6" stroke-dasharray="7 4" stroke-linejoin="round"/>
+        <!-- 障碍不可行边打 X -->
+        <g stroke="#e05a5a" stroke-width="1.4" opacity="0.85">
+          <line x1="250" y1="98"  x2="160" y2="232"/>
+          <line x1="300" y1="196" x2="420" y2="92"/>
+          <line x1="118" y1="120" x2="160" y2="232"/>
+        </g>
+      </svg>
+      <figcaption><b>图 3 · 空间分治与连通图示意</b>——图示"把带障碍空间切分为若干区域、取关键点连成图、再以 A* 搜可行路径"的<strong>通用思想</strong>（对应文中的方案一/方案三）。<strong>注意工程实现差异：</strong>实际 <code>method_graph</code> 并不做"凸单元分解取中点"，而是以<strong>障碍缝隙中点与绕行点</strong>为节点、以末端<strong>直线管道校验</strong>为边构建<strong>工作空间走廊图</strong>；图中的"单元/中点"可视作其"区域/节点"的抽象，障碍（圆 + 矩形）与"穿过障碍的边判为不可行"（红色 ×）则与代码一致。橙色虚线表示由起点经可行节点到目标的 A* 路径。</figcaption>
+    </figure>
+  </section>
+
+  <!-- 4 求解器 -->
+  <section class="card">
+    <h2><span class="no">4</span>求解器组：四类方法及其权衡</h2>
+    <p class="desc">针对"在无障凸子空间内由一点运动至另一点"的子问题，本设计备有四种方法，其速度、最优性与稳定性各有侧重。之所以采用"多类求解器"，在于单一梯度方法不足以覆盖实际需求。</p>
+    <table>
+      <tr><th>求解器</th><th>核心机制</th><th>优点</th><th>缺点</th></tr>
+      <tr><td><b>梯度</b></td><td>沿目标函数给定的<strong>最优梯度方向</strong>运动</td><td>速度快；条件易调；轨迹通常<strong>最优</strong></td><td><strong>极易陷入局部最优</strong></td></tr>
+      <tr><td><b>动量</b></td><td>在<strong>参数空间</strong>上构造 <code>C⁰ 连续</code>的目标函数势，并以<strong>动量</strong>驱动末端在空间内运动，生成轨迹</td><td>可<strong>在一定程度上规避局部最优</strong>（依靠惯性穿越势阱）</td><td>收敛性无保证；轨迹<strong>不稳定</strong></td></tr>
+      <tr><td><b>RRT</b></td><td>不断自生成子节点，以<strong>引导 + 探索</strong>方式逼近终点</td><td><strong>稳定</strong>；可一定程度避障</td><td>轨迹往往<strong>可行但非最优</strong></td></tr>
+      <tr><td><b>PRM</b>（源笔记记作"PRT"）</td><td>在空间内<strong>均匀采样</strong>取点，构建可行连通图</td><td><strong>理论上渐近收敛至最优</strong></td><td>耗时<strong>长</strong>；轨迹<strong>不稳定</strong></td></tr>
+    </table>
+    <div class="note deep"><strong>设计动机：</strong>梯度方法快但易陷入局部最优；动量方法可穿越势阱但收敛性与稳定性欠佳；RRT 稳定但非最优；PRM 最优但耗时。四者互补，分别覆盖"快、稳、优"的不同组合，而单一方法难以同时兼顾三者。故将其组织为<strong>求解器集合</strong>并按需调度（最终实现为 <code>method_auto</code>，调度序为：动量法 → RRT* → 图引导 → PRM → 模拟退火）。</div>
+
+    <figure class="fig">
+      <svg viewBox="0 0 640 360" width="100%" role="img" aria-label="四类求解器在速度与最优性上的定位">
+        <!-- 坐标轴 -->
+        <line x1="70" y1="300" x2="600" y2="300" stroke="#3a4a66" stroke-width="1.4"/>
+        <line x1="70" y1="300" x2="70" y2="40" stroke="#3a4a66" stroke-width="1.4"/>
+        <text x="600" y="322" fill="#8aa0bd" font-size="11" text-anchor="middle">速度（快 → 慢）</text>
+        <text x="34" y="300" fill="#8aa0bd" font-size="11" text-anchor="middle" transform="rotate(-90 34 300)">路径最优性 / 质量</text>
+        <!-- 象限分隔 -->
+        <line x1="290" y1="300" x2="290" y2="40" stroke="#2a3a55" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="70" y1="180" x2="600" y2="180" stroke="#2a3a55" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="180" y="52" fill="#5c708a" font-size="10.5" text-anchor="middle">快 · 较优</text>
+        <text x="450" y="52" fill="#5c708a" font-size="10.5" text-anchor="middle">慢 · 较优</text>
+        <text x="180" y="292" fill="#5c708a" font-size="10.5" text-anchor="middle">快 · 较差</text>
+        <text x="450" y="292" fill="#5c708a" font-size="10.5" text-anchor="middle">慢 · 较差</text>
+        <!-- 节点 -->
+        <circle cx="120" cy="110" r="9" fill="#4da6ff"/><text x="120" y="90" fill="#8fd0ff" font-size="12" text-anchor="middle" font-weight="600">梯度</text>
+        <text x="120" y="126" fill="#8aa0bd" font-size="10" text-anchor="middle">快 · 易局部最优</text>
+        <circle cx="210" cy="170" r="9" fill="#c39bff"/><text x="210" y="150" fill="#c39bff" font-size="12" text-anchor="middle" font-weight="600">动量</text>
+        <text x="210" y="186" fill="#8aa0bd" font-size="10" text-anchor="middle">可冲势阱 · 不稳</text>
+        <circle cx="360" cy="235" r="9" fill="#e0a94d"/><text x="360" y="215" fill="#e0a94d" font-size="12" text-anchor="middle" font-weight="600">RRT</text>
+        <text x="360" y="251" fill="#8aa0bd" font-size="10" text-anchor="middle">稳定 · 可行不优</text>
+        <circle cx="520" cy="120" r="9" fill="#6fbf6f"/><text x="520" y="100" fill="#6fbf6f" font-size="12" text-anchor="middle" font-weight="600">PRM</text>
+        <text x="520" y="136" fill="#8aa0bd" font-size="10" text-anchor="middle">最优 · 慢</text>
+      </svg>
+      <figcaption><b>图 4 · 四类求解器的"速度 × 最优性"定位</b>——横轴为求解速度（快 → 慢），纵轴为轨迹最优性/质量（低 → 高）。<strong>梯度</strong>快但易局部最优；<strong>动量</strong>可穿越势阱但收敛与稳定性欠佳；<strong>RRT</strong> 稳定但轨迹可行非最优；<strong>PRM</strong> 渐近最优但耗时。四者落在不同象限，覆盖"快 / 稳 / 优"的不同组合，故组织为<strong>求解器集合</strong>并按需调度，而非依赖单一方法。</figcaption>
+    </figure>
+    <div class="mine"><b>工程映射（与实际代码对齐）：</b>笔记中的"梯度"与"动量"在实现上合并为 <code>method_momentum</code>（即"梯度下降 + 动量累积"，并无单独纯梯度方法）；<strong>RRT</strong> 对应 <code>method_rrt / method_rrtstar</code>（RRT/RRT*）；<strong>PRM</strong> 对应 <code>method_prm</code>；"分层"由 <code>method_graph</code> 实现（走廊图 + A* + 逐段 RRT*）；另有 <code>method_sa</code>（模拟退火）、<code>method_rl</code>（强化学习）与学习层 <code>cvaePolicyDeploy</code> 作为补充。全部求解方法由 <code>method_auto</code> 按序调度（<code>动量法 → RRT* → 图引导 → PRM → 模拟退火</code>）。</div>
+  </section>
+
+  <!-- 5 后验反馈 -->
+  <section class="card">
+    <h2><span class="no">5</span>后验反馈与高层语义指导模型</h2>
+    <p class="desc">空间分治、路线选择、求解器选择与权重配置目前依赖人工或启发式设定。本设计在此环节预留参数接口，并拟通过离线同步训练学习一个高层语义指导模型。</p>
+    <div class="fn">
+      <div class="fn-head"><span class="fn-name">后验反馈 · 设计预留</span></div>
+      <div class="fn-body">
+        <ul class="tight">
+          <li><strong>设计意图：</strong>为"空间切割、路线选择、求解器选择、求解权重"<strong>预留参数</strong>，并结合<strong>离线同步训练</strong>，学习一个<strong>高层语义指导模型</strong>，用于预测"何种场景应采取何种策略"。该模型可作为求解器按需调度的可学习策略。</li>
+          <li><strong>已知局限：</strong>该语义模型通常<strong>仅适用于特定构型的机械臂</strong>；迁移至不同臂型或关节数时，泛化能力受限。</li>
+        </ul>
+        <div class="note warn"><strong>价值与方向：</strong>若以语义模型替代现行 <code>method_auto</code> 的<strong>固定调度序</strong>（动量法 → RRT* → 图引导 → PRM → 模拟退火），理论上可按场景更精准地选择求解方法，属于后续演进方向之一（与"可解性分类器"思路一致）。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 离线训练 -->
+  <section class="card">
+    <h2><span class="no">6</span>离线训练方法</h2>
+    <p class="desc">本设计以"由既定策略生成最优示范，并为之标注标签"的方式开展离线训练，以期获得可快速输出、并能规避势阱的策略。本节考察三类方法及其共性问题。</p>
+    <div class="fn">
+      <div class="fn-head"><span class="fn-name">三类训练方法</span></div>
+      <div class="fn-body">
+        <table>
+          <tr><th>方法</th><th>机制</th><th>特点</th></tr>
+          <tr><td><b>BC</b>（行为克隆）</td><td>由既定策略生成最优示范，并为示范数据<strong>标注标签</strong>，进行监督回归</td><td>实现简单；但面对多模态决策（如绕左/绕右）时仅输出平均路径</td></tr>
+          <tr><td><b>BC-CVAE</b>（条件变分自编码器）</td><td>在 BC 基础上<strong>引入潜变量</strong>，提升模型在不同场景下的<strong>决策灵敏度</strong></td><td>可表达多模态；灵敏度源于潜变量 <code>z</code></td></tr>
+          <tr><td><b>RL</b>（强化学习）</td><td><strong>纯黑箱特征优化</strong>，基于标签学习</td><td>不依赖梯度可导；适用于奖励函数难以定义的避障问题</td></tr>
+        </table>
+        <div class="note warn"><strong>共性问题：</strong><b>分辨率下的收敛成本</b>。随着分辨率提高，模型规模与训练时间呈<strong>指数级</strong>增长，对<strong>三维空间尤为不利</strong>。换言之，以更高分辨率换取更高精度的代价呈爆炸式上升；在三维化场景下，该矛盾将进一步加剧。</div>
+
+        <figure class="fig">
+          <svg viewBox="0 0 680 260" width="100%" role="img" aria-label="BC、BC-CVAE、RL 三类训练结构">
+            <!-- 分隔线 -->
+            <line x1="226" y1="38" x2="226" y2="216" stroke="#2a3a55" stroke-width="1"/>
+            <line x1="452" y1="38" x2="452" y2="216" stroke="#2a3a55" stroke-width="1"/>
+            <!-- 公共输入说明 -->
+            <text x="113" y="30" fill="#8aa0bd" font-size="10.5" text-anchor="middle">输入 x = [障碍栅格 | q₀ | target]</text>
+            <text x="339" y="30" fill="#8aa0bd" font-size="10.5" text-anchor="middle">同 + 潜变量 z</text>
+            <text x="565" y="30" fill="#8aa0bd" font-size="10.5" text-anchor="middle">状态特征 s</text>
+            <!-- BC -->
+            <text x="113" y="60" fill="#6fbf6f" font-size="12.5" text-anchor="middle" font-weight="600">BC 行为克隆</text>
+            <rect x="48" y="72" width="130" height="40" rx="7" fill="#1c2740" stroke="#6fbf6f"/>
+            <text x="113" y="97" fill="#fff" font-size="11" text-anchor="middle">条件 MLP</text>
+            <line x1="113" y1="112" x2="113" y2="140" stroke="#6fbf6f" stroke-width="1.4"/>
+            <polygon points="113,148 120,140 106,140" fill="#6fbf6f"/>
+            <text x="113" y="168" fill="#d7e0ef" font-size="11" text-anchor="middle">Δ 轨迹（单值回归）</text>
+            <text x="113" y="200" fill="#8aa0bd" font-size="10" text-anchor="middle">多模态 → 平均穿障</text>
+            <!-- BC-CVAE -->
+            <text x="339" y="60" fill="#c39bff" font-size="12.5" text-anchor="middle" font-weight="600">BC-CVAE 条件变分自编码</text>
+            <rect x="262" y="72" width="70" height="40" rx="7" fill="#1c2740" stroke="#c39bff"/>
+            <text x="297" y="97" fill="#fff" font-size="11" text-anchor="middle">编码 z</text>
+            <rect x="348" y="72" width="70" height="40" rx="7" fill="#1c2740" stroke="#c39bff"/>
+            <text x="383" y="97" fill="#fff" font-size="11" text-anchor="middle">解码(x,z)</text>
+            <line x1="297" y1="112" x2="297" y2="140" stroke="#c39bff" stroke-width="1.4"/>
+            <line x1="383" y1="112" x2="383" y2="140" stroke="#c39bff" stroke-width="1.4"/>
+            <text x="339" y="158" fill="#d7e0ef" font-size="11" text-anchor="middle">Δ 轨迹（多模态）</text>
+            <text x="339" y="200" fill="#8aa0bd" font-size="10" text-anchor="middle">潜变量增强决策灵敏度</text>
+            <!-- RL -->
+            <text x="565" y="60" fill="#4da6ff" font-size="12.5" text-anchor="middle" font-weight="600">RL 强化学习</text>
+            <rect x="500" y="72" width="130" height="40" rx="7" fill="#1c2740" stroke="#4da6ff"/>
+            <text x="565" y="97" fill="#fff" font-size="11" text-anchor="middle">策略 π_θ(s)</text>
+            <line x1="565" y1="112" x2="565" y2="140" stroke="#4da6ff" stroke-width="1.4"/>
+            <polygon points="565,148 572,140 558,140" fill="#4da6ff"/>
+            <text x="565" y="168" fill="#d7e0ef" font-size="11" text-anchor="middle">关节增量（黑箱寻优）</text>
+            <text x="565" y="200" fill="#8aa0bd" font-size="10" text-anchor="middle">不需梯度可导</text>
+          </svg>
+          <figcaption><b>图 5 · 三类离线训练方法的结构</b>——<strong>BC</strong> 以条件 MLP 对特征 <code>x＝[障碍栅格 | 起点 | 目标]</code> 做监督回归，直接输出增量轨迹 <code>Δ</code>，面对多模态时只能取平均；<strong>BC-CVAE</strong> 在 BC 基础上引入<strong>潜变量 z</strong>（编码为 <code>z</code>，再与 <code>x,z</code> 解码成 <code>Δ</code>），以潜变量表达多模态、增强决策灵敏度；<strong>RL</strong> 基于状态特征学习策略 <code>π_θ(s)</code> 输出关节增量，为<strong>黑箱特征优化</strong>，不依赖梯度可导。三者共用同一套特征与"增量表示"。</figcaption>
+        </figure>
+        <div class="mine"><b>工程映射：</b>上述方法分别对应 <code>train_policy.py</code>（BC 基线）、<code>train_cvae.py</code>（CVAE，主策略）、<code>method_rl / trainRLPolicy</code>（OpenAI-ES）。"分辨率瓶颈"正是当前体素/点云特征编码与潜空间优化推理所面临的主要难点。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 其他设想 -->
+  <section class="card">
+    <h2><span class="no">7</span>待验证的演进方向</h2>
+    <p class="desc">本节所述两条方向更为宏观，共同围绕"避免穷举全部空间点、充分利用高层语义"这一原则。二者目前均<strong style="color:#fff">尚未经过充分验证</strong>，仅作记录。</p>
+
+    <h3>7.1 语义化的梯度下降</h3>
+    <div class="fn">
+      <div class="fn-body">
+        <ul class="tight">
+          <li><strong>动机：</strong>以学习方式穷举"全部空间点的可行性"成本过高——本质上是对每个空间点逐一验证。</li>
+          <li><strong>思路：</strong>借助已知环境信息，将约束转化为<strong>更高层的语义信息</strong>，引导机械臂<strong>有策略地运动</strong>，从而无需遍历所有空间点。</li>
+          <li><strong>核心命题：</strong>定义一类<strong>隐含环境语义的梯度下降方法</strong>。局部障碍虽可导致势阱与局部最优，但若从"环境对局部障碍势的解释""时间停滞"等<strong>高层语义</strong>出发，<strong>量化引入更多动态参数</strong>，即可使<strong>局部最优唯一，从而等价于全局最优</strong>。</li>
+        </ul>
+        <div class="note deep"><strong>意义与难度：</strong>该方向旨在为梯度法引入环境先验，将"多局部最优"转化为"唯一全局最优"，而无需依赖随机采样进行全局搜索。其理论性最强，实现难度也最高。</div>
+
+        <figure class="fig">
+          <svg viewBox="0 0 680 330" width="100%" role="img" aria-label="引入环境语义后局部最优唯一化">
+            <!-- 原始势能（含局部最优） -->
+            <text x="150" y="30" fill="#e0a94d" font-size="12.5" text-anchor="middle" font-weight="600">原始 V(q)：含局部最优</text>
+            <polyline fill="none" stroke="#e0a94d" stroke-width="2" stroke-dasharray="6 3" stroke-linejoin="round" points="60,80 100,104 140,122 180,132 210,130 245,120 285,132 325,152 360,166 400,180 440,186 480,184 520,172 560,152 610,128"/>
+            <circle cx="210" cy="130" r="5" fill="#e0a94d"/>
+            <text x="210" y="112" fill="#e0a94d" font-size="10.5" text-anchor="middle">局部最优</text>
+            <circle cx="480" cy="184" r="5" fill="#e0a94d"/>
+            <text x="480" y="204" fill="#e0a94d" font-size="10.5" text-anchor="middle">目标（全局最小）</text>
+            <text x="150" y="60" fill="#8aa0bd" font-size="10.5" text-anchor="middle">梯度从左侧陷入局部最优</text>
+
+            <!-- 间隔 -->
+            <path d="M40,220 H640" stroke="#2a3a55" stroke-width="1" stroke-dasharray="4 3"/>
+
+            <!-- 引入语义后的势能 -->
+            <text x="150" y="250" fill="#6fbf6f" font-size="12.5" text-anchor="middle" font-weight="600">引入环境语义动态参数后</text>
+            <polyline fill="none" stroke="#6fbf6f" stroke-width="2.4" stroke-linejoin="round" points="60,300 100,286 140,272 180,262 210,258 245,254 285,248 325,240 360,228 400,212 440,198 480,190 520,184 560,178 610,168"/>
+            <circle cx="480" cy="190" r="5" fill="#6fbf6f"/>
+            <text x="480" y="210" fill="#6fbf6f" font-size="10.5" text-anchor="middle">唯一全局最优</text>
+            <text x="150" y="286" fill="#8aa0bd" font-size="10.5" text-anchor="middle">局部势阱被消除，全局唯一</text>
+          </svg>
+          <figcaption><b>图 6 · 引入环境语义后的"局部最优唯一化"</b>——上图为原始目标势能 <code>V(q)</code>：左侧存在一个<strong>局部最优</strong>（浅势阱），梯度自左起步会陷入其中；下图为<strong>引入"环境对障碍势的解释 / 时间停滞"等高层语义动态参数</strong>后的势能：原本的局部势阱被消除，势能曲面上<strong>只有一个全局最小</strong>，于是"局部最优唯一，即等价于全局最优"。这正是 7.1 拟通过"隐含环境语义的梯度下降"实现的目标——不依赖随机采样全局搜索，而是把"该不该绕、哪块是坑"作为语义量注入坐标。</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <h3>7.2 高层语义的多部分协同运动</h3>
+    <div class="fn">
+      <div class="fn-body">
+        <ul class="tight">
+          <li><strong>出发点：</strong>超多关节机械臂的运动可视为<strong>多个连缀多关节部分的协同运动</strong>。例如，一个 18 关节臂可根据任务划分为 <code>9+3+6</code> 或 <code>6+6+6</code>，或存在<strong>共用关节</strong>的分组。</li>
+          <li><strong>方法：</strong>各部分<strong>独立规划</strong>，并与其他部分进行<strong>协同规划</strong>。</li>
+          <li><strong>难点：</strong>需构建一个<strong>严谨、完整、复杂</strong>的数学框架，以评估"任务-场景-语义"的关系，并结合<strong>监督学习</strong>实现训练。</li>
+        </ul>
+        <div class="note warn"><strong>存在的困难：</strong>如何将高冗余蛇形机械臂划分为若干子臂并实现协同，本质上属于<strong>分层/任务分解</strong>难题；尤其在<strong>共用关节</strong>情形下耦合较强。该方向需以严谨数学框架为支撑，短期内难以落地。</div>
+      </div>
+    </div>
+
+    <div class="note warn"><strong>声明：</strong>除上述设想外，尚有若干<strong>未经检验且尚不成熟</strong>的思路，此处不作逐一列举。凡未经验证者，均不作为既定可实现目标；在进一步推进前，需先开展可行性验证（此即 <code>P0可行性验证报告</code>、<code>全局最优100%策略可行性分析</code> 所延续的脉络）。</div>
+  </section>
+
+  <!-- 8 总结 -->
+  <section class="card">
+    <h2><span class="no">8</span>演进脉络总结</h2>
+    <div class="grid2">
+      <div>
+        <h4>算法设计的演进主线</h4>
+        <ol class="tight">
+          <li><b>初始方案被否定</b>：依赖"将障碍惩罚并入目标函数"的单层梯度方法，目标函数复杂不连续、易陷入势阱、成功率低。</li>
+          <li><b>现行结构</b>：障碍空间 → 可行连通图（第一层语义）→ 拆分为小凸子段 → 逐段求解 → 图搜索验证。</li>
+          <li><b>求解器集合</b>：梯度、动量、RRT、PRM 协作互补（分别对应快、穿越势阱、稳、优）。</li>
+          <li><b>后验学习</b>：依据求解结果反哺空间切割、路线选择、求解器选择与权重，并训练高层语义指导模型。</li>
+          <li><b>离线训练</b>：BC、BC-CVAE、RL，受分辨率指数增长的制约。</li>
+          <li><b>宏观方向</b>：语义化梯度下降（使局部最优唯一）、多部分协同运动（高层语义 + 监督学习）。</li>
+        </ol>
+      </div>
+      <div>
+        <div class="note ok" style="color:var(--text)"><strong>总述：</strong>本设计的核心转变在于，由"以单一连续目标函数并入避障约束"，转向"<strong>以硬约束建模障碍、以空间分治降阶、以多类求解器互补、并按需引入语义学习策略</strong>"。后续 <code>求解策略.html</code>、<code>学习管线.html</code>、<code>三维化分析.html</code> 所展开的各项内容，均源于此一设计主线。</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  平面高冗余蛇形机械臂 IK 求解与仿真平台 · 算法部分可行性与理论概述 · 生成于 2026
+</footer>
+
+</body>
+</html>

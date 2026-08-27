@@ -86,6 +86,19 @@
   .prio.p2 { background:rgba(111,191,111,0.15); color:var(--accent2); }
 
   footer { text-align:center; color:var(--muted); font-size:12.5px; padding:24px; border-top:1px solid var(--line); }
+  nav.sitenav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:12px 24px; background:#101827; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10; }
+  nav.sitenav .brand { font-weight:700; color:var(--accent); margin-right:8px; font-size:14px; }
+  nav.sitenav a { color:var(--muted); padding:3px 10px; border-radius:6px; font-size:13px; }
+  nav.sitenav a:hover { color:#fff; background:rgba(77,166,255,0.12); text-decoration:none; }
+  details { margin:10px 0; border:1px solid var(--line); border-radius:8px; padding:0 16px 8px; background:rgba(255,255,255,0.015); }
+  summary { cursor:pointer; padding:10px 0; font-weight:600; color:var(--accent); }
+  summary::before { content:'▸ 展开 · '; color:var(--muted); font-size:12px; margin-right:4px; }
+  .refbox { margin:18px 0 6px; padding:12px 16px; border:1px dashed var(--line); border-radius:8px; background:rgba(77,166,255,0.05); }
+  .refbox b { color:var(--accent); }
+  .refbox ol { margin:8px 0 0; padding-left:20px; }
+  .refbox li { margin:4px 0; font-size:13.5px; }
+  .keybox { margin:16px 0; padding:14px 18px; border:1px solid rgba(111,191,111,0.35); border-left:5px solid var(--accent2); border-radius:8px; background:rgba(111,191,111,0.08); }
+  .keybox b { color:var(--accent2); }
 </style>
 </head>
 <body>
@@ -102,7 +115,18 @@
   </div>
 </header>
 
+<nav class="sitenav">
+  <span class="brand">◈ 平面蛇形机械臂 IK 平台</span>
+  <a href="项目介绍.html">项目介绍</a>
+  <a href="架构总览.html">架构总览</a>
+  <a href="运行机制.html">运行机制</a>
+  <a href="求解策略.html">求解策略</a>
+  <a href="学习管线.html">学习管线</a>
+  <a href="三维化分析.html">三维化分析</a>
+  <a href="算法部分可行性与理论概述.html">理论概述</a>
+</nav>
 <main>
+  <div class="keybox"><b>核心成果（终点）</b>：一套 <b>6 关节 × 1043.93mm</b> 超冗余平面蛇形机械臂的 <b>IK / 规划 / 任务 / 仿真</b> 中间模块——<b>9 种求解方法</b> + <code>auto</code> 调度 + <b>LGM 分层</b>，纯 MATLAB 五层架构；含模拟视觉任务闭环、<code>motorCmd</code> 导出（dSPACE 加载）与评估框架，软件核心完成度 <b>≈90%</b>。</div>
 
   <section class="card">
     <h2><span class="no">◈</span>目录与阅读指引</h2>
@@ -161,7 +185,7 @@ motorCmd（.mat / .csv：q_seq + t_seq + gripper_seq）
   <!-- 1. 架构 -->
   <section class="card" id="g1">
     <h2><span class="no">1</span>系统架构与分层</h2>
-    <p class="desc">核心按「接口 → 价值 → 方法 → 数学 → 任务误差」五层组织，依赖单向；学习层与顶层闭环叠加其上。完整函数签名见 <code>architecture.html</code>。</p>
+    <p class="desc">核心按「接口 → 价值 → 方法 → 数学 → 任务误差」五层组织，依赖单向；学习层与顶层闭环叠加其上。完整函数签名见 <code>架构总览.html</code>。</p>
 
     <div class="grid2">
       <div>
@@ -191,7 +215,7 @@ motorCmd（.mat / .csv：q_seq + t_seq + gripper_seq）
     </div>
 
     <div class="xref">
-      <span class="f">architecture.html</span>
+      <span class="f">架构总览.html</span>
       <span class="t"><b>详细章节：</b>系统定位、L0–L4 分层表、价值函数与默认参数表、9 方法表与 auto 调度链、任务生命周期与状态机、接口契约、学习管线、文件结构。<span>（逐函数签名 / 返回值）</span></span>
     </div>
   </section>
@@ -199,7 +223,7 @@ motorCmd（.mat / .csv：q_seq + t_seq + gripper_seq）
   <!-- 2. 运行机制 -->
   <section class="card" id="g2">
     <h2><span class="no">2</span>运行机制与四条链路</h2>
-    <p class="desc">四个入口/常驻进程都被数据源驱动，在“求解语义”上汇入<strong style="color:#fff">同一个共享内核</strong>，再各自产出下游负载。完整情景与接口格式见 <code>runtime.html</code>。</p>
+    <p class="desc">四个入口/常驻进程都被数据源驱动，在“求解语义”上汇入<strong style="color:#fff">同一个共享内核</strong>，再各自产出下游负载。完整情景与接口格式见 <code>运行机制.html</code>。</p>
 
     <h3>2.1 共享求解内核</h3>
     <pre>simulateMotion（统一入口 + 方法分派 + 后处理）
@@ -220,7 +244,7 @@ motorCmd（.mat / .csv：q_seq + t_seq + gripper_seq）
     <div class="note"><strong>唯一的“关键路径”是链路 A</strong>：只有它的产物会真实驱动电控执行；B/C/D 都是“在大脑里演练”。链路 A 的任务生命周期：<code>RECEIVED → ACCEPTED → PLANNING → EXECUTING → COMPLETED</code>（并行 REJECTED / FAILED / CANCELED / ESTOP_TRIGGERED）。</div>
 
     <div class="xref">
-      <span class="f">runtime.html</span>
+      <span class="f">运行机制.html</span>
       <span class="t"><b>详细章节：</b>运行总览拓扑图、四个链路的逐步逻辑表、任务运作情景（S1–S11）、模块间交互与接口格式（E1–E8）、子模块运行关系总表、状态与错误流转、依赖与约束。</span>
     </div>
   </section>
@@ -228,7 +252,7 @@ motorCmd（.mat / .csv：q_seq + t_seq + gripper_seq）
   <!-- 3. 求解策略 -->
   <section class="card" id="g3">
     <h2><span class="no">3</span>求解策略与数学</h2>
-    <p class="desc">覆盖<strong style="color:#fff">梯度局部精修 → 采样全局 → 图引导 → 工作空间连通 → 学习加速</strong>五种范式，共享单一价值函数。完整数学推导、公式、参数表见 <code>strategies.html</code>。</p>
+    <p class="desc">覆盖<strong style="color:#fff">梯度局部精修 → 采样全局 → 图引导 → 工作空间连通 → 学习加速</strong>五种范式，共享单一价值函数。完整数学推导、公式、参数表见 <code>求解策略.html</code>。</p>
 
     <h3>3.1 五种范式</h3>
     <table>
@@ -251,7 +275,7 @@ motorCmd（.mat / .csv：q_seq + t_seq + gripper_seq）
 局部最优判定：‖∇V‖ &lt; tol 且 末端未达 ⇒ 升级到采样层</pre>
 
     <div class="xref">
-      <span class="f">strategies.html</span>
+      <span class="f">求解策略.html</span>
       <span class="t"><b>详细章节：</b>共享数学基础（价值/梯度/运动学/障碍）、9 种策略的“直觉 + 公式 + 步骤 + 参数 + 优缺点”、收敛性与最优性讨论、横向对比与选择指南。</span>
     </div>
   </section>
@@ -259,7 +283,7 @@ motorCmd（.mat / .csv：q_seq + t_seq + gripper_seq）
   <!-- 4. 学习策略 -->
   <section class="card" id="g4">
     <h2><span class="no">4</span>学习策略与部署</h2>
-    <p class="desc">把“离线全局最优规划”蒸馏为<strong style="color:#fff">毫秒级策略直出</strong>。完整理论、损失、导出格式、部署闭环见 <code>learning.html</code>。</p>
+    <p class="desc">把“离线全局最优规划”蒸馏为<strong style="color:#fff">毫秒级策略直出</strong>。完整理论、损失、导出格式、部署闭环见 <code>学习管线.html</code>。</p>
 
     <h3>4.1 三条学习路线</h3>
     <table>
@@ -280,7 +304,7 @@ motorCmd（.mat / .csv：q_seq + t_seq + gripper_seq）
     <pre>直出(CVAE) → 安全校验 isFreeTraj → 穿障/误差&gt;0.08 回退 method_auto → 终点精修 ≤0.008</pre>
 
     <div class="xref">
-      <span class="f">learning.html</span>
+      <span class="f">学习管线.html</span>
       <span class="t"><b>详细章节：</b>为什么学、数据管线与示范生成原理、公共特征编码、BC / CVAE / RL 各自的理论与实现、潜空间优化、模型导出与 MATLAB 手写 forward、部署闭环、评估与验收、模型栈与演进。</span>
     </div>
   </section>
@@ -503,13 +527,13 @@ stats = runTaskLoop(model, struct('outbox','data/outbox','inbox','data/inbox'));
     <p class="desc">一套有层级的文档体系：本页是<strong style="color:#fff">总览入口</strong>，四份深度文档按领域深耕，补充内容已并入本页。</p>
     <div class="tree">
 <span class="file">项目介绍.html</span>  ── 总览入口 · 层级索引 · 含补充内容（此页）
-├─ <span class="grp">1 系统架构</span>  <span class="dim">是什么</span>  → <span class="file">architecture.html</span>
+├─ <span class="grp">1 系统架构</span>  <span class="dim">是什么</span>  → <span class="file">架构总览.html</span>
 │    <span class="dim">分层 / 价值函数 / 9 方法 / 生命周期 / 接口契约 / 文件结构</span>
-├─ <span class="grp">2 运行机制</span>  <span class="dim">何时·谁驱动</span>  → <span class="file">runtime.html</span>
+├─ <span class="grp">2 运行机制</span>  <span class="dim">何时·谁驱动</span>  → <span class="file">运行机制.html</span>
 │    <span class="dim">运行拓扑 / 4 链路 / 共享内核 / 情景与错误流转 / 模块关系</span>
-├─ <span class="grp">3 求解策略</span>  <span class="dim">算法怎么算</span>  → <span class="file">strategies.html</span>
+├─ <span class="grp">3 求解策略</span>  <span class="dim">算法怎么算</span>  → <span class="file">求解策略.html</span>
 │    <span class="dim">9 方法 + auto / 数学公式 / 收敛性与最优性 / 选择指南</span>
-├─ <span class="grp">4 学习策略</span>  <span class="dim">学什么·怎么落地</span>  → <span class="file">learning.html</span>
+├─ <span class="grp">4 学习策略</span>  <span class="dim">学什么·怎么落地</span>  → <span class="file">学习管线.html</span>
 │    <span class="dim">BC/CVAE/RL / 理论 / 导出 / 部署闭环 / 评估</span>
 ├─ <span class="grp">5–10 补充</span>  <span class="dim">结果 / 验证 / 边界 / 对比 / 工程 / 路线图</span>  <span class="dim">（已并入本页 §5–§10）</span>
 └─ <span class="dim">其他</span>：<span class="file">文档/</span>（实现方案 · 电控对接 · 云训练迁移 · 验收差距分析）  <span class="file">test/</span>（test_all）  <span class="file">scripts/</span>（verifyPolicy 等）
@@ -517,10 +541,10 @@ stats = runTaskLoop(model, struct('outbox','data/outbox','inbox','data/inbox'));
     <table style="margin-top:16px">
       <tr><th>文档</th><th>定位</th><th>读者场景</th></tr>
       <tr><td><a href="项目介绍.html">项目介绍.html</a></td><td>总览入口（本页）</td><td>首次接触 / 汇报 / 交接总览</td></tr>
-      <tr><td><a href="architecture.html">architecture.html</a></td><td>系统架构与函数接口</td><td>理解系统构成</td></tr>
-      <tr><td><a href="runtime.html">runtime.html</a></td><td>运行机制与模块关系</td><td>理解运行时行为</td></tr>
-      <tr><td><a href="strategies.html">strategies.html</a></td><td>搜索策略与数学</td><td>深究算法</td></tr>
-      <tr><td><a href="learning.html">learning.html</a></td><td>学习策略与实现</td><td>深究学习链路</td></tr>
+      <tr><td><a href="架构总览.html">架构总览.html</a></td><td>系统架构与函数接口</td><td>理解系统构成</td></tr>
+      <tr><td><a href="运行机制.html">运行机制.html</a></td><td>运行机制与模块关系</td><td>理解运行时行为</td></tr>
+      <tr><td><a href="求解策略.html">求解策略.html</a></td><td>搜索策略与数学</td><td>深究算法</td></tr>
+      <tr><td><a href="学习管线.html">学习管线.html</a></td><td>学习策略与实现</td><td>深究学习链路</td></tr>
     </table>
   </section>
 

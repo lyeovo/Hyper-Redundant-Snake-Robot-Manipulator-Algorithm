@@ -249,6 +249,19 @@
   }
   .toc a { display: block; padding: 2px 0; }
   @media (max-width: 560px) { .toc { columns: 1; } }
+  nav.sitenav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:12px 24px; background:#101827; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10; }
+  nav.sitenav .brand { font-weight:700; color:var(--accent); margin-right:8px; font-size:14px; }
+  nav.sitenav a { color:var(--muted); padding:3px 10px; border-radius:6px; font-size:13px; }
+  nav.sitenav a:hover { color:#fff; background:rgba(77,166,255,0.12); text-decoration:none; }
+  details { margin:10px 0; border:1px solid var(--line); border-radius:8px; padding:0 16px 8px; background:rgba(255,255,255,0.015); }
+  summary { cursor:pointer; padding:10px 0; font-weight:600; color:var(--accent); }
+  summary::before { content:'▸ 展开 · '; color:var(--muted); font-size:12px; margin-right:4px; }
+  .refbox { margin:18px 0 6px; padding:12px 16px; border:1px dashed var(--line); border-radius:8px; background:rgba(77,166,255,0.05); }
+  .refbox b { color:var(--accent); }
+  .refbox ol { margin:8px 0 0; padding-left:20px; }
+  .refbox li { margin:4px 0; font-size:13.5px; }
+  .keybox { margin:16px 0; padding:14px 18px; border:1px solid rgba(111,191,111,0.35); border-left:5px solid var(--accent2); border-radius:8px; background:rgba(111,191,111,0.08); }
+  .keybox b { color:var(--accent2); }
 </style>
 </head>
 <body>
@@ -264,7 +277,18 @@
   </div>
 </header>
 
+<nav class="sitenav">
+  <span class="brand">◈ 平面蛇形机械臂 IK 平台</span>
+  <a href="项目介绍.html">项目介绍</a>
+  <a href="架构总览.html">架构总览</a>
+  <a href="运行机制.html">运行机制</a>
+  <a href="求解策略.html">求解策略</a>
+  <a href="学习管线.html">学习管线</a>
+  <a href="三维化分析.html">三维化分析</a>
+  <a href="算法部分可行性与理论概述.html">理论概述</a>
+</nav>
 <main>
+  <div class="keybox"><b>核心结论（终点）</b>：核心 <code>ArmSimulator2D/</code> 按「接口 → 价值 → 方法 → 数学 → 任务误差」五层单向组织；<b>统一价值函数 + 解析梯度</b>（机器精度校验）；<b>9 种求解器</b> + <code>auto</code> 调度 + 无梯度精修 + <b>LGM 工作空间连通层</b>；全方法共享统一 <code>info</code> 契约，下游产出 <code>motorCmd</code> 供电控。</div>
 
   <section class="card">
     <h2><span class="no">◈</span>目录</h2>
@@ -319,6 +343,52 @@
       <tr><td><code>顶层闭环</code></td><td>实时读反馈 + 手眼在线估计 + Kalman 目标估计</td><td><code>runTopLevel.m</code> <code>handEyeEstimate2D.m</code> <code>kalmanTarget*.m</code></td><td>调 L0/L3</td></tr>
       <tr><td><code>GUI</code></td><td>虚拟仿真窗口（障碍编辑/目标拖拽/回放）</td><td><code>ArmSimApp.m</code></td><td>调 L0/L2</td></tr>
     </table>
+    <figure style="margin:16px 0; text-align:center">
+      <svg viewBox="0 0 920 440" width="100%" style="max-width:920px" role="img" aria-label="五层架构依赖图">
+        <defs>
+          <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1c2740"/><stop offset="1" stop-color="#131c2e"/>
+          </linearGradient>
+          <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#4da6ff"/>
+          </marker>
+        </defs>
+        <text x="460" y="30" text-anchor="middle" fill="#d7e0ef" font-size="15" font-weight="700">ArmSimulator2D · 五层单向依赖架构</text>
+        <!-- 顶层叠加 -->
+        <rect x="40" y="52" width="400" height="42" rx="9" fill="url(#lg1)" stroke="#6fbf6f" stroke-dasharray="4 3"/>
+        <text x="240" y="79" text-anchor="middle" fill="#6fbf6f" font-size="13" font-weight="700">学习层（L2）· 示范生成→CVAE→部署闭环</text>
+        <rect x="480" y="52" width="400" height="42" rx="9" fill="url(#lg1)" stroke="#e0a94d" stroke-dasharray="4 3"/>
+        <text x="680" y="79" text-anchor="middle" fill="#e0a94d" font-size="13" font-weight="700">顶层闭环 · 手眼在线估计 + Kalman 目标估计</text>
+        <!-- L0 -->
+        <rect x="40" y="120" width="400" height="52" rx="9" fill="url(#lg1)" stroke="#4da6ff" stroke-width="1.6"/>
+        <text x="240" y="142" text-anchor="middle" fill="#d7e0ef" font-size="14" font-weight="700">L0 接口层</text>
+        <text x="240" y="161" text-anchor="middle" fill="#8aa0bd" font-size="11">createArmModel · simulateMotion · solveIK · taskExecute · exportMotorCmd</text>
+        <text x="440" y="146" text-anchor="start" fill="#8aa0bd" font-size="11">→ 调 L1 / L2</text>
+        <line x1="240" y1="172" x2="240" y2="204" stroke="#4da6ff" stroke-width="2" marker-end="url(#arw)"/>
+        <!-- L1 -->
+        <rect x="40" y="208" width="400" height="52" rx="9" fill="url(#lg1)" stroke="#4da6ff" stroke-width="1.6"/>
+        <text x="240" y="230" text-anchor="middle" fill="#d7e0ef" font-size="14" font-weight="700">L1 价值层</text>
+        <text x="240" y="249" text-anchor="middle" fill="#8aa0bd" font-size="11">armValue · armGradient · detectLocalMin</text>
+        <text x="440" y="234" text-anchor="start" fill="#8aa0bd" font-size="11">→ 调 L3</text>
+        <line x1="240" y1="260" x2="240" y2="292" stroke="#4da6ff" stroke-width="2" marker-end="url(#arw)"/>
+        <!-- L2 -->
+        <rect x="40" y="296" width="400" height="52" rx="9" fill="url(#lg1)" stroke="#6fbf6f" stroke-width="1.8"/>
+        <text x="240" y="318" text-anchor="middle" fill="#d7e0ef" font-size="14" font-weight="700">L2 方法层（9 求解器 + auto + LGM）</text>
+        <text x="240" y="337" text-anchor="middle" fill="#8aa0bd" font-size="11">method_* · refineRandomGreedy · buildConnectivityGraph(graphPaths)</text>
+        <text x="440" y="322" text-anchor="start" fill="#8aa0bd" font-size="11">→ 调 L1 / L3</text>
+        <line x1="240" y1="348" x2="240" y2="380" stroke="#4da6ff" stroke-width="2" marker-end="url(#arw)"/>
+        <!-- L3 -->
+        <rect x="40" y="384" width="400" height="52" rx="9" fill="url(#lg1)" stroke="#4da6ff" stroke-width="1.4"/>
+        <text x="240" y="406" text-anchor="middle" fill="#d7e0ef" font-size="14" font-weight="700">L3 数学层（基元，无依赖）</text>
+        <text x="240" y="425" text-anchor="middle" fill="#8aa0bd" font-size="11">planarFK_L · planarJac_L · obsDistAll/GradAll · seg*DistGrad</text>
+        <!-- L4 右侧 -->
+        <rect x="480" y="384" width="400" height="52" rx="9" fill="url(#lg1)" stroke="#e0a94d" stroke-width="1.4"/>
+        <text x="680" y="406" text-anchor="middle" fill="#d7e0ef" font-size="14" font-weight="700">L4 任务误差层 · 学习层</text>
+        <text x="680" y="425" text-anchor="middle" fill="#8aa0bd" font-size="11">projectTo2D · errorModel · assessRobustness · feedbackCorrect</text>
+        <line x1="480" y1="410" x2="458" y2="410" stroke="#e0a94d" stroke-width="1.6" marker-end="url(#arw)"/>
+        <text x="900" y="30" text-anchor="end" fill="#8aa0bd" font-size="11">依赖严格单向，学习/顶层/GUI 只叠加在 L0–L3 之上</text>
+      </svg>
+    </figure>
     <div class="note">所有 <code>method_*</code> 与 <code>simulateMotion</code> 都消费同一个 <code>info</code> 结构（§7.3 公共返回契约），便于统一后处理与 exportMotorCmd 兼容。</div>
   </section>
 
@@ -1204,6 +1274,19 @@ success / error_code / q_final / meta</pre>
 ├── vision/              视觉模块（独立仓库，参考）
 ├── 文档/                设计文档（.md + .docx）
 └── archive/             已归档旧版/死代码（迁移过渡）</pre>
+  </section>
+
+  <section class="card">
+    <h2><span class="no">◆</span>相关文献与外部链接</h2>
+    <div class="refbox">
+      <b>本平台所依据的经典方法（点击可读原文）</b>
+      <ol>
+        <li>构型空间规划综述：LaValle, "Planning Algorithms", Cambridge Univ. Press 2006. <a href="http://lavalle.pl/planning/" target="_blank" rel="noopener">lavalle.pl/planning</a></li>
+        <li>超冗余/蛇形机器人运动学：Chirikjian &amp; Burdick, "Kinematically Optimal Hyper-Redundant Manipulator Configurations", IEEE T-RO 1995. <a href="https://doi.org/10.1109/70.370500" target="_blank" rel="noopener">DOI 10.1109/70.370500</a></li>
+        <li>RRT*（平台主采样法）：Karaman &amp; Frazzoli 2011. <a href="https://arxiv.org/abs/1105.1186" target="_blank" rel="noopener">arXiv:1105.1186</a></li>
+      </ol>
+    </div>
+    <p class="desc">函数级签名/参数/返回以本页为准；具体算法数学推导见 <code style="color:#8fd0ff">求解策略.html</code>。</p>
   </section>
 
 </main>
