@@ -1,4 +1,5 @@
 function app = ArmSimApp()
+
 %ArmSimApp — 基于 ArmSimulator2D 新接口的交互仿真 GUI（含模拟视觉任务）
 %   app = ArmSimApp()
 %
@@ -12,7 +13,7 @@ function app = ArmSimApp()
 %   - 【目标函数权重】：w_pos / w_ang / w_obs / w_var / w_acc 自定义
 %   - 障碍编辑：圆形 [x,y,r] 与可旋转矩形 [x,y,θ,w,h]（表格增删改，实时可视化）
 %   - 目标位姿 [x,y,θ] 设置（绘图区十字可拖拽）
-%   - 单次求解：5 种方法 + auto（momentum/sa/rrt/prm/rl）+ 轨迹回放
+%   - 单次求解：auto/momentum/sa/rrt/rrtstar/prm/graph/rl/cvae/multilayer（多层·骨架图）+ 轨迹回放
 %   - 【模拟视觉任务】选择任务类型（move_near_target/pick_target/pick_and_place/
 %     dock_to_interface/home）→ 构造 TaskCommand → 任务级执行（展开运动序列、
 %     逐段求解、夹爪动作、状态流 RECEIVED→…→COMPLETED）→ 逐段动画 → motorCmd 导出
@@ -76,10 +77,14 @@ function app = ArmSimApp()
 
     sectionTitle(tabScene, py, '── 单次求解 ──'); py = py - 0.024;
     s.hMethod = uicontrol(tabScene,'Style','popupmenu', ...
-        'String',{'auto（推荐）','momentum 动量','sa 模拟退火','rrt 采样','prm 路线图','rl 强化学习（实验性）','cvae 策略（L2 模型）'}, ...
+        'String',{'auto（推荐）','momentum 动量','sa 模拟退火','rrt 采样','rrtstar 渐近最优','prm 路线图','graph 图引导','rl 强化学习（实验性）','cvae 策略（L2 模型）','multilayer 多层（骨架图）'}, ...
         'Value',1,'Units','normalized','Position',[0.05 py-0.012 0.90 0.026], ...
         'Background',[0.2 0.2 0.3],'Foreground',[1 1 1],'FontSize',8);
     py = py - 0.031;
+    s.hMulti = uicontrol(tabScene,'Style','checkbox','String','强迫多层（use_multilayer）', ...
+        'Value',1,'Units','normalized','Position',[0.05 py-0.012 0.90 0.024], ...
+        'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7);
+    py = py - 0.028;
     uicontrol(tabScene,'Style','text','String','策略文件:','Units','normalized', ...
         'Position',[0.03 py-rH 0.24 rH],'Background',[0.14 0.15 0.18], ...
         'Foreground',[0.85 0.85 0.95],'FontSize',7,'HorizontalAlignment','left');
@@ -511,11 +516,17 @@ function onRun(src, ~)
         s = setLog(s, ['参数错误: ' e.message]);
         guidata(f, s); return;
     end
-    method = {'auto','momentum','sa','rrt','rrtstar','prm','graph','rl','cvae'};
+    method = {'auto','momentum','sa','rrt','rrtstar','prm','graph','rl','cvae','multilayer'};
     m = method{get(s.hMethod,'Value')};
     target = [s.model.cfg.X_target, s.model.cfg.theta_target];
     t0 = tic;
-    if strcmp(m, 'cvae')
+    if strcmp(m, 'multilayer')
+        % 多层：骨架连通图 → 候选路径(k-shortest) → 逐段求解（快速+稳健回退）→ 末尾精修
+        % 开关：GUI 勾选“强迫多层(use_multilayer)”控制是否走多层；取消→多层退化为单段兜底
+        opts = struct('use_multilayer', get(s.hMulti,'Value'), ...
+            'k_paths', 2, 'max_segments', 9, 'GRID', 64, 'Snapshot', 1);
+        info = method_multilayer(s.model, s.q, target, opts);
+    elseif strcmp(m, 'cvae')
         % L2 策略推理（部署闭环：策略优先 + 安全回退）
         pfile = get(s.hPolicyFile, 'String');
         try
@@ -574,6 +585,8 @@ function onRun(src, ~)
         tp = s.model.cfg.tol_pos;  ta = s.model.cfg.tol_ang;
     elseif contains(mu, 'cvae')
         tp = 0.05;  ta = 0.2;   % 直出+精修后部署端 pos≤0.01，显示阈值收紧到 0.05
+    elseif contains(mu, 'multilayer')
+        tp = 0.03;  ta = 0.3;   % 多层判定：末尾精修后 pos<0.03m、角度放开仅报告
     else   % rrt / rrtstar / prm / graph / auto(全部失败) 兜底：采样类阈值
         tp = s.model.cfg.rrt_goal_eps;  ta = s.model.cfg.rrt_goal_ang;
     end
@@ -627,7 +640,7 @@ function onTaskRun(src, ~)
     s = setLog(s, sprintf('模拟视觉任务 %s → RECEIVED → ACCEPTED → PLANNING …', ct));
     drawnow limitrate;
     % 任务模拟遵循 GUI 方法选择（与单次求解策略一致）
-    method = {'auto','momentum','sa','rrt','rrtstar','prm','graph','rl','cvae'};
+    method = {'auto','momentum','sa','rrt','rrtstar','prm','graph','rl','cvae','multilayer'};
     mth = method{get(s.hMethod,'Value')};
     info = taskExecute(s.model, cmd, struct('inbox', s.taskInbox, 'snapshot_m', 1, 'method', mth));
     q_all = []; g_all = []; n_fail = 0;
