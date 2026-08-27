@@ -206,7 +206,10 @@ function [nodes, edges] = skeletonGraph(occ, gx, gy, dx, R, opts)
         p = allSk(k,:);
         dNodes = sqrt(sum((exN - p).^2,2));
         if size(picked,1) > 0, dPk = sqrt(sum((picked - p).^2,2)); else, dPk = inf; end
-        if min(dNodes) >= dmin && min(dPk) >= dmin, picked(end+1,:) = p; end %#ok<AGROW>
+        % 空数组防护：exN/picked 为空时视为无约束（min 空 → [] 不能作 && 标量操作数）
+        okN = isempty(dNodes) || min(dNodes) >= dmin;
+        okP = isempty(dPk)    || min(dPk)    >= dmin;
+        if okN && okP, picked(end+1,:) = p; end %#ok<AGROW>
     end
     % nodeIds 映射
     nodeIds = zeros(GRID,GRID);  nid = 0;
