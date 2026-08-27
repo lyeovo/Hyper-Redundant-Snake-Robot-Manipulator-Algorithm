@@ -56,16 +56,24 @@ function info = method_multilayer(model, q0, target, opts)
     info = fallbackSolve(model, q0, target, opts);  info.method_used = 'multilayer(fallback)';
 end
 
-function [snap, qf, ok] = solveSegments(model, q0, nodes, path, ~, segFast, segRob, segBud, wpEps)
+function [snap, qf, ok] = solveSegments(model, q0, nodes, path, target, segFast, segRob, segBud, wpEps)
     cfg = model.cfg;  q = q0;  qf = q0;  snap = zeros(0, cfg.N);  ok = true;
     for i = 2:numel(path)
         wp = nodes(path(i), :);                 % [x,y]
-        % 角度完全放开：目标 θ = 当前末端角度（梯度只推位置，不强制转向）
-        th = getEndEffectorAngle_L(q, model.DH, cfg.rod_offset_arr);
-        tgt = [wp(1), wp(2), th];
-        m = simulateMotion(model, segFast, q, tgt, 'Snapshot', 4, 'max_iter', 150);
+        lastSeg = (i == numel(path));           % 末段=目标段，需精确（位置+角度）
+        if lastSeg
+            tt = [wp(1), wp(2), target(3)];                       % 目标段用真实目标角度
+            peps = 0.05;  aeps = 0.10;                            % 末段严格收敛
+        else
+            % 中间走廊段：角度放开（目标 θ=当前末端角），位置宽松；到 ~wpEps 即停，不磨终点
+            tt = [wp(1), wp(2), getEndEffectorAngle_L(q, model.DH, cfg.rod_offset_arr)];
+            peps = wpEps;  aeps = pi + 1;
+        end
+        m = simulateMotion(model, segFast, q, tt, 'Snapshot', 4, 'max_iter', 150, ...
+            'tol_pos', peps, 'tol_ang', aeps);
         if ~nearWP(m, wp, wpEps)
-            m = simulateMotion(model, segRob, q, tgt, 'Snapshot', 4, 'max_samples', segBud);
+            m = simulateMotion(model, segRob, q, tt, 'Snapshot', 4, 'max_samples', segBud, ...
+                'goal_eps', peps, 'goal_ang', aeps);
         end
         if ~nearWP(m, wp, wpEps), ok = false; return; end   % 软位置判据：只看末端到路点距离
         if i == 2
@@ -91,9 +99,15 @@ end
 
 function [snap, qf] = refineFinal(model, snap, qf, target)
     % 末尾精确微调：无梯度随机贪心精修（L2 管线同款，绕开梯度局部极小）
-    [q_rf, p_rf, ~] = refineRandomGreedy(model, qf, target, ...
+    cfg = model.cfg;
+    [q_rf, p_rf, a_rf] = refineRandomGreedy(model, qf, target, ...
         struct('layers', 4, 'steps_per_layer', 150, 'goal_eps', 0.006));
-    if p_rf < 0.03   % 精修后位置足够精确（<0.03m）
+    % 位置已足够精确，且「位置+加权角度」总误差确有改善才接受，避免精修牺牲角度换位置
+    [~, pe0] = planarFK_L(qf, model.DH, cfg.rod_offset_arr);
+    th0 = getEndEffectorAngle_L(qf, model.DH, cfg.rod_offset_arr);
+    e0 = norm(pe0 - target(1:2)) + 0.5*abs(wrapAngle(target(3) - th0));
+    e1 = p_rf + 0.5*abs(a_rf);
+    if p_rf < 0.03 && e1 < e0
         qf = q_rf;
         snap = [snap; qf];   % 精修无轨迹，追加末点与相邻快照一致
     end
