@@ -62,6 +62,8 @@ function info = simulateMotion(model, method, q0, target, varargin)
             info = method_prm(m2, q_start, target, mopts);
         case 'auto'
             info = method_auto(m2, q_start, target, mopts);
+        case 'multilayer'
+            info = method_multilayer(m2, q_start, target, mopts);
         case 'rl'
             % 默认加载离线训练策略（RLPolicy.mat 存在且 N 匹配），否则回退任务内现训
             info = [];
