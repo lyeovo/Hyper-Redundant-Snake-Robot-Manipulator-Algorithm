@@ -20,6 +20,11 @@ function info = simulateMotion(model, method, q0, target, varargin)
     cfg = model.cfg;
     if nargin < 4, error('simulateMotion:args', '需要 model, method, q0, target'); end
     if nargin >= 5, opts = parseOpts(varargin); else, opts = struct(); end
+    % 'Snapshot' 键 → snapshot_m（此前 parseOpts 存成 opts.Snapshot，方法读 snapshot_m 导致被忽略，
+    % 快照停留在 cfg.snapshot_m=10、首帧非 q0，回放丢头部运动）
+    if isfield(opts, 'Snapshot') && ~isfield(opts, 'snapshot_m')
+        opts.snapshot_m = opts.Snapshot;
+    end
     if ~isfield(opts, 'snapshot_m'), opts.snapshot_m = cfg.snapshot_m; end
 
     % ---- 目标覆盖 ----

@@ -529,6 +529,7 @@ function onRun(src, ~)
     m = method{get(s.hMethod,'Value')};
     target = [s.model.cfg.X_target, s.model.cfg.theta_target];
     t0 = tic;
+    q_start = s.q;   % 记录求解前臂位姿：回放锚定到真实起点 q0
     if strcmp(m, 'multilayer')
         % 多层：骨架连通图 → 候选路径(k-shortest) → 逐段求解（快速+稳健回退）→ 末尾精修
         % 开关：GUI 勾选“强迫多层(use_multilayer)”控制是否走多层；取消→多层退化为单段兜底
@@ -575,6 +576,16 @@ function onRun(src, ~)
     dt = toc(t0);
     s.q = info.q_final;
     s.snap = info.q_snapshot;
+    % 回放锚定：确保轨迹覆盖「真实起点 → 终点」（momentum 等快照从 snapshot_m 步起，缺 q0）
+    qf0 = info.q_final;
+    if isempty(s.snap) || size(s.snap,1) < 1
+        s.snap = q_start;
+    elseif norm(s.snap(1,:) - q_start) > 1e-6
+        s.snap = [q_start; s.snap];
+    end
+    if size(s.snap,1) >= 1 && norm(s.snap(end,:) - qf0) > 1e-6
+        s.snap = [s.snap; qf0];
+    end
     s.gripperSeq = [];
     s.snapIdx = 1;
     s.info = info;
