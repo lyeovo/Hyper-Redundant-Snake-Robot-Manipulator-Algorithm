@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Root>
+	<creator type="key">ConfigurationDesk 6.4</creator>
+	<application>
+		<Name type="key">Application_0829_1.CDL</Name>
+		<DisplayName type="key">Application_0829_1</DisplayName>
+		<Path type="key">.\Application_0829_1</Path>
+		<Component type="key">ProjectApplication</Component>
+		<Type type="key">14</Type>
+		<ApplicationType type="key">3</ApplicationType>
+		<Flags type="key">41216</Flags>
+		<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+		<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+		<ItemInfoDocs type="key"/>
+		<ItemInfoDescr type="key"/>
+		<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+		<Log type="key"/>
+		<AddInfoDb type="key"/>
+		<DatabaseID type="key">-1</DatabaseID>
+		<EntityID type="key">{57DB102B-CA9A-45A2-B6FF-87691B7B2254}</EntityID>
+		<item>
+			<Name type="key">WindowConfiguration.xml</Name>
+			<DisplayName type="key">WindowConfiguration.xml</DisplayName>
+			<Path type="key">.</Path>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">260</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">4</Type>
+			<ItemInfoDate type="key">2026/8/29 17:13:01</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{25A8438F-3432-4ACB-888A-7CF46DF3EF1A}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">Device Topology</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">131328</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">33</Type>
+			<ItemInfoDate type="key">2026/8/29 17:13:01</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{8FB17BFA-B924-4D69-B2B4-E087D8D5742E}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">Hardware Topology</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">256</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">19</Type>
+			<ItemInfoDate type="key">2026/8/29 17:13:01</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{8CCCE754-6010-4006-B8A5-840A1211DE80}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">Model Topology</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">256</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">31</Type>
+			<ItemInfoDate type="key">2026/8/29 17:13:01</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key">Model location:
+C:\Users\501JGJG\Desktop\motiontest0829.slx
+</Log>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{6D111AC3-9799-4FA5-BF5B-84266A103D1F}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">Communication Matrices</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">131328</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">70</Type>
+			<ItemInfoDate type="key">2026/8/29 17:13:01</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{50182179-0E5C-4532-98E4-BF62CF11228C}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">External Cable Harness</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">131328</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">32</Type>
+			<ItemInfoDate type="key">2026/8/29 17:13:01</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{6CA6233C-FFD5-4645-95F3-B05DCCCD8330}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<Name type="key">Application.cfgx</Name>
+			<DisplayName type="key">Core Application</DisplayName>
+			<Path type="key">.</Path>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">260</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">20</Type>
+			<ItemInfoDate type="key">2026/8/29 17:13:01</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{49C9E4D8-FADC-42EF-8E47-208443374BF0}</EntityID>
+			<Targets/>
+		</item>
+	</application>
+</Root>

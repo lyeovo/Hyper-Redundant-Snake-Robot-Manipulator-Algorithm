@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9 关节蛇形臂 · 三维 RRT* 运动规划演示</title>
+<style>
+  :root{--bg:#0e1420;--panel:#161f30;--panel2:#1c2740;--line:#2a3a55;--text:#d7e0ef;--muted:#8aa0bd;--accent:#4da6ff;--accent2:#6fbf6f;--warn:#e0a94d;--danger:#e05a5a;--mono:'Cascadia Code',Consolas,monospace;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;}
+  #app{position:fixed;inset:0;}
+  canvas{display:block;}
+  .panel{position:absolute;top:12px;left:12px;width:300px;max-height:calc(100% - 24px);overflow-y:auto;background:rgba(22,31,48,0.94);border:1px solid var(--line);border-radius:12px;padding:14px 16px;z-index:5;font-size:13px;box-shadow:0 6px 30px rgba(0,0,0,0.4);}
+  .panel h1{margin:0 0 6px;font-size:16px;color:#fff;display:flex;align-items:center;gap:8px;}
+  .panel h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);}
+  .panel p.sub{margin:0 0 12px;color:var(--muted);font-size:12px;line-height:1.5;}
+  .sec{margin:12px 0;padding-top:10px;border-top:1px solid var(--line);}
+  .sec h2{margin:0 0 8px;font-size:12.5px;color:var(--accent);letter-spacing:.5px;text-transform:uppercase;}
+  .row{display:flex;flex-wrap:wrap;gap:6px;}
+  button{cursor:pointer;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:12.5px;transition:.15s;}
+  button:hover{border-color:var(--accent);background:#233150;}
+  button.acc{border-color:var(--accent);color:#fff;background:rgba(77,166,255,0.16);}
+  button.acc:hover{background:rgba(77,166,255,0.28);}
+  button.grn{border-color:var(--accent2);color:#fff;background:rgba(111,191,111,0.14);}
+  button.warn{border-color:var(--warn);color:#fff;background:rgba(224,169,77,0.14);}
+  .stat{margin:8px 0;font-size:12px;color:var(--muted);line-height:1.55;}
+  .stat .ok{color:var(--accent2);}.stat .no{color:var(--danger);}
+  .joint{display:flex;align-items:center;gap:8px;margin:5px 0;}
+  .joint .lab{width:46px;color:var(--muted);font-size:11.5px;flex-shrink:0;}
+  .joint input[type=range]{flex:1;accent-color:var(--accent);}
+  .joint span{width:44px;text-align:right;color:var(--text);font-family:var(--mono);font-size:11px;}
+  .joint.tw .lab{color:var(--accent);}
+  .joint.bd .lab{color:var(--accent2);}
+  .hint{color:var(--muted);font-size:11.5px;line-height:1.55;margin:8px 0 2px;}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 4px;font-size:11.5px;color:var(--muted);}
+  .legend .lg{display:inline-flex;align-items:center;gap:5px;}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  .wrapbar{position:absolute;top:12px;right:12px;z-index:4;background:rgba(22,31,48,0.9);border:1px solid var(--line);border-radius:10px;padding:8px 11px;color:var(--muted);font-size:12.5px;font-family:var(--mono);}
+  .wrapbar b{color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div class="panel">
+  <h1><span class="dot"></span>9 关节蛇形臂 · 三维 RRT*</h1>
+  <p class="sub">每个关节均可<strong style="color:var(--accent)">轴向旋转（roll，改变臂朝向）</strong>与<strong style="color:var(--accent2)">弯折（bend，改变臂夹角）</strong>，共 9×2=18 维关节空间。RRT* 在关节空间采样，经三维碰撞检测后渐近地向目标扩展（约 800 样本预算）。</p>
+
+  <div class="sec">
+    <h2>任务设置</h2>
+    <div class="row">
+      <button id="randStart" class="grn">随机起点</button>
+      <button id="randTarget" class="warn">随机目标</button>
+      <button id="addSphere">+ 球形障碍</button>
+      <button id="addBox">+ 方盒障碍</button>
+      <button id="clearObs">清空障碍</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>求解与演示</h2>
+    <div class="row">
+      <button id="solve" class="acc">▶ 求解 RRT*</button>
+      <button id="play">⏵ 播放轨迹</button>
+      <button id="clear">清树 / 清路径</button>
+      <button id="stop">■ 停止</button>
+    </div>
+    <div class="stat" id="status">就绪。请先随机起点 / 目标，或添加障碍，再点击“求解”。</div>
+  </div>
+
+  <div class="sec">
+    <h2>手动机器人位姿（可选）</h2>
+    <p class="hint">拖动滑块逐个关节调姿，或先“随机起点”再微调。蓝色=轴向 roll，绿色=弯折 bend。</p>
+    <div id="joints"></div>
+    <div class="row"><button id="applyQ" class="grn" style="margin-top:6px">应用当前关节角为起点</button></div>
+  </div>
+
+  <div class="sec">
+    <h2>图例</h2>
+    <div class="legend">
+      <span class="lg"><span class="sw" style="background:var(--accent)"></span>机器人</span>
+      <span class="lg"><span class="sw" style="background:#6fbf6f"></span>目标</span>
+      <span class="lg"><span class="sw" style="background:#4d6fbf;opacity:.6"></span>RRT* 探索树</span>
+      <span class="lg"><span class="sw" style="background:var(--warn)"></span>找到的路径</span>
+      <span class="lg"><span class="sw" style="background:var(--danger)"></span>障碍</span>
+    </div>
+    <p class="hint">左键拖拽旋转视角，滚轮缩放；<strong style="color:var(--text)">在地面（y=0 平面）点击</strong>可放置一个方盒障碍。</p>
+  </div>
+</div>
+
+<div class="wrapbar">可达域半径 ≈ <b id="reach">—</b> &nbsp;·&nbsp; 采样 <b id="samp">0</b></div>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+/* ================= 常量 ================= */
+const N=9, L=1.0, ARM_R=0.16;
+const TWIST_MAX=Math.PI, BEND_MAX=1.25, DIM=2*N;
+const QB=1.0, QT=0.3;                 // 距离/代价权重（bend 权重 > twist 权重）
+const SAMPLE_MAX=1200, STEP=0.62, GOAL_EPS=0.5, REWIRE_R=2.4, COARSE_EPS=1.2, REFINE_ITERS=60, REFINE_SIG=0.35;
+
+/* ================= 场景 ================= */
+const app=document.getElementById('app');
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x0e1420); scene.fog=new THREE.Fog(0x0e1420,34,95);
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,200);
+const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+app.appendChild(renderer.domElement);
+scene.add(new THREE.AmbientLight(0x8899bb,0.8));
+const d1=new THREE.DirectionalLight(0xffffff,0.95); d1.position.set(6,12,8); scene.add(d1);
+const d2=new THREE.DirectionalLight(0x4466ff,0.4); d2.position.set(-8,4,-6); scene.add(d2);
+const grid=new THREE.GridHelper(24,24,0x2a3a55,0x1c2740); scene.add(grid);
+scene.add(new THREE.AxesHelper(3));
+
+const targetMarker=new THREE.Mesh(new THREE.SphereGeometry(0.28,24,18), new THREE.MeshStandardMaterial({color:0x6fbf6f,emissive:0x1d5a2d,emissiveIntensity:0.7})); scene.add(targetMarker);
+const baseMark=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.52,0.3,24), new THREE.MeshStandardMaterial({color:0x4da6ff,emissive:0x133a66,emissiveIntensity:0.6})); baseMark.position.y=0.15; scene.add(baseMark);
+
+/* ================= 机器人层级（roll+bend） ================= */
+const joints=[], segs=[];
+(function buildArm(){
+  let parent=new THREE.Group(); scene.add(parent);
+  const cylGeo=new THREE.CylinderGeometry(0.13,0.13,L,18,1,true);
+  const matSeg=new THREE.MeshStandardMaterial({color:0x4da6ff,metalness:0.3,roughness:0.4});
+  const finGeo=new THREE.BoxGeometry(0.06,L*0.62,0.18);
+  const matFin=new THREE.MeshStandardMaterial({color:0xe0a94d,metalness:0.2,roughness:0.5});
+  for(let i=0;i<N;i++){
+    const joint=new THREE.Group(); joint.rotation.order='YXZ';   // 先 roll(Y) 后 bend(X)
+    parent.add(joint);
+    const cyl=new THREE.Mesh(cylGeo,matSeg); cyl.position.y=L/2; joint.add(cyl);
+    const fin=new THREE.Mesh(finGeo,matFin); fin.position.set(0.1,L/2,0); joint.add(fin);  // 轴向 fin：roll 时可见
+    const tip=new THREE.Group(); tip.position.y=L; joint.add(tip);
+    segs.push(cyl); joints.push(joint);
+    parent=tip;
+  }
+})();
+function setArmPose(q){ for(let i=0;i<N;i++) joints[i].rotation.set(q[2*i+1],q[2*i],0); }
+
+/* ================= 解析正运动学（与显示同规则） ================= */
+const qTmp=new THREE.Quaternion(), qTmp2=new THREE.Quaternion(), axV=new THREE.Vector3();
+function fk(q){
+  const pts=[new THREE.Vector3(0,0,0)];
+  let quat=new THREE.Quaternion().identity();
+  let dir=new THREE.Vector3(0,1,0);
+  for(let i=0;i<N;i++){
+    qTmp.setFromAxisAngle(axV.set(0,1,0), q[2*i]);         // roll(Y)
+    qTmp2.setFromAxisAngle(axV.set(1,0,0), q[2*i+1]);      // bend(X)
+    quat.multiply(qTmp.clone().multiply(qTmp2));
+    dir=new THREE.Vector3(0,1,0).applyQuaternion(quat);
+    pts.push(pts[pts.length-1].clone().add(dir.clone().multiplyScalar(L)));
+  }
+  return {pts:pts, end:pts[N].clone(), dirE:dir};
+}
+/* 但 qTmp/qTmp2 复用会冲突：改为每次用新对象，避免轴向复用覆盖 —— 上面已用 clone，安全。 */
+function sampleQ(){ const q=new Float64Array(DIM); for(let i=0;i<N;i++){ q[2*i]=(Math.random()*2-1)*TWIST_MAX; q[2*i+1]=(Math.random()*2-1)*BEND_MAX; } return q; }
+function clampQ(q){ for(let i=0;i<N;i++){ q[2*i]=Math.max(-TWIST_MAX,Math.min(TWIST_MAX,q[2*i])); q[2*i+1]=Math.max(-BEND_MAX,Math.min(BEND_MAX,q[2*i+1])); } }
+
+/* ================= 障碍 ================= */
+const obstacles=[];
+function addSphereMesh(x,y,z,r){ const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,18), new THREE.MeshStandardMaterial({color:0xe05a5a,transparent:true,opacity:0.85,roughness:0.5})); m.position.set(x,y,z); scene.add(m); obstacles.push({type:'sphere',x,y,z,r}); return m; }
+function addBoxMesh(x,y,z,w,h,d){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:0xe05a5a,transparent:true,opacity:0.85,roughness:0.5})); m.position.set(x,y,z); scene.add(m); obstacles.push({type:'box',min:new THREE.Vector3(x-w/2,y-h/2,z-d/2),max:new THREE.Vector3(x+w/2,y+h/2,z+d/2)}); return m; }
+function armCollides(q){
+  const {pts}=fk(q), P=new THREE.Vector3(), AB=new THREE.Vector3();
+  for(let s=0;s<N;s++){
+    const a=pts[s], b=pts[s+1];
+    for(const o of obstacles){
+      if(o.type==='sphere'){
+        AB.subVectors(b,a); const L2=AB.lengthSq()||1e-9;
+        let t=((o.x-a.x)*AB.x+(o.y-a.y)*AB.y+(o.z-a.z)*AB.z)/L2; t=Math.max(0,Math.min(1,t));
+        P.copy(a).addScaledVector(AB,t);
+        if(P.distanceTo(new THREE.Vector3(o.x,o.y,o.z)) < o.r+ARM_R) return true;
+      } else {
+        for(let m=0;m<=8;m++){
+          P.copy(a).lerp(b,m/8);
+          if(P.x>o.min.x-ARM_R&&P.x<o.max.x+ARM_R&&P.y>o.min.y-ARM_R&&P.y<o.max.y+ARM_R&&P.z>o.min.z-ARM_R&&P.z<o.max.z+ARM_R) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+function randFreePos(){
+  for(let t=0;t<50;t++){ const x=(Math.random()*2-1)*6, y=1+Math.random()*5.5, z=(Math.random()*2-1)*6; if(Math.hypot(x,y-1,z)>2.4) return new THREE.Vector3(x,y,z); }
+  return new THREE.Vector3(3.5,3.5,3.5);
+}
+function addSphere(){ const p=randFreePos(); addSphereMesh(p.x,p.y,p.z,0.7+Math.random()*0.5); }
+function addBox(){ const p=randFreePos(); addBoxMesh(p.x,p.y,p.z,1.2+Math.random()*1.0,1.2+Math.random()*1.0,1.2+Math.random()*1.0); }
+function clearObstacles(){ const rem=[]; scene.traverse(o=>{if(o.isMesh&&o.material&&o.material.transparent&&o.material.color&&o.material.color.getHex()===0xe05a5a&&o!==targetMarker&&o!==baseMark)rem.push(o);}); rem.forEach(o=>scene.remove(o)); obstacles.length=0; }
+
+/* ================= 距离 / 代价 ================= */
+function wDist(a,b){ let s=0; for(let i=0;i<N;i++){ const t=(a[2*i]-b[2*i])*QT, d=(a[2*i+1]-b[2*i+1])*QB; s+=t*t+d*d; } return Math.sqrt(s); }
+
+/* ================= RRT* ================= */
+let tree=[], foundPath=null, solving=false, playing=false, animIdx=0, solveIt=0;
+const target=new THREE.Vector3(2.5,3.0,0.0);
+let startQ=null;
+
+function nearest(q){ let best=-1,bd=Infinity; for(let i=0;i<tree.length;i++){ const d=wDist(q,tree[i].q); if(d<bd){bd=d;best=i;} } return best; }
+function steer(from,to){ const q=from.slice(); const d=wDist(from,to); if(d<1e-9) return q; const s=Math.min(1,STEP/d); for(let i=0;i<DIM;i++) q[i]=from[i]+(to[i]-from[i])*s; clampQ(q); return q; }
+function edgeFree(qa,qb){ const k=Math.max(4,Math.ceil(wDist(qa,qb)/0.25)); const qv=new Float64Array(DIM); for(let m=0;m<=k;m++){ for(let i=0;i<DIM;i++) qv[i]=qa[i]+(qb[i]-qa[i])*(m/k); if(armCollides(qv)) return false; } return true; }
+function eeDist(q){ return fk(q).end.distanceTo(target); }
+/* 无梯度随机贪心精修：从 q0 出发，扰动 q，保持无碰撞且不断减小末端到目标距离 */
+function refineGoal(q0,cur){
+  let q=q0.slice(), cd=cur;
+  for(let it=0;it<REFINE_ITERS;it++){
+    const qn=q.slice();
+    for(let i=0;i<DIM;i++){ const s=(i%2===0)?1:0.55; qn[i]+=(Math.random()*2-1)*REFINE_SIG*s; }
+    clampQ(qn); if(armCollides(qn)) continue;
+    const d=eeDist(qn); if(d<cd){ cd=d; q=qn; }
+  }
+  return {q:q, d:cd};
+}
+let seedQ=null, bestDist=Infinity, bestIdx=-1;
+/* 目标种子：快速找一个让末端靠近目标的构型，用于目标偏置采样 */
+function findSeed(){
+  let best=null, bd=Infinity;
+  for(let k=0;k<150;k++){ const q=sampleQ(); if(armCollides(q)) continue; const d=eeDist(q); if(d<bd){bd=d;best=q;} }
+  if(best){ const r=refineGoal(best,bd); best=r.q; bd=r.d; }
+  seedQ=best;              // 仅用于目标偏置采样；bestIdx/bestDist 由树节点维护
+}
+function sampleQBiased(){
+  if(seedQ && Math.random()<0.25){
+    const q=seedQ.slice();
+    for(let i=0;i<DIM;i++){ const s=(i%2===0)?1:0.55; q[i]+=(Math.random()*2-1)*0.18*s; }
+    clampQ(q); return q;
+  }
+  return sampleQ();
+}
+function buildTree(){ if(!startQ){ startQ=sampleQ(); } const q0=startQ.slice(); tree=[{q:q0,parent:-1,cost:0,end:fk(q0).end.clone()}]; setArmPose(q0); bestIdx=0; bestDist=eeDist(q0); }
+function stepRRT(){
+  const qrand=sampleQBiased(); let ni=nearest(qrand); if(ni<0) return false;
+  const qnew=steer(tree[ni].q,qrand); if(!edgeFree(tree[ni].q,qnew)) return false;
+  const near=[]; for(let i=0;i<tree.length;i++){ const d=wDist(qnew,tree[i].q); if(d<REWIRE_R) near.push(i); }
+  let best=ni, bc=tree[ni].cost+wDist(qnew,tree[ni].q);
+  for(const j of near){ const c=tree[j].cost+wDist(qnew,tree[j].q); if(c<bc&&edgeFree(tree[j].q,qnew)){best=j;bc=c;} }
+  if(!edgeFree(tree[best].q,qnew)) return false;
+  const {end}=fk(qnew), idx=tree.length;
+  tree.push({q:qnew,parent:best,cost:bc,end:end.clone()});
+  for(const j of near){ if(j===idx) continue; const c=tree[idx].cost+wDist(tree[idx].q,tree[j].q); if(c<tree[j].cost&&edgeFree(tree[idx].q,tree[j].q)){ tree[j].parent=idx; tree[j].cost=c; } }
+  const d=end.distanceTo(target);
+  if(d<bestDist){ bestDist=d; bestIdx=idx; seedQ=qnew.slice(); }
+  if(d<GOAL_EPS){ const path=[]; let c=idx; while(c>=0){ path.unshift(tree[c].q.slice()); c=tree[c].parent; } foundPath=path; return true; }
+  return false;
+}
+function tryRefineGoalNode(){
+  if(bestIdx<0) return false;
+  const node=tree[bestIdx];
+  const r=refineGoal(node.q, bestDist);
+  if(r.d<GOAL_EPS && edgeFree(node.q, r.q)){
+    const path=[]; let c=bestIdx; while(c>=0){ path.unshift(tree[c].q.slice()); c=tree[c].parent; }
+    path.push(r.q); foundPath=path; showPath(); return true;
+  }
+  return false;
+}
+function solveTick(){
+  let found=false;
+  for(let b=0;b<8&&!found;b++){ if(solveIt>=SAMPLE_MAX) break; if(stepRRT())found=true; solveIt++; }
+  ensureTreeLine(); document.getElementById('samp').textContent=solveIt;
+  if(found){ solving=false; showPath(); status('✔ 找到可行路径（样本 '+solveIt+'），点击“播放轨迹”。','ok'); return; }
+  // 粗达即精修：一旦某节点进入目标邻域，用无梯度局部搜索磨到 < GOAL_EPS
+  if(bestDist<COARSE_EPS && tryRefineGoalNode()){ solving=false; status('✔ 经终点精修找到路径（样本 '+solveIt+'）。','ok'); return; }
+  if(solveIt>=SAMPLE_MAX){
+    // 预算耗尽：从最近节点做一次最终精修
+    if(tryRefineGoalNode()){ solving=false; status('✔ 末段精修命中目标（样本 '+solveIt+'）。','ok'); return; }
+    solving=false; status('✘ 预算内未找到可行路径。可缩短目标距离、减少障碍或换起点后重试。','no'); return;
+  }
+}
+
+/* ================= 可视化：树 / 路径 ================= */
+let treeLine=null, pathLine=null;
+function ensureTreeLine(){
+  if(!treeLine){ treeLine=new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({color:0x4d6fbf,transparent:true,opacity:0.5})); scene.add(treeLine); }
+  const pos=[]; for(let i=1;i<tree.length;i++){ const p=tree[i].end, pc=tree[tree[i].parent].end; if(pc) pos.push(pc.x,pc.y,pc.z,p.x,p.y,p.z); }
+  const g=treeLine.geometry; g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.computeBoundingSphere();
+}
+function showPath(){
+  if(pathLine){ scene.remove(pathLine); pathLine=null; }
+  if(!foundPath) return;
+  const pos=[], e0=fk(foundPath[0]).end; pos.push(e0.x,e0.y,e0.z);
+  for(let i=1;i<foundPath.length;i++){ const e=fk(foundPath[i]).end; pos.push(e.x,e.y,e.z); }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  pathLine=new THREE.Line(g,new THREE.LineBasicMaterial({color:0xe0a94d,linewidth:2}));
+  scene.add(pathLine);
+}
+function resetPlay(){ animIdx=0; }
+function animStep(dt){
+  if(!foundPath) return true;
+  animIdx += dt*2.6;
+  const i=Math.floor(animIdx);
+  if(i>=foundPath.length-1){ setArmPose(foundPath[foundPath.length-1]); return true; }
+  const f=animIdx-i, q=foundPath[i].slice();
+  for(let k=0;k<DIM;k++) q[k]=foundPath[i][k]*(1-f)+foundPath[i+1][k]*f;
+  setArmPose(q); return false;
+}
+function clearTree(){ if(treeLine){ scene.remove(treeLine); treeLine=null; } if(pathLine){ scene.remove(pathLine); pathLine=null; } tree=[]; foundPath=null; }
+
+/* ================= 手动滑块 ================= */
+function buildJointSliders(){
+  const c=document.getElementById('joints'); c.innerHTML='';
+  for(let i=0;i<N;i++){
+    const tw=document.createElement('div'); tw.className='joint tw';
+    tw.innerHTML=`<span class="lab">J${i} roll</span><input type="range" min="${-TWIST_MAX}" max="${TWIST_MAX}" step="0.05" value="0"><span>0.00</span>`;
+    const bd=document.createElement('div'); bd.className='joint bd';
+    bd.innerHTML=`<span class="lab">J${i} bend</span><input type="range" min="${-BEND_MAX}" max="${BEND_MAX}" step="0.05" value="0"><span>0.00</span>`;
+    c.appendChild(tw); c.appendChild(bd);
+  }
+}
+function sliderQ(){ const q=new Float64Array(DIM); const ins=document.querySelectorAll('#joints .joint input'); for(let i=0;i<N;i++){ q[2*i]=parseFloat(ins[i*2].value); q[2*i+1]=parseFloat(ins[i*2+1].value); } return q; }
+function syncLabels(){ const ins=document.querySelectorAll('#joints .joint input'); for(let i=0;i<DIM;i++) ins[i].nextElementSibling.textContent=parseFloat(ins[i].value).toFixed(2); }
+function loadQtoSliders(q){ const ins=document.querySelectorAll('#joints .joint input'); for(let i=0;i<DIM;i++){ ins[i].value=q[i]; } syncLabels(); }
+function bindSliders(){ let t=null; document.querySelectorAll('#joints .joint input').forEach(el=>el.addEventListener('input',()=>{ syncLabels(); clearTimeout(t); t=setTimeout(()=>setArmPose(sliderQ()),12); })); }
+
+/* ================= 相机轨道 + 地面点击放盒 ================= */
+let azim=0.55, polar=Math.PI/3, radius=18, dragging=false, moved=false, px=0, py=0, downX=0, downY=0;
+function applyCam(){ camera.position.set(radius*Math.sin(polar)*Math.cos(azim),radius*Math.cos(polar),radius*Math.sin(polar)*Math.sin(azim)); camera.lookAt(0,1.6,0); }
+renderer.domElement.addEventListener('mousedown',e=>{ if(e.button===0){ dragging=true; moved=false; px=downX=e.clientX; py=downY=e.clientY; } });
+window.addEventListener('mousemove',e=>{ if(dragging){ const dx=e.clientX-px, dy=e.clientY-py; if(Math.hypot(dx,dy)>0){ moved=true; azim-=dx*0.006; polar=Math.max(0.15,Math.min(Math.PI-0.15,polar+dy*0.006)); } px=e.clientX; py=e.clientY; } });
+window.addEventListener('mouseup',e=>{ if(dragging&&!moved){ placeBoxOnGround(e); } dragging=false; });
+renderer.domElement.addEventListener('wheel',e=>{ radius=Math.max(6,Math.min(60,radius*(e.deltaY>0?1.1:0.9))); e.preventDefault(); },{passive:false});
+const raycaster=new THREE.Raycaster(), groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+function placeBoxOnGround(e){
+  const ndc=new THREE.Vector2((e.clientX/innerWidth)*2-1, -(e.clientY/innerHeight)*2+1);
+  raycaster.setFromCamera(ndc,camera); const p=new THREE.Vector3();
+  if(raycaster.ray.intersectPlane(groundPlane,p)) addBoxMesh(p.x,0.7,p.z,1.2,1.2,1.2);
+}
+
+/* ================= UI ================= */
+function status(t,cls){ document.getElementById('status').innerHTML=t; }
+document.getElementById('randStart').onclick=()=>{ startQ=sampleQ(); setArmPose(startQ); loadQtoSliders(startQ); clearTree(); status('已设随机起点。','ok'); };
+document.getElementById('randTarget').onclick=()=>{
+  const r=2.6+Math.random()*3.0, th=Math.random()*2*Math.PI, ph=0.15+Math.random()*0.85;
+  target.set(r*Math.cos(ph)*Math.cos(th), 0.9+r*Math.sin(ph), r*Math.cos(ph)*Math.sin(th));
+  targetMarker.position.copy(target); clearTree(); status('已设随机目标（可达半径≈'+r.toFixed(1)+'）。','ok');
+};
+document.getElementById('addSphere').onclick=addSphere;
+document.getElementById('addBox').onclick=addBox;
+document.getElementById('clearObs').onclick=()=>{ clearObstacles(); status('已清空障碍。',''); };
+document.getElementById('solve').onclick=()=>{ clearTree(); bestDist=Infinity; bestIdx=-1; findSeed(); buildTree(); solving=true; solveIt=0; resetPlay(); document.getElementById('samp').textContent='0'; status('RRT* 扩展中…',''); };
+document.getElementById('play').onclick=()=>{ if(!foundPath){ status('尚无路径，请先“求解”。','warn'); return; } playing=true; resetPlay(); status('播放中…',''); };
+document.getElementById('clear').onclick=()=>{ clearTree(); status('已清除树与路径。',''); };
+document.getElementById('stop').onclick=()=>{ playing=false; solving=false; status('已停止。',''); };
+document.getElementById('applyQ').onclick=()=>{ startQ=sliderQ().slice(); setArmPose(startQ); clearTree(); status('已将此手动机器人位姿设为起点。','ok'); };
+
+/* ================= 主循环 ================= */
+const clock=new THREE.Clock();
+function loop(){ requestAnimationFrame(loop); const dt=clock.getDelta(); if(solving) solveTick(); if(playing){ if(animStep(dt)){ playing=false; status('轨迹播放完毕。','ok'); } } renderer.render(scene,camera); }
+applyCam(); loop();
+window.addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+
+buildJointSliders(); bindSliders();
+document.getElementById('reach').textContent=(N*L).toFixed(1)+' m';
+
+/* 初始：一个温和的弧形起点 + 一个可见目标 */
+startQ=new Float64Array(DIM);
+for(let i=0;i<N;i++){ startQ[2*i]=0; startQ[2*i+1]=0.2; }   // 全弯 0.2 → 平面弧
+setArmPose(startQ); loadQtoSliders(startQ);
+target.set(2.6,2.4,1.6); targetMarker.position.copy(target);
+status('初始：蛇臂沿 Y-Z 平面弯成弧。可随机起点/目标，添加障碍后“求解”。','');
+</script>
+</body>
+</html>

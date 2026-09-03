@@ -1,39 +1,52 @@
-function segs = taskToSegments(cmd, ~, approach_dist)
-%taskToSegments command_type → 运动段展开（修正版任务类型集）
+function segs = taskToSegments(cmd, model, approach_dist)
+%taskToSegments command_type → 运动段展开（参数与视觉接口统一）
 %   segs = taskToSegments(cmd, model, approach_dist)
-%   cmd : TaskCommand（不改结构，参数从 existing 字段读：
-%           move_along/move_for_place/rotate/rotate_arm/facing_arm 的 θ,d,α,n 取 cmd.motion_params
-%           （键：theta/d/alpha/n）；位置类取 selected_target/destination.pose_camera/pose_base）
+%   cmd : TaskCommand（不改结构；参数从 cmd.params 读，缺失回退 cmd.motion_params；键遵循
+%          TASK_COMMAND_INTERFACE v2.0：角度用度(theta_deg/alpha_deg)、距离用米(distance_m)、
+%          关节 1 索引(joint_index)、位置用 x/y；旧键 theta/alpha/d/n(弧度)作向后兼容回退）
+%   model : createArmModel 输出（joint_index 按 model.cfg.N 截断）
 %   segs: struct 数组，字段：
 %           .target [x,y,θ]    末端目标（kind='ee'）
 %           .kind   'ee'|'ee_relative'|'ee_rotate'|'joint_delta'|'joint_abs'
 %           .gripper 0保持 1开 2合   .name 当前步名
 %           以及相对/关节字段：.dir,.dist,.alpha,.joint,.delta,.angle（按 kind 取）
 %
-%   类型 → 展开（参数由 motion_params 提供，缺省用目标/默认）：
-%     move_to       : ee   → [x,y,θ]
-%     move_along    : ee_relative → 当前末端沿 θ 方向 d 米
+%   指令类型 → 展开（参数由 params 提供，缺省用当前末端/目标/默认）：
+%     move_to       : ee   → [x,y,θ]（θ 取 selected_target 朝向，缺省 0）
+%     move_along    : ee_relative → 当前末端沿 theta_deg 方向 distance_m 米
 %     move_for_pick : ee   → selected_target（实时物体位）
 %     move_for_place: ee   → destination 硬编码放置位
-%     rotate        : ee_rotate → 末端位置不动，θ 转 α
-%     rotate_arm    : joint_delta → 第 n 关节转 α
-%     facing_arm    : joint_abs  → 第 n 关节连杆朝 θ 方向
+%     rotate        : ee_rotate → 末端位置不动，θ 转 alpha_deg
+%     rotate_arm    : joint_delta → 第 joint_index 关节转 alpha_deg
+%     facing_arm    : joint_abs  → 第 joint_index 关节连杆朝 theta_deg 方向
 %     pick          : [朝向物体] + [抓取(合)] + [后撤]
 %     place         : [开爪]
 %     withdraw      : [沿 -target 方向后撤 approach]
 %     reset         : [回 [0,0,0]]
+%   （emergency_stop / cancel_task 属控制类指令，由 taskExecute 提前处理，不走此展开）
     if nargin < 3 || isempty(approach_dist), approach_dist = 0.15; end
     ct = cmd.command_type;
-    prm = optget(cmd, 'motion_params', struct());
-    tgt = projectTo2D(cmd.selected_target.pose_camera);   % [x,y,θ]
-    A  = optget(prm,'alpha', 0.5);   n = max(1, round(optget(prm,'n', 1)));
-    D  = optget(prm,'d', approach_dist);
-    Th = optget(prm,'theta', tgt(3));   % θ：move_along 方向 / facing_arm 目标朝向 共用 'theta'
+    % params 为主、motion_params 为向后兼容镜像；角度统一度→弧度（求解器/段用弧度）
+    prm = optget(cmd, 'params', optget(cmd, 'motion_params', struct()));
+    if isfield(cmd,'selected_target') && isstruct(cmd.selected_target) && ~isempty(cmd.selected_target) ...
+            && isfield(cmd.selected_target,'pose_camera') && ~isempty(cmd.selected_target.pose_camera)
+        tgt = projectTo2D(cmd.selected_target.pose_camera);   % [x,y,θ] rad
+    else
+        tgt = [0, 0, 0];   % 无目标（move_to 等）：位置/朝向由 params 提供
+    end
+    A  = deg2rad(optget(prm,'alpha_deg', rad2deg(optget(prm,'alpha', 0.5))));   % 度→弧度
+    n  = max(1, round(optget(prm,'joint_index', optget(prm,'n', 1))));
+    if isstruct(model) && isfield(model,'cfg') && isfield(model.cfg,'N') && ~isempty(model.cfg.N)
+        n = min(n, model.cfg.N);   % 文档含 16 关节，本地按实际关节数截断
+    end
+    D  = optget(prm,'distance_m', optget(prm,'d', approach_dist));
+    Th = deg2rad(optget(prm,'theta_deg', rad2deg(optget(prm,'theta', tgt(3)))));
+    x  = optget(prm,'x', tgt(1));   y = optget(prm,'y', tgt(2));
 
     switch ct
         % ---- 末端位置类 ----
         case 'move_to'
-            segs = mk('ee', [tgt(1), tgt(2), tgt(3)], 0, 'MOVING_TO');
+            segs = mk('ee', [x, y, tgt(3)], 0, 'MOVING_TO');   % x/y 取 params（接口键）
 
         case 'move_along'
             segs = mk('ee_relative', [], 0, 'MOVING_ALONG', 'dir', Th, 'dist', D);

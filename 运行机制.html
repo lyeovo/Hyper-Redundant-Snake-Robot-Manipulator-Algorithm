@@ -311,7 +311,7 @@
       <p>叫 <code>runTaskLoop</code> 的程序<strong>一直醒着</strong>，每隔 1 秒看一眼邮箱。一看到新单子，就把“文件”读成“程序能处理的格式”（jsondecode）。要是单子坏了读不出来，就把它丢到一边（改名 <code>.bad</code>）继续等下一单，绝不卡住。</p>
 
       <h4>③ 拆单 —— taskExecute 把“一件事”拆成“一串动作”</h4>
-      <p>拿到单子，<code>taskExecute</code> 先做三件<strong>安全检查</strong>：整机是否被急停（estop）？是否被明确禁止执行（allow_execute）？目标识别够不够可信（置信度）？任何一条不满足就<strong>直接拒单</strong>（REJECTED），绝不启动。没问题后，它把任务<strong>拆成若干小步骤（段）</strong>。比如“抓起来再放到别处”（pick_and_place）会拆成 5 段：靠近 → 抓 → 抬 → 挪到放置位置 → 松开。</p>
+      <p>拿到单子，<code>taskExecute</code> 先做三件<strong>安全检查</strong>：整机是否被急停（estop）？是否被明确禁止执行（allow_execute）？目标识别够不够可信（置信度）？任何一条不满足就<strong>直接拒单</strong>（REJECTED），绝不启动。没问题后，它把任务<strong>拆成若干小步骤（段）</strong>。比如“抓取后放置”会依次展开 <code>move_for_pick</code> → <code>pick</code>（抓合）→ <code>move_for_place</code> → <code>place</code>（张开）；每段由求解器给出 <code>q_seq</code> 轨迹。</p>
 
       <h4>④ 翻译位置 —— taskToSegments / projectTo2D</h4>
       <p>视觉给的是“相机视角下的 3D 坐标”，可机械臂是在<strong>水平平面</strong>上工作的。所以先把坐标<strong>翻译</strong>成平面的 <code>[x, y, 朝向角]</code>，再算出“预抓取点”（目标后 0.15 m 处先停一下）和“放置预取点”，让动作更稳、不容易碰。</p>
@@ -390,7 +390,7 @@
       <tr><td>4</td><td><code>MOVING_TO_PLACE</code></td><td><code>dest − 0.15·[cosθ, sinθ, 0]</code></td><td><code>0</code></td><td>退到放置预取点</td></tr>
       <tr><td>5</td><td><code>RELEASING</code></td><td><code>dest</code></td><td><code>1</code></td><td>到放置点 / 段末<strong>张开</strong></td></tr>
     </table>
-    <div class="note"><code>dest</code> 缺省为 <code>tgt + [0.6, 0, 0]</code>（目标旁 0.6m），否则取 <code>cmd.destination.pose_base</code> 经 <code>projectTo2D</code> 投影。其余 <code>command_type</code> 段数见 架构总览.html §5（<code>move_near_target</code> 1 段、<code>pick_target</code> 3 段、<code>dock_to_interface</code> 2 段、<code>home</code> 1 段）。</div>
+    <div class="note"><code>dest</code> 缺省为 <code>tgt + [0.6, 0, 0]</code>（目标旁 0.6m），否则取 <code>cmd.destination.pose_base</code> 经 <code>projectTo2D</code> 投影。其余 <code>command_type</code> 展开见 架构总览.html §5（共 11 种：<code>move_to/move_along/move_for_pick/move_for_place/rotate/rotate_arm/facing_arm/pick/place/withdraw/reset</code>）。</div>
 
     <h3>2.2 模块间交互与接口格式<span class="sub">每条交互边的调用签名与参数格式</span></h3>
     <p class="desc">以下是链路 A 中<strong style="color:#fff">每一条跨模块边界</strong>的真实接口约定（字段名与值源自源码）。</p>
@@ -399,7 +399,7 @@
     <h4>E1 · 视觉 UI → outbox：TaskCommand JSON（<code>jsondecode</code> 为 <code>cmd</code> struct）</h4>
     <pre>{
   "command_id": "CMD-20260826-0001",
-  "command_type": "pick_and_place",
+  "command_type": "move_for_pick",
   "selected_target": {
     "pose_camera": {
       "position":          { "x": 1.82, "y": 0.35, "z": 0.0 },

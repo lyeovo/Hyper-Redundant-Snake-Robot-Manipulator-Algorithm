@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Root>
+	<creator type="key">ConfigurationDesk 6.4</creator>
+	<project>
+		<Creator type="key">ConfigurationDesk</Creator>
+		<MigrationHistory type="key"/>
+		<Name type="key">Project_motiontest0829.CDP</Name>
+		<DisplayName type="key">Project_motiontest0829</DisplayName>
+		<Flags type="key">4096</Flags>
+		<Type type="key">1</Type>
+		<UniqueID type="key">121971866</UniqueID>
+		<EntityID type="key">{2C9AE278-4BD1-4F3E-9EC2-71C4FAF6CAD6}</EntityID>
+		<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+		<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+		<ItemInfoDescr type="key"/>
+		<ItemInfoAddInfoDb type="key"/>
+		<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+		<item>
+			<Targets type="key">project</Targets>
+			<Name type="key">Project_motiontest0829</Name>
+			<DisplayName type="key">Project_motiontest0829</DisplayName>
+			<Path type="key">..</Path>
+			<Flags type="key">4100</Flags>
+			<Type type="key">3</Type>
+			<UniqueID type="key">104644513</UniqueID>
+			<EntityID type="key">{BB8BB22D-2C66-4229-9616-F0DA1EC0801D}</EntityID>
+			<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+			<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAddInfoDb type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<item>
+				<Docs type="key">.doc,.docx,.txt,.pdf,.xls,.xlsx,.csv,.rtf</Docs>
+				<Name type="key">Specifications</Name>
+				<DisplayName type="key">Specifications</DisplayName>
+				<Path type="key">.</Path>
+				<Type type="key">3</Type>
+				<UniqueID type="key">699446461</UniqueID>
+				<EntityID type="key">{ECDF9442-0F97-46FB-8273-D215A96237B9}</EntityID>
+				<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+				<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+				<ItemInfoDocs type="key">.doc,.docx,.txt,.pdf,.xls,.xlsx,.csv,.rtf</ItemInfoDocs>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAddInfoDb type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			</item>
+			<item>
+				<Docs type="key">.mpp,.mppx</Docs>
+				<Name type="key">Project Plans</Name>
+				<DisplayName type="key">Project Plans</DisplayName>
+				<Path type="key">.</Path>
+				<Type type="key">3</Type>
+				<UniqueID type="key">553061507</UniqueID>
+				<EntityID type="key">{B7744053-D581-472F-8B15-3389DC198B0F}</EntityID>
+				<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+				<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+				<ItemInfoDocs type="key">.mpp,.mppx</ItemInfoDocs>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAddInfoDb type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			</item>
+			<item>
+				<Docs type="key">.slx,.mdl,.sic,.fmu,.ctlgz,.bsc,.mcd,.mtfx</Docs>
+				<Name type="key">Models</Name>
+				<DisplayName type="key">Models</DisplayName>
+				<Path type="key">.</Path>
+				<Type type="key">3</Type>
+				<UniqueID type="key">17907739</UniqueID>
+				<EntityID type="key">{417889C2-B6D1-4BC0-A826-4EE7C6202567}</EntityID>
+				<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+				<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+				<ItemInfoDocs type="key">.slx,.mdl,.sic,.fmu,.ctlgz,.bsc,.mcd,.mtfx</ItemInfoDocs>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAddInfoDb type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			</item>
+			<item>
+				<Docs type="key">.arxml,.ldf,.dbc,.xml</Docs>
+				<Name type="key">Communication Matrices</Name>
+				<DisplayName type="key">Communication Matrices</DisplayName>
+				<Path type="key">.</Path>
+				<Type type="key">3</Type>
+				<UniqueID type="key">905328206</UniqueID>
+				<EntityID type="key">{033F6043-9546-4F03-989B-FE7F85E00A4C}</EntityID>
+				<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+				<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+				<ItemInfoDocs type="key">.arxml,.ldf,.dbc,.xml</ItemInfoDocs>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAddInfoDb type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			</item>
+			<item>
+				<Docs type="key">.xml,.cpp,.c,.h,.o,.so,.py,.pyc</Docs>
+				<Name type="key">CustomFunctions</Name>
+				<DisplayName type="key">CustomFunctions</DisplayName>
+				<Path type="key">.</Path>
+				<Type type="key">3</Type>
+				<UniqueID type="key">371283166</UniqueID>
+				<EntityID type="key">{D7748F43-65FF-43F3-952A-94ED041ADD79}</EntityID>
+				<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+				<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+				<ItemInfoDocs type="key">.xml,.cpp,.c,.h,.o,.so,.py,.pyc</ItemInfoDocs>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAddInfoDb type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			</item>
+		</item>
+		<item>
+			<MigrationHistory type="key"/>
+			<Component type="key">ProjectApplication</Component>
+			<Name type="key">Application_0829_1.CDL</Name>
+			<DisplayName type="key">Application_0829_1</DisplayName>
+			<Path type="key">.\Application_0829_1</Path>
+			<Flags type="key">8448</Flags>
+			<ExtendedFlags type="key">16</ExtendedFlags>
+			<Type type="key">14</Type>
+			<UniqueID type="key">42011202</UniqueID>
+			<EntityID type="key">{57DB102B-CA9A-45A2-B6FF-87691B7B2254}</EntityID>
+			<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+			<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoLog type="key"/>
+			<ItemInfoAddInfoDb type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+		</item>
+		<item>
+			<MigrationHistory type="key"/>
+			<Component type="key">ProjectApplication</Component>
+			<Name type="key">Application_motiontest0829_2.CDL</Name>
+			<DisplayName type="key">Application_motiontest0829_2</DisplayName>
+			<Path type="key">.\Application_motiontest0829_2</Path>
+			<Flags type="key">8448</Flags>
+			<ExtendedFlags type="key">16</ExtendedFlags>
+			<Type type="key">14</Type>
+			<UniqueID type="key">597813530</UniqueID>
+			<EntityID type="key">{4D1339F5-AD5D-4C5D-B335-B9BD59987CA5}</EntityID>
+			<ItemInfoDate type="key">2026/8/29 17:17:02</ItemInfoDate>
+			<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoLog type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAddInfoDb type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+		</item>
+		<item>
+			<Component type="key">ProjectApplication</Component>
+			<Name type="key">Application_gptest0830.CDL</Name>
+			<DisplayName type="key">Application_gptest0830</DisplayName>
+			<Path type="key">.\Application_gptest0830</Path>
+			<Flags type="key">8448</Flags>
+			<ExtendedFlags type="key">16</ExtendedFlags>
+			<Type type="key">14</Type>
+			<UniqueID type="key">188206171</UniqueID>
+			<EntityID type="key">{0310A80B-95DD-4097-AEAF-9364851E98E1}</EntityID>
+			<ItemInfoDate type="key">2026/8/30 18:49:33</ItemInfoDate>
+			<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAddInfoDb type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+		</item>
+		<item>
+			<Component type="key">ProjectApplication</Component>
+			<Name type="key">Application_gp2test0830_2.CDL</Name>
+			<DisplayName type="key">Application_gp2test0830_2</DisplayName>
+			<Path type="key">.\Application_gp2test0830_2</Path>
+			<Flags type="key">41216</Flags>
+			<Type type="key">14</Type>
+			<UniqueID type="key">947037797</UniqueID>
+			<EntityID type="key">{343E5D50-7610-45A2-8707-501E74A1EBA4}</EntityID>
+			<ItemInfoDate type="key">2026/8/30 19:18:00</ItemInfoDate>
+			<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAddInfoDb type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+		</item>
+	</project>
+	<experiments/>
+	<UserManager/>
+	<Interpreter>
+		<PythonVersion type="key">3.6</PythonVersion>
+	</Interpreter>
+	<ProjectExperiment/>
+	<ProjectApplication>
+		<applications>
+			<application>
+				<Name type="key">Application_0829_1.CDL</Name>
+				<DisplayName type="key">Application_0829_1</DisplayName>
+				<Path type="key">.\Application_0829_1</Path>
+				<Component type="key">ProjectApplication</Component>
+				<Type type="key">14</Type>
+				<ApplicationType type="key">3</ApplicationType>
+				<Flags type="key">8448</Flags>
+				<ItemInfoDate type="key">2026/8/29 17:12:49</ItemInfoDate>
+				<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+				<ItemInfoDocs type="key"/>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+				<Log type="key"/>
+				<AddInfoDb type="key"/>
+				<DatabaseID type="key">-1</DatabaseID>
+				<EntityID type="key">{57DB102B-CA9A-45A2-B6FF-87691B7B2254}</EntityID>
+			</application>
+			<application>
+				<Name type="key">Application_motiontest0829_2.CDL</Name>
+				<DisplayName type="key">Application_motiontest0829_2</DisplayName>
+				<Path type="key">.\Application_motiontest0829_2</Path>
+				<Component type="key">ProjectApplication</Component>
+				<Type type="key">14</Type>
+				<ApplicationType type="key">3</ApplicationType>
+				<Flags type="key">8448</Flags>
+				<ItemInfoDate type="key">2026/8/29 17:17:02</ItemInfoDate>
+				<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+				<ItemInfoDocs type="key"/>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+				<Log type="key"/>
+				<AddInfoDb type="key"/>
+				<DatabaseID type="key">-1</DatabaseID>
+				<EntityID type="key">{4D1339F5-AD5D-4C5D-B335-B9BD59987CA5}</EntityID>
+			</application>
+			<application>
+				<Name type="key">Application_gptest0830.CDL</Name>
+				<DisplayName type="key">Application_gptest0830</DisplayName>
+				<Path type="key">.\Application_gptest0830</Path>
+				<Component type="key">ProjectApplication</Component>
+				<Type type="key">14</Type>
+				<ApplicationType type="key">3</ApplicationType>
+				<Flags type="key">8448</Flags>
+				<ItemInfoDate type="key">2026/8/30 18:49:33</ItemInfoDate>
+				<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+				<ItemInfoDocs type="key"/>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+				<Log type="key"/>
+				<AddInfoDb type="key"/>
+				<DatabaseID type="key">-1</DatabaseID>
+				<EntityID type="key">{0310A80B-95DD-4097-AEAF-9364851E98E1}</EntityID>
+			</application>
+			<application>
+				<Name type="key">Application_gp2test0830_2.CDL</Name>
+				<DisplayName type="key">Application_gp2test0830_2</DisplayName>
+				<Path type="key">.\Application_gp2test0830_2</Path>
+				<Component type="key">ProjectApplication</Component>
+				<Type type="key">14</Type>
+				<ApplicationType type="key">3</ApplicationType>
+				<Flags type="key">41216</Flags>
+				<ItemInfoDate type="key">2026/8/30 19:18:00</ItemInfoDate>
+				<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+				<ItemInfoDocs type="key"/>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+				<Log type="key"/>
+				<AddInfoDb type="key"/>
+				<DatabaseID type="key">-1</DatabaseID>
+				<EntityID type="key">{343E5D50-7610-45A2-8707-501E74A1EBA4}</EntityID>
+			</application>
+		</applications>
+		<LastActiveApplication type="key">Application_gp2test0830_2</LastActiveApplication>
+	</ProjectApplication>
+	<PlatformManagement/>
+</Root>

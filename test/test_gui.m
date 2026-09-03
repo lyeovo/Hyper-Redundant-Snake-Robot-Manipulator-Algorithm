@@ -16,7 +16,7 @@ function nf = test_gui()
         ok(1) = s.model.cfg.N == 6;
         ok(2) = size(s.model.cfg.obstacles.circles, 1) == 1 && ...
                 size(s.model.cfg.obstacles.rects, 1) == 0;
-        ok(3) = numel(get(s.hTaskType, 'String')) == 11;  % 任务类型数（与 taskToSegments 的 11 种保持一致）
+        ok(3) = numel(get(s.hTaskType, 'String')) == 13;  % 任务类型数（与 taskToSegments 的 11 种 + 急停/取消，共 13 种保持一致）
 
         % ---------- 2. 参数修改 → 单次求解（先清空障碍保证快收敛） ----------
         set(s.hObsTable, 'Data', {});
@@ -88,7 +88,7 @@ function nf = test_gui()
         ok(13) = true;   % 各方法回调均正常返回（未抛错即通过）
 
         % ---------- 5. 5 种模拟视觉任务下发执行 ----------
-        ct = {'move_to','move_along','move_for_pick','move_for_place','rotate','rotate_arm','facing_arm','pick','place','withdraw','reset'};
+        ct = {'move_to','move_along','move_for_pick','move_for_place','rotate','rotate_arm','facing_arm','pick','place','withdraw','reset','emergency_stop','cancel_task'};
         for k = 1:numel(ct)
             set(s.hTaskType, 'Value', k);
             feval(get(s.hTaskRun, 'Callback'), s.hTaskRun, []);

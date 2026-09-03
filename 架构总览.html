@@ -481,11 +481,15 @@ grad  ∇V = −2·w_pos·e_pos·J − 2·w_ang·e_ang·J_ang
     <div class="grid2">
       <div>
         <ul class="tight">
-          <li><code>move_near_target</code> — 靠近目标</li>
-          <li><code>pick_target</code> — 夹取</li>
-          <li><code>pick_and_place</code> — 夹取-放置</li>
-          <li><code>dock_to_interface</code> — 对接</li>
-          <li><code>home</code> — 归位</li>
+          <li><code>move_to (x,y)</code> — 末端移动到 (x,y)</li>
+          <li><code>move_along (θ,d)</code> — 末端沿 θ 方向移动 d 米</li>
+          <li><code>move_for_pick</code> — 依实时相对位置向物体移动</li>
+          <li><code>move_for_place</code> — 依硬编码向放置位置移动</li>
+          <li><code>rotate (α)</code> — 末端位置不动，旋转 α 角</li>
+          <li><code>rotate_arm (α,n)</code> — 第 n 关节旋转 α 角</li>
+          <li><code>facing_arm (θ,n)</code> — 第 n 关节面向 θ 方向</li>
+          <li><code>pick</code> / <code>place</code> — 夹爪抓取 / 放置动作链</li>
+          <li><code>withdraw</code> / <code>reset</code> — 退回上一状态 / 恢复初始位置</li>
         </ul>
       </div>
       <div>
@@ -493,17 +497,24 @@ grad  ∇V = −2·w_pos·e_pos·J − 2·w_ang·e_ang·J_ang
         <ul class="tight">
           <li><code>0</code> = 保持 · <code>1</code> = 张开 · <code>2</code> = 闭合</li>
           <li>动作在段末快照触发（如 GRASPING 段末闭合）</li>
+          <li>参数（θ,d,α,n）从 <code>cmd.motion_params</code> 读取（不改 TaskCommand 结构）</li>
         </ul>
       </div>
     </div>
-    <p class="desc" style="margin-top:14px">每个 <code>command_type</code> 展开为运动段序列（由 <code>taskToSegments</code> 实现），段目标含 <code>target=[x,y,θ]</code> 与 <code>gripper</code> 动作：</p>
+    <p class="desc" style="margin-top:14px">每个 <code>command_type</code> 由 <code>taskToSegments</code> 展开为段序列；段按 <code>kind</code> 区分：<code>ee</code>（末端 [x,y,θ]）、<code>ee_relative</code>（当前末端沿 θ 移 d）、<code>ee_rotate</code>（原位转 α）、<code>joint_delta</code>（第 n 关节转 α）、<code>joint_abs</code>（第 n 关节连杆朝 θ）。<code>taskExecute</code> 用当前臂态解析相对/关节段（<code>resolveSegTarget</code> / <code>execJointSeg</code>）。</p>
     <table>
-      <tr><th>command_type</th><th>展开的段（按序）</th></tr>
-      <tr><td><code>move_near_target</code></td><td>approach（退 approach_dist 的预抓取点）</td></tr>
-      <tr><td><code>pick_target</code></td><td>approach → <code>GRASPING</code>(闭合) → lift(后撤)</td></tr>
-      <tr><td><code>pick_and_place</code></td><td>approach → GRASPING(闭合) → lift → approach_place → <code>RELEASING</code>(张开)</td></tr>
-      <tr><td><code>dock_to_interface</code></td><td>pre_dock → <code>DOCKING</code>(θ 高精度)</td></tr>
-      <tr><td><code>home</code></td><td>零位 [0,0,0]</td></tr>
+      <tr><th>command_type</th><th>展开的段（kind）</th></tr>
+      <tr><td><code>move_to</code></td><td>ee → 末端到 [x,y,θ]</td></tr>
+      <tr><td><code>move_along</code></td><td>ee_relative → 当前末端沿 θ 方向 d 米</td></tr>
+      <tr><td><code>move_for_pick</code></td><td>ee → selected_target（实时物体位）</td></tr>
+      <tr><td><code>move_for_place</code></td><td>ee → destination 硬编码放置位</td></tr>
+      <tr><td><code>rotate</code></td><td>ee_rotate → 末端位置不动，θ 转 α</td></tr>
+      <tr><td><code>rotate_arm</code></td><td>joint_delta → 第 n 关节转 α（关节空间）</td></tr>
+      <tr><td><code>facing_arm</code></td><td>joint_abs → 第 n 关节连杆朝 θ 方向（关节空间）</td></tr>
+      <tr><td><code>pick</code></td><td>ee（到目标）→ 夹爪闭合（GRASPING）</td></tr>
+      <tr><td><code>place</code></td><td>ee（到目标）→ 夹爪张开（RELEASING）</td></tr>
+      <tr><td><code>withdraw</code></td><td>ee → 沿目标反方向后撤 approach_dist</td></tr>
+      <tr><td><code>reset</code></td><td>ee → 回 [0,0,0]（复位）</td></tr>
     </table>
   </section>
 
@@ -1187,8 +1198,8 @@ success / error_code / q_final / meta</pre>
         <span class="fn-layer l0">L0</span>
       </div>
       <div class="fn-body">
-        <div class="fn-desc"><code>command_type</code> → 运动序列展开（§1.1 展开表）。approach 点：沿目标朝向反方向退 <code>approach_dist</code>（预抓取点）；lift = 目标后撤 0.10（平面内沿末端朝向反方向，抬离由电控/垂直轴处理）。</div>
-        <div class="fn-out">返回 <code>segs</code> struct 数组，每段 <code>{.target=[x,y,θ], .gripper(0=保持/1=开/2=合), .name}</code>。未知 command_type 直接 <code>error</code>。</div>
+        <div class="fn-desc"><code>command_type</code> → 运动序列展开（§5 展开表，共 11 种：<code>move_to/move_along/move_for_pick/move_for_place/rotate/rotate_arm/facing_arm/pick/place/withdraw/reset</code>）。参数（θ,d,α,n）从 <code>cmd.motion_params</code> 读取（不改 TaskCommand 结构）；运动基元参数经 <code>projectTo2D</code> 取 <code>selected_target/destination</code>。</div>
+        <div class="fn-out">返回 <code>segs</code> struct 数组，每段字段：<code>kind</code>（<code>ee/ee_relative/ee_rotate/joint_delta/joint_abs</code>）、<code>target</code>（ee 类 [x,y,θ]）、<code>gripper</code>(0保持/1开/2合)、<code>name</code>，及按 kind 的 <code>dir/dist/alpha/joint/delta/angle</code>。未知 <code>command_type</code> 直接 <code>error</code>。</div>
       </div>
     </div>
 

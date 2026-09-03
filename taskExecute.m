@@ -38,6 +38,16 @@ function info = taskExecute(model, cmd, opts)
         end
     end
 
+    % ---- 控制类指令（不做运动展开，直接回写控制状态） ----
+    if strcmp(cmd.command_type, 'emergency_stop')
+        taskWriteStatus(inbox, cmd, 'ESTOP_TRIGGERED', 'Msg', '急停');
+        info = mkInfo(false, 6, 'ESTOP_TRIGGERED'); return;
+    end
+    if strcmp(cmd.command_type, 'cancel_task')
+        taskWriteStatus(inbox, cmd, 'CANCELED', 'Msg', '任务取消');
+        info = mkInfo(false, 0, 'CANCELED'); return;
+    end
+
     taskWriteStatus(inbox, cmd, 'ACCEPTED');
     taskWriteStatus(inbox, cmd, 'PLANNING');
 

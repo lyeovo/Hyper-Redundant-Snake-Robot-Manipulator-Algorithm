@@ -9,7 +9,7 @@ function nfail = test_all()
 %   现改为逐项 try/catch 汇总，任一项失败即 error 退出。
     names = {'test_obstacle_geometry', 'test_gradcheck', 'test_createModel', ...
              'test_simulateMotion', 'test_errorModel', 'test_methodRl', ...
-             'test_taskBridge', 'test_taskLoop', 'test_gui', 'test_topLevel'};
+             'test_taskBridge', 'test_taskLoop', 'test_taskUnify', 'test_gui', 'test_topLevel'};
     fprintf('=========== 测试开始（共 %d 项）===========\n', numel(names));
     t0 = tic;
     failed = {};

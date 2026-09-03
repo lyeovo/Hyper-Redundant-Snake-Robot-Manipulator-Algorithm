@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Root>
+	<creator type="key">ConfigurationDesk 6.4</creator>
+	<application>
+		<Name type="key">Application_gptest0830.CDL</Name>
+		<DisplayName type="key">Application_gptest0830</DisplayName>
+		<Path type="key">.\Application_gptest0830</Path>
+		<Component type="key">ProjectApplication</Component>
+		<Type type="key">14</Type>
+		<ApplicationType type="key">3</ApplicationType>
+		<Flags type="key">41216</Flags>
+		<ItemInfoDate type="key">2026/8/30 18:49:33</ItemInfoDate>
+		<ItemInfoPath type="key">$FPATH$</ItemInfoPath>
+		<ItemInfoDocs type="key"/>
+		<ItemInfoDescr type="key"/>
+		<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+		<Log type="key"/>
+		<AddInfoDb type="key"/>
+		<DatabaseID type="key">-1</DatabaseID>
+		<EntityID type="key">{0310A80B-95DD-4097-AEAF-9364851E98E1}</EntityID>
+		<item>
+			<Name type="key">WindowConfiguration.xml</Name>
+			<DisplayName type="key">WindowConfiguration.xml</DisplayName>
+			<Path type="key">.</Path>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">260</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">4</Type>
+			<ItemInfoDate type="key">2026/8/30 18:49:37</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{FB3D8115-249B-43BF-8047-7C675194CE70}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">Device Topology</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">131328</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">33</Type>
+			<ItemInfoDate type="key">2026/8/30 18:49:37</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{6393FC8A-6223-468C-AFE3-318D1A9D04AC}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">Hardware Topology</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">256</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">19</Type>
+			<ItemInfoDate type="key">2026/8/30 18:49:37</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{B8F8E315-81F3-4216-88FA-C990B259B170}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">Model Topology</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">256</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">31</Type>
+			<ItemInfoDate type="key">2026/8/30 18:49:37</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key">Model location:
+C:\Users\501JGJG\Desktop\gptest0830.slx
+</Log>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{3202ECE0-9C28-4379-AA38-BB67B21171D5}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">Communication Matrices</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">131328</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">70</Type>
+			<ItemInfoDate type="key">2026/8/30 18:49:37</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{C64C528B-BE6A-445D-93C2-8E5DA5FB8ACA}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<DisplayName type="key">External Cable Harness</DisplayName>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">131328</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">32</Type>
+			<ItemInfoDate type="key">2026/8/30 18:49:37</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{7719BAA6-3A9F-473E-A1B7-EDCD5F3F2803}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<Name type="key">Application.cfgx</Name>
+			<DisplayName type="key">Core Application</DisplayName>
+			<Path type="key">.</Path>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">260</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">20</Type>
+			<ItemInfoDate type="key">2026/8/30 18:49:37</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{9B3F5248-5F25-4A74-AB36-FAE69E4080B9}</EntityID>
+			<Targets/>
+		</item>
+		<item>
+			<Name type="key">Build Results</Name>
+			<DisplayName type="key">Build Results</DisplayName>
+			<Path type="key">.</Path>
+			<Component type="key">ProjectApplication</Component>
+			<Flags type="key">256</Flags>
+			<ExtendedFlags type="key">0</ExtendedFlags>
+			<Type type="key">58</Type>
+			<ItemInfoDate type="key">2026/8/30 18:53:07</ItemInfoDate>
+			<ItemInfoPath type="key"/>
+			<ItemInfoDocs type="key"/>
+			<ItemInfoDescr type="key"/>
+			<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+			<ItemInfoAddInfoDb type="key"/>
+			<Log type="key"/>
+			<DatabaseID type="key">-1</DatabaseID>
+			<EntityID type="key">{65D97989-31BA-470D-B99E-A02E5F0C657F}</EntityID>
+			<Targets/>
+			<item>
+				<Name type="key">Build Results</Name>
+				<DisplayName type="key">itSDFROOT</DisplayName>
+				<Path type="key">.</Path>
+				<Component type="key">ProjectApplication</Component>
+				<Flags type="key">260</Flags>
+				<ExtendedFlags type="key">0</ExtendedFlags>
+				<Type type="key">29</Type>
+				<ItemInfoDate type="key">2026/8/30 18:53:07</ItemInfoDate>
+				<ItemInfoPath type="key"/>
+				<ItemInfoDocs type="key"/>
+				<ItemInfoDescr type="key"/>
+				<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+				<ItemInfoAddInfoDb type="key"/>
+				<Log type="key"/>
+				<DatabaseID type="key">-1</DatabaseID>
+				<EntityID type="key">{9C760140-3DED-48C7-B194-F2764244DA10}</EntityID>
+				<Targets/>
+				<item>
+					<Name type="key">Application_gptest0830.dsbuildinfo</Name>
+					<DisplayName type="key">Application_gptest0830.dsbuildinfo</DisplayName>
+					<Path type="key">.\Build Results</Path>
+					<Component type="key">ProjectApplication</Component>
+					<Flags type="key">260</Flags>
+					<ExtendedFlags type="key">0</ExtendedFlags>
+					<Type type="key">4</Type>
+					<ItemInfoDate type="key">2026/8/30 18:53:07</ItemInfoDate>
+					<ItemInfoPath type="key"/>
+					<ItemInfoDocs type="key"/>
+					<ItemInfoDescr type="key"/>
+					<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+					<ItemInfoAddInfoDb type="key"/>
+					<Log type="key"/>
+					<DatabaseID type="key">-1</DatabaseID>
+					<EntityID type="key">{6140BB4D-EA83-4AAE-8295-C8789F984792}</EntityID>
+					<Targets/>
+				</item>
+				<item>
+					<Name type="key">Application_gptest0830.rta</Name>
+					<DisplayName type="key">Application_gptest0830.rta</DisplayName>
+					<Path type="key">.\Build Results</Path>
+					<Component type="key">ProjectApplication</Component>
+					<Flags type="key">256</Flags>
+					<ExtendedFlags type="key">0</ExtendedFlags>
+					<Type type="key">37</Type>
+					<ItemInfoDate type="key">2026/8/30 18:53:07</ItemInfoDate>
+					<ItemInfoPath type="key"/>
+					<ItemInfoDocs type="key"/>
+					<ItemInfoDescr type="key"/>
+					<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+					<ItemInfoAddInfoDb type="key"/>
+					<Log type="key"/>
+					<DatabaseID type="key">-1</DatabaseID>
+					<EntityID type="key">{FFBEA7A8-F794-4F37-AB9A-760C6C3476EC}</EntityID>
+					<Targets/>
+				</item>
+				<item>
+					<Name type="key">Application_gptest0830.sdf</Name>
+					<DisplayName type="key">Application_gptest0830.sdf</DisplayName>
+					<Path type="key">.\Build Results</Path>
+					<Component type="key">ProjectApplication</Component>
+					<Flags type="key">256</Flags>
+					<ExtendedFlags type="key">0</ExtendedFlags>
+					<Type type="key">35</Type>
+					<ItemInfoDate type="key">2026/8/30 18:53:07</ItemInfoDate>
+					<ItemInfoPath type="key"/>
+					<ItemInfoDocs type="key"/>
+					<ItemInfoDescr type="key"/>
+					<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+					<ItemInfoAddInfoDb type="key"/>
+					<Log type="key"/>
+					<DatabaseID type="key">-1</DatabaseID>
+					<EntityID type="key">{05C85B09-3D4A-41F6-92E0-D81187964CB5}</EntityID>
+					<Targets/>
+				</item>
+				<item>
+					<Name type="key">gptest0830.expswcfg</Name>
+					<DisplayName type="key">gptest0830.expswcfg</DisplayName>
+					<Path type="key">.\Build Results</Path>
+					<Component type="key">ProjectApplication</Component>
+					<Flags type="key">256</Flags>
+					<ExtendedFlags type="key">0</ExtendedFlags>
+					<Type type="key">71</Type>
+					<ItemInfoDate type="key">2026/8/30 18:53:08</ItemInfoDate>
+					<ItemInfoPath type="key"/>
+					<ItemInfoDocs type="key"/>
+					<ItemInfoDescr type="key"/>
+					<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+					<ItemInfoAddInfoDb type="key"/>
+					<Log type="key"/>
+					<DatabaseID type="key">-1</DatabaseID>
+					<EntityID type="key">{D18018C4-790D-4989-85D8-3ACEE56D70F6}</EntityID>
+					<Targets/>
+				</item>
+				<item>
+					<Name type="key">gptest0830.map</Name>
+					<DisplayName type="key">gptest0830.map</DisplayName>
+					<Path type="key">.\Build Results</Path>
+					<Component type="key">ProjectApplication</Component>
+					<Flags type="key">256</Flags>
+					<ExtendedFlags type="key">0</ExtendedFlags>
+					<Type type="key">36</Type>
+					<ItemInfoDate type="key">2026/8/30 18:53:08</ItemInfoDate>
+					<ItemInfoPath type="key"/>
+					<ItemInfoDocs type="key"/>
+					<ItemInfoDescr type="key"/>
+					<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+					<ItemInfoAddInfoDb type="key"/>
+					<Log type="key"/>
+					<DatabaseID type="key">-1</DatabaseID>
+					<EntityID type="key">{EA527EA4-5640-4859-BD55-17CB57777A5A}</EntityID>
+					<Targets/>
+				</item>
+				<item>
+					<Name type="key">gptest0830.trc</Name>
+					<DisplayName type="key">gptest0830.trc</DisplayName>
+					<Path type="key">.\Build Results</Path>
+					<Component type="key">ProjectApplication</Component>
+					<Flags type="key">256</Flags>
+					<ExtendedFlags type="key">0</ExtendedFlags>
+					<Type type="key">34</Type>
+					<ItemInfoDate type="key">2026/8/30 18:53:08</ItemInfoDate>
+					<ItemInfoPath type="key"/>
+					<ItemInfoDocs type="key"/>
+					<ItemInfoDescr type="key"/>
+					<ItemInfoAuthor type="key">501JGJG</ItemInfoAuthor>
+					<ItemInfoAddInfoDb type="key"/>
+					<Log type="key"/>
+					<DatabaseID type="key">-1</DatabaseID>
+					<EntityID type="key">{8F7D8E07-1436-44EC-94B2-D0ADE17E38BC}</EntityID>
+					<Targets/>
+				</item>
+			</item>
+		</item>
+	</application>
+</Root>
