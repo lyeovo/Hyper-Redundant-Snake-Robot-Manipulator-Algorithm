@@ -37,7 +37,18 @@ Desktop.ini
 $null
 
 # ---- 大型可再生二进制（训练产物/示范数据；源码与训练脚本已入仓） ----
-# 如需交付模型快照，可临时解除下面注释后提交
-# rl_pipeline/policy_*.mat
-# rl_pipeline/policy_*.npz
-# demonstrations_*/
+# 已从版本库 git rm --cached，工作区保留。如需重新交付模型快照，
+# 可临时注释对应规则后再 git add -f
+rl_pipeline/policy_*.mat
+rl_pipeline/policy_*.npz
+data/demonstrations_*/
+
+# ---- 电控 dSPACE 工程构建产物（可再生，勿入库） ----
+电控文件/**/Build/
+电控文件/**/*.o86
+电控文件/**/*.map
+电控文件/**/*.mk
+电控文件/**/*.part
+
+# ---- AI 代理运行时记忆/状态（非项目源码，勿提交） ----
+.workbuddy/
