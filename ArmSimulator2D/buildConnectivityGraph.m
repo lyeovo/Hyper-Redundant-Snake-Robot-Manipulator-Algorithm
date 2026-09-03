@@ -19,7 +19,7 @@ function [graph, info] = buildConnectivityGraph(obstacles, start, goal, opts)
     else
         R = 6;
     end
-    GRID = of(opts,'GRID',64);
+    GRID = optget(opts,'GRID',64);
 
     % ---- 1. 场景范围（覆盖起点/终点/障碍 + 边距），正方形网格 ----
     allPts = [start; goal];
@@ -63,14 +63,14 @@ function [graph, info] = buildConnectivityGraph(obstacles, start, goal, opts)
     dist = chamferDist(occ) * dx;
 
     % ---- 4/5. 取点 + 加边：骨架模式(默认，走廊中轴线) 或 PRM 模式 ----
-    skelMode = of(opts,'skeleton', true);
+    skelMode = optget(opts,'skeleton', true);
     if skelMode
         [nodes, edges] = skeletonGraph(occ, gx, gy, dx, R, opts);
     else
-        minClear = of(opts,'min_clear',0.10*R);
-        suppR    = of(opts,'suppress_r',0.18*R);
-        connR    = of(opts,'conn_r',0.35*R);
-        knn      = of(opts,'knn',4);
+        minClear = optget(opts,'min_clear',0.10*R);
+        suppR    = optget(opts,'suppress_r',0.18*R);
+        connR    = optget(opts,'conn_r',0.35*R);
+        knn      = optget(opts,'knn',4);
         nodes = extractCorridorNodes(occ, dist, gx, gy, dx, minClear, suppR);
         edges = visibilityEdges(nodes, occ, gx, gy, dx, connR, knn);
     end
@@ -79,7 +79,7 @@ function [graph, info] = buildConnectivityGraph(obstacles, start, goal, opts)
     sxy = [gx(si(2)), gy(si(1))];  gxy = [gx(gi(2)), gy(gi(1))];
     nodes = [sxy; gxy; nodes];
     start_i = 1;  goal_i = 2;
-    connR = of(opts,'conn_r',0.45*R);
+    connR = optget(opts,'conn_r',0.45*R);
     edges = connectEndpoints(edges, nodes, start_i, goal_i, occ, gx, gy, dx, connR);
 
     % ---- 6. 起/终连通性检查（图 BFS/传播）----
@@ -271,8 +271,4 @@ function edges = connectEndpoints(edges, nodes, start_i, goal_i, occ, gx, gy, dx
         if best > 0, edges(end+1,:) = [min(t,best), max(t,best)]; end %#ok<AGROW>
     end
     if ~isempty(edges), edges = unique(sort(edges,2),'rows'); end
-end
-
-function v = of(s, f, d)
-    if isfield(s,f) && ~isempty(s.(f)), v = s.(f); else, v = d; end
 end

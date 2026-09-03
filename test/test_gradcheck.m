@@ -9,18 +9,18 @@ function test_gradcheck()
 
     % ---- 场景 A：无障碍 ----
     m = testModel('w_obs', 0, 'obstacles', struct('rects',[],'circles',[]));
-    eA = gradErr(m, 20, 1e-6, 'A-无障碍');
-    fprintf('  A 无障碍: 最大相对误差 %.3e\n', eA);
+    [eA, nA] = gradErr(m, 20, 1e-6, 'A-无障碍');
+    fprintf('  A 无障碍: 最大相对误差 %.3e（%d 样本）\n', eA, nA);
 
     % ---- 场景 B：圆障碍（远离屏障） ----
     m = testModel('obstacles', struct('rects',[],'circles',[2.0,0.8,0.25]));
-    eB = gradErr(m, 20, 1e-5, 'B-圆障碍', 0.15);
-    fprintf('  B 圆障碍: 最大相对误差 %.3e\n', eB);
+    [eB, nB] = gradErr(m, 20, 1e-5, 'B-圆障碍', 0.15);
+    fprintf('  B 圆障碍: 最大相对误差 %.3e（%d 样本）\n', eB, nB);
 
     % ---- 场景 C：矩形障碍 ----
     m = testModel('obstacles', struct('rects',[1.5,0.6,0.3,0.4,0.2],'circles',[]));
-    eC = gradErr(m, 30, 1e-3, 'C-矩形障碍', 0.15, true);
-    fprintf('  C 矩形障碍: 最大相对误差 %.3e\n', eC);
+    [eC, nC] = gradErr(m, 30, 1e-3, 'C-矩形障碍', 0.15, true);
+    fprintf('  C 矩形障碍: 最大相对误差 %.3e（%d 样本）\n', eC, nC);
 
     % ---- 雅可比 vs FK 差分（off=0 精确） ----
     q0 = [0.3, -0.5, 0.8, -0.2];
@@ -28,6 +28,10 @@ function test_gradcheck()
     Jn = jacNum(q0, m.DH, m.cfg.rod_offset_arr);
     eJ = max(max(abs(J - Jn))) / max(1, max(max(abs(Jn))));
     fprintf('  雅可比(off=0) vs 差分: 最大相对误差 %.3e\n', eJ);
+    % NaN 防护：任何一项为 NaN 都不算通过（NaN 参与比较恒为 false，会掩盖失败）
+    if any(isnan([eA, eB, eC, eJ]))
+        error('test_gradcheck FAILED: 存在 NaN 误差（采样无效或数值异常）');
+    end
     if eJ > 1e-6, error('test_gradcheck FAILED: Jacobian'); end
     if eA > 1e-6 || eB > 1e-5 || eC > 1e-3
         error('test_gradcheck FAILED');
@@ -35,12 +39,18 @@ function test_gradcheck()
     fprintf('  全部通过\n\n');
 end
 
-function e = gradErr(m, nSamp, tol, name, margin, reportQuant)
-% 采样 nSamp 个随机 q，解析梯度 vs 中心差分；返回最大相对误差
+function [e, nvalid] = gradErr(m, nSamp, tol, name, margin, reportQuant)
+% 采样 nSamp 个随机 q，解析梯度 vs 中心差分；返回最大相对误差与有效样本数
+%   带 margin 的场景用【拒绝采样】收集够 nSamp 个有效点为止（上限 maxTry 次尝试）。
+%   有效样本不足则报错——历史坑：曾因 margin 过滤过严导致 errs 为空、返回 NaN，
+%   而调用处 `if e > tol` 对 NaN 恒为 false，场景 B 一次都没校验却显示通过。
     if nargin < 5, margin = 0; end
     if nargin < 6, reportQuant = false; end
-    errs = [];
-    for s = 1:nSamp
+    maxTry  = nSamp * 50;              % 拒绝采样尝试上限
+    minKeep = max(3, ceil(nSamp/4));   % 至少要有这么多个有效点才算校验成立
+    errs = [];  tried = 0;
+    while numel(errs) < nSamp && tried < maxTry
+        tried = tried + 1;
         q = randq(m);
         if margin > 0
             dmin = minObstacleDist(m, q);
@@ -54,7 +64,12 @@ function e = gradErr(m, nSamp, tol, name, margin, reportQuant)
         denom = max(norm(g_fd), 1e-6);
         errs(end+1) = norm(g_an - g_fd) / denom; %#ok<AGROW>
     end
-    if isempty(errs), e = NaN; return; end
+    nvalid = numel(errs);
+    if nvalid < minKeep
+        error('test_gradcheck:nosample', ...
+            '%s: 仅收集到 %d/%d 个有效样本（尝试 %d 次，margin=%.3f）——过滤过严，无法完成校验', ...
+            name, nvalid, nSamp, tried, margin);
+    end
     if reportQuant
         e = prctile(errs, 95);              % 允许少量 min 切换点（次梯度）
     else

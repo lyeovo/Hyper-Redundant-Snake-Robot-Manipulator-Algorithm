@@ -22,15 +22,15 @@ function res = evaluatePolicy(policy, opts)
 %     res = evaluatePolicy('rrtstar');                        % 基线自评
 %     res = evaluatePolicy(@(m,q0,t) myPolicy(m,q0,t), ...);  % 自定义策略
     if nargin < 2 || isempty(opts), opts = struct(); end
-    n_test   = of(opts, 'n_test', 30);
-    N = of(opts, 'N', 4);
-    L = of(opts, 'L_seg', 1.04393);
-    seed     = of(opts, 'seed', []);
-    ref_ms   = of(opts, 'ref_max_samples', 1500);
-    ref_opt  = of(opts, 'ref_optimize', true);   % 参考侧轨迹优化（近全局参考）
-    goal_pos = of(opts, 'goal_pos', 0.1);
-    goal_ang = of(opts, 'goal_ang', 0.2);
-    verbose  = of(opts, 'verbose', true);
+    n_test   = optget(opts, 'n_test', 30);
+    N = optget(opts, 'N', 4);
+    L = optget(opts, 'L_seg', 1.04393);
+    seed     = optget(opts, 'seed', []);
+    ref_ms   = optget(opts, 'ref_max_samples', 1500);
+    ref_opt  = optget(opts, 'ref_optimize', true);   % 参考侧轨迹优化（近全局参考）
+    goal_pos = optget(opts, 'goal_pos', 0.1);
+    goal_ang = optget(opts, 'goal_ang', 0.2);
+    verbose  = optget(opts, 'verbose', true);
     if ~isempty(seed), rng(seed); end
     if ischar(policy) || isstring(policy)
         if strcmp(policy, 'rrtstar')
@@ -123,13 +123,5 @@ function ok = isFreeAll(model, traj)
         if ~isempty(g) && min(g) < model.cfg.rho0
             ok = false; return;
         end
-    end
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
     end
 end

@@ -26,17 +26,17 @@ function stats = trainRLPolicy(opts)
 %     trainRLPolicy(struct('n_gen',2000,'tasks_per_gen',8));   % 大训练
 %     trainRLPolicy(struct('load_path','RLPolicy.mat'));       % 续训
     if nargin < 1 || isempty(opts), opts = struct(); end
-    n_gen    = of(opts,'n_gen', 500);
-    n_pop    = of(opts,'n_pop', 16);
-    sig      = of(opts,'sigma_es', 0.2);
-    lam      = of(opts,'lambda', 0.3);
-    max_roll = of(opts,'max_rollout', 50);
-    tpg      = of(opts,'tasks_per_gen', 4);
-    lr       = of(opts,'lr', 0.5);
-    save_path = of(opts,'save_path', 'RLPolicy.mat');
-    load_path = of(opts,'load_path', '');
-    eval_every = of(opts,'eval_every', 50);
-    verbose  = of(opts,'verbose', true);
+    n_gen    = optget(opts,'n_gen', 500);
+    n_pop    = optget(opts,'n_pop', 16);
+    sig      = optget(opts,'sigma_es', 0.2);
+    lam      = optget(opts,'lambda', 0.3);
+    max_roll = optget(opts,'max_rollout', 50);
+    tpg      = optget(opts,'tasks_per_gen', 4);
+    lr       = optget(opts,'lr', 0.5);
+    save_path = optget(opts,'save_path', 'RLPolicy.mat');
+    load_path = optget(opts,'load_path', '');
+    eval_every = optget(opts,'eval_every', 50);
+    verbose  = optget(opts,'verbose', true);
 
     % 固定训练模型（策略维度依赖 N；训练/推理须同 N）
     base = createArmModel(struct('N', 4, 'L_seg', 1.0));
@@ -171,13 +171,5 @@ function stats = trainRLPolicy(opts)
     if verbose
         fprintf('训练完成: 最终成功率 %.1f%% | 平均末端距离 %.3f m | 策略已存 %s\n', ...
             final_succ*100, final_dmean, save_path);
-    end
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
     end
 end

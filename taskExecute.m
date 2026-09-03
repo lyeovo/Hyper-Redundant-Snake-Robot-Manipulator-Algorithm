@@ -12,11 +12,11 @@ function info = taskExecute(model, cmd, opts)
 %   返回 info：.success .error_code .seg_infos .motor_cmd .status
     cfg = model.cfg;
     if nargin < 3 || isempty(opts), opts = struct(); end
-    inbox = getopt(opts, 'inbox', '');
-    method = getopt(opts, 'method', 'auto');
-    snapshot_m = getopt(opts, 'snapshot_m', cfg.snapshot_m);
-    approach_dist = getopt(opts, 'approach_dist', 0.15);
-    estop = getopt(opts, 'estop', []);
+    inbox = optget(opts, 'inbox', '');
+    method = optget(opts, 'method', 'auto');
+    snapshot_m = optget(opts, 'snapshot_m', cfg.snapshot_m);
+    approach_dist = optget(opts, 'approach_dist', 0.15);
+    estop = optget(opts, 'estop', []);
 
     % ---- 安全校验（消费 TaskCommand.safety 字段） ----
     if isfield(cmd, 'safety') && ~isempty(cmd.safety)
@@ -55,6 +55,7 @@ function info = taskExecute(model, cmd, opts)
     n_seg = numel(segs);
     % 预检：段目标是否被障碍吞没（距障碍 < rho0，安全约束下物理不可达）→ 明确报错
     for s = 1:n_seg
+        if isempty(segs(s).target), continue; end   % 关节/相对段目标在执行时解析，此处跳过
         d_tgt = inf;
         cfgm = model.cfg;
         for ci = 1:size(cfgm.obstacles.circles, 1)
@@ -86,9 +87,14 @@ function info = taskExecute(model, cmd, opts)
         try
             % 段级重试（采样类方法带随机性，最多 3 次尝试）
             si = [];
-            for attempt = 1:3
-                si = simulateMotion(model, method, q, segs(s).target, 'Snapshot', snapshot_m);
-                if si.success, break; end
+            if strcmp(segs(s).kind, 'joint_delta') || strcmp(segs(s).kind, 'joint_abs')
+                si = execJointSeg(model, q, segs(s), snapshot_m);   % 关节空间段（直接驱动）
+            else
+                tgt = resolveSegTarget(model, q, segs(s));          % 末端/相对/旋转段 → [x,y,θ]
+                for attempt = 1:3
+                    si = simulateMotion(model, method, q, tgt, 'Snapshot', snapshot_m);
+                    if si.success, break; end
+                end
             end
         catch e
             % 段求解异常：记录失败信息并终止任务（避免半状态任务）
@@ -141,16 +147,46 @@ function info = taskExecute(model, cmd, opts)
     info.motor_cmd = motor_cmd;
 end
 
-function v = getopt(opts, field, default)
-    if isfield(opts, field) && ~isempty(opts.(field))
-        v = opts.(field);
-    else
-        v = default;
-    end
-end
-
 function info = mkInfo(success, code, status, msg)
     if nargin < 4, msg = ''; end
     info = struct('success', success, 'error_code', code, 'status', status, ...
         'message', msg, 'seg_infos', [], 'motor_cmd', []);
+end
+
+function tgt = resolveSegTarget(model, q, seg)
+%resolveSegTarget 把段解析为末端目标 [x,y,θ]（ee / ee_relative / ee_rotate）
+    cfg = model.cfg;
+    switch seg.kind
+        case 'ee'
+            tgt = seg.target;
+        case 'ee_relative'          % 当前末端沿 seg.dir 方向 seg.dist 米
+            [~, pe] = planarFK_L(q, model.DH, cfg.rod_offset_arr);
+            th = getEndEffectorAngle_L(q, model.DH, cfg.rod_offset_arr);
+            tgt = [pe(1) + seg.dist*cos(seg.dir), pe(2) + seg.dist*sin(seg.dir), th];
+        case 'ee_rotate'            % 末端位置不动，θ 转 seg.alpha
+            [~, pe] = planarFK_L(q, model.DH, cfg.rod_offset_arr);
+            th = getEndEffectorAngle_L(q, model.DH, cfg.rod_offset_arr);
+            tgt = [pe(1), pe(2), wrapAngle(th + seg.alpha)];
+        otherwise
+            tgt = seg.target;
+    end
+end
+
+function si = execJointSeg(model, q, seg, snapshot_m)
+%execJointSeg 关节空间段：第 n 关节增量(joint_delta)或连杆朝向(joint_abs)
+%   生成 q→q' 的线性短轨迹作为该段快照（成功即达，无需 IK）
+    cfg = model.cfg;  N = cfg.N;  n = max(1, min(N, seg.joint));
+    if strcmp(seg.kind, 'joint_abs')
+        cur = sum(q(1:n));                        % 平面链：连杆 n 绝对角 = 前 n 关节角求和
+        dq = wrapAngle(seg.angle - cur);
+    else
+        dq = seg.delta;
+    end
+    qn = q;  qn(n) = max(cfg.q_min(n), min(cfg.q_max(n), q(n) + dq));
+    m = max(2, min(20, ceil(snapshot_m*3)));
+    xs = linspace(0, 1, m);
+    Q = repmat(q, m, 1) + (qn - q).*xs(:);
+    si = struct('q_snapshot', Q, 't_seq', (0:m-1), 'q_final', qn, ...
+        'success', true, 'error_code', 0, 'dist_end', 0, 'err_ang', 0, ...
+        'vel_ok', true, 'safety_ok', true, 'converged', true, 'method_used', 'joint');
 end

@@ -20,22 +20,22 @@ function info = method_rrtstar(model, q0, target, opts)
 %   额外 stats.cost_path = 最优路径代价）
     cfg = model.cfg;
     if nargin < 4 || isempty(opts), opts = struct(); end
-    snapshot_m = of(opts, 'snapshot_m', cfg.snapshot_m);
-    onStep  = of(opts, 'onStep', []);
-    isCancel= of(opts, 'isCancel', []);
-    max_samples = of(opts, 'max_samples', cfg.rrt_max_samples);
-    max_step    = of(opts, 'max_step', cfg.rrt_max_step);
-    goal_eps    = of(opts, 'goal_eps', cfg.rrt_goal_eps);
-    goal_ang    = of(opts, 'goal_ang', cfg.rrt_goal_ang);
-    rf_steps    = of(opts, 'rf_steps', 150);   % 终点精修步数（走廊段可调小）
-    gamma_r     = of(opts, 'rrt_gamma', 2.5);
-    cw          = of(opts, 'cost_weights', ones(1, cfg.N));   % C-space 代价权重
+    snapshot_m = optget(opts, 'snapshot_m', cfg.snapshot_m);
+    onStep  = optget(opts, 'onStep', []);
+    isCancel= optget(opts, 'isCancel', []);
+    max_samples = optget(opts, 'max_samples', cfg.rrt_max_samples);
+    max_step    = optget(opts, 'max_step', cfg.rrt_max_step);
+    goal_eps    = optget(opts, 'goal_eps', cfg.rrt_goal_eps);
+    goal_ang    = optget(opts, 'goal_ang', cfg.rrt_goal_ang);
+    rf_steps    = optget(opts, 'rf_steps', 150);   % 终点精修步数（走廊段可调小）
+    gamma_r     = optget(opts, 'rrt_gamma', 2.5);
+    cw          = optget(opts, 'cost_weights', ones(1, cfg.N));   % C-space 代价权重
 
     N = cfg.N;
     q_min = cfg.q_min(:)';  q_max = cfg.q_max(:)';
     cw = cw(:)';
-    if ~isempty(of(opts, 'seed', [])), rng(of(opts, 'seed', [])); end   % 可复现
-    use_prescan = of(opts, 'use_prescan', true);                       % 种子预跑开关（无障时可关省时）
+    if ~isempty(optget(opts, 'seed', [])), rng(optget(opts, 'seed', [])); end   % 可复现
+    use_prescan = optget(opts, 'use_prescan', true);                       % 种子预跑开关（无障时可关省时）
 
     % ============ 2D 适配层（3D 演进时替换此处四个函数） ============
     function ok = isFree(qq)
@@ -290,14 +290,6 @@ function path = extractPath(tree, parent, idx)
     while c ~= 1
         c = parent(c);
         path = [tree(:, c)'; path]; %#ok<AGROW>
-    end
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
     end
 end
 

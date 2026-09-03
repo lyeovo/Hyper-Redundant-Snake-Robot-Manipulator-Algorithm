@@ -14,8 +14,8 @@ function app = ArmSimApp()
 %   - 障碍编辑：圆形 [x,y,r] 与可旋转矩形 [x,y,θ,w,h]（表格增删改，实时可视化）
 %   - 目标位姿 [x,y,θ] 设置（绘图区十字可拖拽）
 %   - 单次求解：auto/momentum/sa/rrt/rrtstar/prm/graph/rl/cvae/multilayer（多层·骨架图）+ 轨迹回放
-%   - 【模拟视觉任务】选择任务类型（move_near_target/pick_target/pick_and_place/
-%     dock_to_interface/home）→ 构造 TaskCommand → 任务级执行（展开运动序列、
+%   - 【模拟视觉任务】选择任务类型（move_to/move_along/move_for_pick/move_for_place/rotate/
+%     rotate_arm/facing_arm/pick/place/withdraw/reset）→ 构造 TaskCommand → 任务级执行（展开运动序列、
 %     逐段求解、夹爪动作、状态流 RECEIVED→…→COMPLETED）→ 逐段动画 → motorCmd 导出
 %   - 可选文件桥：设置 outbox/inbox 目录后可真实模拟"视觉下发→回写"闭环
 %
@@ -52,7 +52,50 @@ function app = ArmSimApp()
     tg = uitabgroup(hp,'Units','normalized','Position',[0.01 0.01 0.98 0.98]);
     tabScene = uitab(tg,'Title','场景 · 求解');
     tabParam = uitab(tg,'Title','模型 · 权重');
+    tabLink  = uitab(tg,'Title','真实链路 · 调试');
     rH = 0.0265;
+
+    % ========== Tab 3：真实链路 · 调试 ==========
+    py = 0.97;
+    sectionTitle(tabLink, py, '── 链路配置 ──'); py = py - 0.024;
+    [hLOb, hLIb, py] = twoCol(tabLink, py, rH, 'outbox:', 'data/outbox', 'inbox:', 'data/inbox');
+    s.hLOutbox = hLOb;  s.hLInbox = hLIb;
+    [hLHp, hLPt, py] = twoCol(tabLink, py, rH, '电控 host:', '127.0.0.1', '电控 port:', '9000');
+    s.hLHost = hLHp;  s.hLPort = hLPt;
+    [hLSt, hLDc, py] = twoCol(tabLink, py, rH, '步进/圈:', '40000', '抽稀 n:', '2');
+    s.hLStep = hLSt;  s.hLDec = hLDc;
+    [hLFb, ~, py] = twoCol(tabLink, py, rH, '反馈端口:', '9001', '', '');
+    s.hLFb = hLFb;
+    [hLcx, hLcy, py] = twoCol(tabLink, py, rH, '相机X(base):', '1.5', '相机Y(base):', '0');
+    s.hLCx = hLcx;  s.hLCy = hLcy;
+    [hLct, ~, py] = twoCol(tabLink, py, rH, '相机θ(base):', '0', '', '');
+    s.hLCt = hLct;
+    s.hFbOn = uicontrol(tabLink,'Style','checkbox','String','实时反馈（读电控STATE，实时更新臂/物体）', ...
+        'Value',1,'Units','normalized','Position',[0.05 py-rH-0.006 0.92 rH], ...
+        'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7);
+    py = py - rH - 0.016;
+    s.hLinkStart = uicontrol(tabLink,'Style','pushbutton','String','▶ 启动链路(轮询outbox)', ...
+        'Units','normalized','Position',[0.05 py-0.016 0.44 0.033], ...
+        'Background',[0.15 0.55 0.25],'Foreground',[1 1 1],'FontSize',8,'Callback',@onLinkStart);
+    s.hLinkStop = uicontrol(tabLink,'Style','pushbutton','String','⏹ 停止链路', ...
+        'Units','normalized','Position',[0.53 py-0.016 0.42 0.033], ...
+        'Background',[0.55 0.3 0.2],'Foreground',[1 1 1],'FontSize',8,'Callback',@onLinkStop);
+    py = py - 0.04;
+    s.hDecCheck = uicontrol(tabLink,'Style','pushbutton','String','📐 抽稀校验(末端误差表)', ...
+        'Units','normalized','Position',[0.05 py-0.016 0.44 0.033], ...
+        'Background',[0.3 0.3 0.42],'Foreground',[1 1 1],'FontSize',8,'Callback',@onDecCheck);
+    s.hTcpSend = uicontrol(tabLink,'Style','pushbutton','String','📤 TCP下发当前轨迹', ...
+        'Units','normalized','Position',[0.53 py-0.016 0.42 0.033], ...
+        'Background',[0.55 0.4 0.15],'Foreground',[1 1 1],'FontSize',8,'Callback',@onTcpSend);
+    py = py - 0.04;
+    s.hApply = uicontrol(tabLink,'Style','checkbox','String','下发后将真实位姿回写仿真(q_actual_final)', ...
+        'Value',1,'Units','normalized','Position',[0.05 py-0.012 0.90 0.024], ...
+        'Background',[0.14 0.15 0.18],'Foreground',[0.85 0.85 0.95],'FontSize',7);
+    py = py - 0.028;
+    uicontrol(tabLink,'Style','text','String','真实链路：视觉GUI→outbox→taskExecute→motorCmd→TCP(锁步)→dSPACE；状态与调试输出见右侧日志。', ...
+        'Units','normalized','Position',[0.03 py-rH 0.94 rH],'Background',[0.14 0.15 0.18], ...
+        'Foreground',[0.7 0.7 0.8],'FontSize',7,'HorizontalAlignment','left');
+    py = py - rH - 0.004;
 
     % ========== Tab 1：场景 · 求解 ==========
     py = 0.97;
@@ -127,7 +170,7 @@ function app = ArmSimApp()
         'Position',[0.03 py-rH 0.26 rH],'Background',[0.14 0.15 0.18], ...
         'Foreground',[0.9 0.9 1],'FontSize',7,'HorizontalAlignment','left');
     s.hTaskType = uicontrol(tabScene,'Style','popupmenu', ...
-        'String',{'move_near_target','pick_target','pick_and_place','dock_to_interface','home'}, ...
+        'String',{'move_to','move_along','move_for_pick','move_for_place','rotate','rotate_arm','facing_arm','pick','place','withdraw','reset'}, ...
         'Value',3,'Units','normalized','Position',[0.31 py-rH 0.64 0.027], ...
         'Background',[0.2 0.2 0.3],'Foreground',[1 1 1],'FontSize',7);
     py = py - rH - 0.005;
@@ -394,6 +437,13 @@ function s = drawAll(s)
             text(s.ax, dx+0.08, dy+0.08, '放置', 'Color',[1 0.6 1], 'FontSize', 7);
         end
     end
+    % 真实链路实时反馈：目标物体位置标记（s.objState 由电控 STATE.obj 更新）
+    if isfield(s,'objState') && numel(s.objState) >= 2 && all(isfinite(s.objState(1:2)))
+        plot(s.ax, s.objState(1), s.objState(2), 'o', 'MarkerSize', 11, ...
+            'MarkerFaceColor',[1 0.75 0.3], 'MarkerEdgeColor',[1 0.5 0], 'LineWidth', 1.6);
+        text(s.ax, s.objState(1)+0.08, s.objState(2)+0.08, '目标物体', ...
+            'Color',[1 0.7 0.3], 'FontSize', 7);
+    end
     [p_all, ~] = planarFK_L(s.q, s.model.DH, cfg.rod_offset_arr);
     p_nodes = planarFK_SimpleNode(s.q, s.model.DH, cfg.rod_offset_arr);
     hArmNode = plot(s.ax, p_nodes(:,1), p_nodes(:,2), 'o-', 'Color',[0.3 0.75 1], ...
@@ -547,6 +597,191 @@ function onWpEpsEdit(src, ~)
     guidata(f, s);
 end
 
+%% ---------- 真实链路 · 调试 ----------
+function onLinkStart(src, ~)
+% 启动真实链路：定时轮询 outbox；若勾选实时反馈，则另开反馈连接读电控 STATE 实时更新臂/物体
+    f = ancestor(src,'figure');  s = guidata(f);
+    if isfield(s,'linkTimer') && isvalid(s.linkTimer), stop(s.linkTimer); delete(s.linkTimer); end
+    tm = timer('TimerFcn', @onLinkTick, 'Period', 1.0, 'ExecutionMode', 'fixedSpacing', 'UserData', f);
+    start(tm);  s.linkTimer = tm;
+    % 实时反馈：连接电控反馈端口，读 STATE{t,joints,gripper,obj} → 更新 s.q(臂) + s.objState(物体)
+    if get(s.hFbOn,'Value')
+        try
+            fbp = round(str2double(get(s.hLFb,'String')));
+            s.fbConn = tcpclient(get(s.hLHost,'String'), fbp, 'ConnectTimeout', 5);
+            s.fbBuf = uint8([]);  s.objState = [];
+            if isfield(s,'fbTimer') && isvalid(s.fbTimer), stop(s.fbTimer); delete(s.fbTimer); end
+            s.fbTimer = timer('TimerFcn', @onFbTick, 'Period', 0.02, 'ExecutionMode', 'fixedSpacing', 'UserData', f);
+            start(s.fbTimer);
+            s = setLog(s, sprintf('实时反馈已连接：%s:%d（读 STATE 更新臂+物体）', get(s.hLHost,'String'), fbp));
+        catch e
+            s = setLog(s, ['实时反馈连接失败(电控需开 STATE 流): ' e.message]);
+        end
+    end
+    s = setLog(s, sprintf('真实链路已启动：轮询 %s → taskExecute → %s；每1s。配置见「真实链路·调试」页。', ...
+        get(s.hLOutbox,'String'), get(s.hLInbox,'String')));
+    guidata(f, s);
+end
+
+function onLinkStop(src, ~)
+    f = ancestor(src,'figure');  s = guidata(f);
+    if isfield(s,'linkTimer') && isvalid(s.linkTimer), stop(s.linkTimer); delete(s.linkTimer); s.linkTimer = []; end
+    if isfield(s,'fbTimer') && isvalid(s.fbTimer), stop(s.fbTimer); delete(s.fbTimer); s.fbTimer = []; end
+    try, if isfield(s,'fbConn') && ~isempty(s.fbConn), delete(s.fbConn); end; catch, end
+    s = setLog(s, '真实链路已停止（含实时反馈）。');  guidata(f, s);
+end
+
+function onFbTick(tm, ~)
+% 非阻塞读反馈缓存：解析完整 STATE 帧 → 更新真实臂 s.q 与物体 s.objState → 重绘
+    f = get(tm,'UserData');  if isempty(f) || ~ishandle(f), return; end
+    s = guidata(f);
+    try
+        t = s.fbConn;
+        if t.NumBytesAvailable > 0
+            s.fbBuf = [s.fbBuf, read(t, t.NumBytesAvailable)];
+        end
+        while numel(s.fbBuf) >= 4
+            len = double(s.fbBuf(1))*2^24 + double(s.fbBuf(2))*2^16 + ...
+                  double(s.fbBuf(3))*2^8 + double(s.fbBuf(4));
+            if numel(s.fbBuf) < 4 + len, break; end
+            m = jsondecode(char(s.fbBuf(5:4+len)));
+            s.fbBuf(1:4+len) = [];   % consume
+            if isfield(m,'type') && strcmp(m.type,'STATE') && isfield(m,'data')
+                d = m.data;
+                % --- 物体：相机系相对位姿 → 基座系绝对位姿；视野无物体则保持本地目标 ---
+                if isfield(d,'obj_absent') && logical(d.obj_absent)
+                    appLog(f, '[反馈] 相机视野内无物体（保持本地目标）');
+                else
+                    objAbs = resolveObjAbs(s, d);     % 转绝对位姿（本地目标数据）
+                    s.objState = objAbs(1:2);
+                    s.objAbs   = objAbs;              % 本地目标位置
+                    appLog(f, sprintf('[反馈] 目标物体(绝对) = (%.3f, %.3f) θ=%.2f', objAbs(1), objAbs(2), objAbs(3)));
+                end
+                q = double(d.joints);  if numel(q) == s.model.cfg.N, s.q = q(:).'; end
+                s = drawAll(s);   % 重绘臂 + 物体标记
+            end
+        end
+    catch e
+        appLog(f, ['反馈读取异常: ' e.message]);
+        if isfield(s,'fbTimer') && isvalid(s.fbTimer), stop(s.fbTimer); delete(s.fbTimer); s.fbTimer=[]; end
+    end
+    guidata(f, s);
+end
+
+function objAbs = resolveObjAbs(s, d)
+% 解析目标物体绝对位姿：frame='cam' 用相机位姿换算；frame='base' 直接用；缺省按 base
+    frame = 'base';
+    if isfield(d,'obj_frame') && ischar(d.obj_frame), frame = d.obj_frame; end
+    if strcmp(frame,'cam')
+        cam = [str2double(get(s.hLCx,'String')), str2double(get(s.hLCy,'String')), str2double(get(s.hLCt,'String'))];
+        objRel = double(d.obj);  if isempty(objRel), objRel = [0 0 0]; end
+        objAbs = objRelToAbs([objRel(1) objRel(2) optget(s,'objTh',0)], cam);
+    else
+        o = double(d.obj);  objAbs = [o(1) o(2) (optget(d,'obj_theta',0))];
+    end
+end
+
+function onLinkTick(tm, ~)
+% 定时轮询 outbox：处理一个任务 → taskExecute → 记录 motor_cmd → 改名 .done
+    f = get(tm,'UserData');  if isempty(f) || ~ishandle(f), return; end
+    s = guidata(f);
+    outbox = get(s.hLOutbox,'String');  inbox = get(s.hLInbox,'String');
+    if ~exist(outbox,'dir'), mkdir(outbox); end
+    d = dir(fullfile(outbox,'*.json'));  if isempty(d), return; end
+    [~, ord] = sort([d.datenum]);  fn = fullfile(outbox, d(ord(1)).name);
+    try cmd = jsondecode(fileread(fn)); catch e; movefile(fn,[fn '.bad']); return; end
+    method = {'auto','momentum','sa','rrt','rrtstar','prm','graph','rl','cvae'};
+    m = method{get(s.hMethod,'Value')};
+    try
+        info = taskExecute(s.model, cmd, struct('inbox', inbox, 'method', m, 'snapshot_m', 1));
+        s.infoLink = info;  s.lastCmd = cmd;
+        s = setLog(s, sprintf('链路: %s (%s) -> %s (error_code=%d)，motorCmd 已存，可点“TCP下发”。', ...
+            cmd.command_id, cmd.command_type, info.status, info.error_code));
+        movefile(fn, [fn '.done']);
+    catch e
+        s = setLog(s, ['链路处理异常: ' e.message]);
+    end
+    guidata(f, s);
+end
+
+function onDecCheck(src, ~)
+% 抽稀校验：对当前轨迹跑 tcpDecimateCheck，显示 n-误差表 + 建议 n
+    f = ancestor(src,'figure');  s = guidata(f);
+    if isempty(s.snap) || size(s.snap,1) < 2, s = setLog(s,'先求解运动生成轨迹'); guidata(f,s); return; end
+    step = str2double(get(s.hLStep,'String'));
+    rep = tcpDecimateCheck(s.model, s.snap, 'step_per_rev', step, 'ee_tol', 1e-3);
+    msg = sprintf('抽稀校验 (步进角=%.5g°)\nn  = %s\n末端误差(m)= %s\n建议 n (1mm) = %d', ...
+        rep.step_deg, mat2str(rep.n_candidates), mat2str(rep.max_ee_err,3), rep.best_n);
+    s = setLog(s, msg);  guidata(f, s);
+end
+
+function onTcpSend(src, ~)
+% TCP 锁步下发（【异步子进程】：GUI 不冻结，后台 MATLAB 逐帧锁步下发，poll 流式进度，完成回写位姿）
+    f = ancestor(src,'figure');  s = guidata(f);
+    if isempty(s.snap) || size(s.snap,1) < 2, s = setLog(s,'先求解运动生成轨迹'); guidata(f,s); return; end
+    host = get(s.hLHost,'String');  port = round(str2double(get(s.hLPort,'String')));
+    step = str2double(get(s.hLStep,'String'));  n = max(1, round(str2double(get(s.hLDec,'String'))));
+    K = size(s.snap,1);
+    g = zeros(1,K);  if ~isempty(s.gripperSeq), g = s.gripperSeq(1:K); end
+    g = (g == 1);                       % 0/1/2 -> 0/1（1=张开，其余闭合）
+    traj = struct('q', s.snap, 'gripper', g, 't', (0:K-1));
+    jobDir = fullfile(tempdir, sprintf('tcpjob_%d', fix(rand*1e6)));
+    if exist(jobDir,'dir'), rmdir(jobDir,'s'); end;  mkdir(jobDir);
+    jb = struct('traj', traj, 'q0', s.snap(1,:), 'host', host, 'port', port, ...
+        'step', step, 'n', n, 'cid', 'GUI-RT');
+    save(fullfile(jobDir,'job.mat'), '-struct', 'jb');
+    % 启动后台 MATLAB 子进程（不阻塞 GUI；异步）
+    guiDir = fileparts(mfilename('fullpath'));
+    mexe = fullfile(matlabroot, 'bin', 'matlab.exe');
+    cmd = sprintf('start /b "" "%s" -batch "addpath(''%s''); tcpSendMotionCli(''%s'')"', ...
+        mexe, fullfile(guiDir, 'ArmSimulator2D'), jobDir);
+    [st, ~] = system(cmd);
+    % 结果轮询 timer（流式读 progress.txt，完成后读 out.mat 回写位姿）
+    if isfield(s,'tcpPollTimer') && isvalid(s.tcpPollTimer), stop(s.tcpPollTimer); delete(s.tcpPollTimer); end
+    s.tcpPollTimer = timer('TimerFcn', @(t,e) onJobPoll(f, jobDir, get(s.hApply,'Value')), ...
+        'Period', 0.4, 'ExecutionMode', 'fixedSpacing');
+    s.progN = 0;  start(s.tcpPollTimer);
+    s = setLog(s, sprintf('TCP下发(异步子进程): %s:%d  step=%g  n=%d (%d点) — 启动(exit=%d)。进度将在日志实时刷新。', ...
+        host, port, step, n, K, st));
+    guidata(f, s);
+end
+
+function appLog(f, msg)
+% 追加一行到 GUI 日志（不覆盖历史）
+    s = guidata(f);
+    cur = get(s.hLog,'String');  if ischar(cur), cur = {cur}; end
+    cur = [cur(:); {msg}];
+    set(s.hLog,'String', cur, 'Value', numel(cur));
+end
+
+function onJobPoll(f, jobDir, apply)
+% 轮询后台下发：流式刷新 progress.txt 进度；完成后读 out.mat 回写位姿
+    s = guidata(f);
+    prog = fullfile(jobDir, 'progress.txt');
+    if exist(prog,'file')
+        try lines = readlines(prog); catch, lines = string([]); end
+        n0 = optget(s,'progN',0);
+        if n0 < numel(lines)
+            for i = n0+1:numel(lines), appLog(f, char(lines(i))); end
+            s.progN = numel(lines);
+        end
+    end
+    if exist(fullfile(jobDir,'DONE'),'file')
+        out = struct('q_actual_final', []);
+        try o = load(fullfile(jobDir,'out.mat')); out = o.out; catch, end
+        appLog(f, 'TCP下发完成(后台)。');
+        if apply && isempty(out)
+            appLog(f, '  (无返回/异常)');
+        elseif apply && numel(out.q_actual_final) >= 1
+            s.q = out.q_actual_final;  s = syncJointEditors(s);  s = drawAll(s);
+            appLog(f, sprintf('  [回写] 仿真位姿已修正为 %s', mat2str(out.q_actual_final,4)));
+        end
+        if isfield(s,'tcpPollTimer') && isvalid(s.tcpPollTimer), stop(s.tcpPollTimer); delete(s.tcpPollTimer); s.tcpPollTimer=[]; end
+        try rmdir(jobDir,'s'); catch, end
+    end
+    guidata(f, s);
+end
+
 function onParamEdit(src, ~)
     f = ancestor(src,'figure');
     s = guidata(f);
@@ -602,7 +837,7 @@ function onRun(src, ~)
         if info.success, info.error_code = 0; else, info.error_code = 2; end
     else
         % 采样预算：自适应（按场景难度）或用户手动指定
-        rkv = rrtKV(s);   % RRT/RRT* 参数（采样方法专用；对其他方法无害，方法用 of() 自取）
+        rkv = rrtKV(s);   % RRT/RRT* 参数（采样方法专用；对其他方法无害，方法用 optget() 自取）
         if isfield(s,'hAdaptive') && ishandle(s.hAdaptive) && get(s.hAdaptive,'Value')
             b0 = adaptiveBudget(s.model, s.q, target);
             info = simulateMotion(s.model, m, s.q, target, 'Snapshot', 1, ...
@@ -691,7 +926,7 @@ function onTaskRun(src, ~)
         s = setLog(s, ['参数错误: ' e.message]);
         guidata(f, s); return;
     end
-    ctList = {'move_near_target','pick_target','pick_and_place','dock_to_interface','home'};
+    ctList = {'move_to','move_along','move_for_pick','move_for_place','rotate','rotate_arm','facing_arm','pick','place','withdraw','reset'};
     ct = ctList{get(s.hTaskType,'Value')};
     xt = str2double(get(s.hTx,'String')); yt = str2double(get(s.hTy,'String'));
     tt = str2double(get(s.hTth,'String'));
@@ -1043,14 +1278,17 @@ function cmd = mockTaskCommand(ct, xt, yt, tt, dx, dy)
         'confidence', 0.95, ...
         'pose_camera', struct('frame_id','camera_left', ...
             'position', struct('x',xt,'y',yt,'z',0.0), ...
+            'orientation_euler', struct('roll',0,'pitch',0,'yaw',tt), ...   % 目标朝向 θ
             'orientation_quat', struct('x',0,'y',0,'z',0,'w',1)), ...
         'pose_base', []);
     cmd.destination = struct('name','Assembly_Port_A', ...
         'pose_base', struct('frame_id','robot_base', ...
             'position', struct('x',dx,'y',dy,'z',0.0), ...
+            'orientation_euler', struct('roll',0,'pitch',0,'yaw',0), ...
             'orientation_quat', struct('x',0,'y',0,'z',0,'w',1)));
     cmd.motion_params = struct('approach_distance_m', 0.15, ...
-        'gripper_mode', 'demo_grip', 'speed_mode', 'normal');
+        'gripper_mode', 'demo_grip', 'speed_mode', 'normal', ...
+        'theta', tt, 'd', 0.15, 'alpha', 0.5, 'n', 2);   % 参数型任务的默认参数（move_along/rotate/rotate_arm/facing_arm）
     cmd.safety = struct('require_user_confirm', false, ...
         'allow_execute', true, 'estop_active', false);
 end
@@ -1089,7 +1327,7 @@ end
 
 function kv = rrtKV(s)
 % rrtKV 从「RRT/RRT* 参数」编辑框读取采样方法专用参数，返回 {'Key',val,...} 供 varargin 透传
-%   仅对 rrt / rrtstar（以及内部调它们的 auto/graph）有意义；其它方法用 of() 自行忽略未知键
+%   仅对 rrt / rrtstar（以及内部调它们的 auto/graph）有意义；其它方法用 optget() 自行忽略未知键
     cfg = s.model.cfg;
     mstep = gnum(s, 'hMaxStep', cfg.rrt_max_step);
     geps  = gnum(s, 'hGoalEps', cfg.rrt_goal_eps);

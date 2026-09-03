@@ -19,13 +19,13 @@ function top = runTopLevel(opts)
 %     .task           任务规划结果（simulateMotion info）
 %     .log            过程日志 cell
     if nargin < 1 || isempty(opts), opts = struct(); end
-    target_true  = getopt2(opts, 'target_true',   [2.5, 1.0, 0.3]);
-    Xh_true      = getopt2(opts, 'T_ee_cam_true', [0.05, 0.0, 0.0]);
-    n_frames     = getopt2(opts, 'n_frames', 24);
-    motor_noise  = getopt2(opts, 'motor_noise', 0.01);
-    vis_noise    = getopt2(opts, 'vis_noise', [0.005, 0.01]);
-    plan_method  = getopt2(opts, 'plan_method', 'auto');
-    verbose      = getopt2(opts, 'verbose', false);
+    target_true  = optget(opts, 'target_true',   [2.5, 1.0, 0.3]);
+    Xh_true      = optget(opts, 'T_ee_cam_true', [0.05, 0.0, 0.0]);
+    n_frames     = optget(opts, 'n_frames', 24);
+    motor_noise  = optget(opts, 'motor_noise', 0.01);
+    vis_noise    = optget(opts, 'vis_noise', [0.005, 0.01]);
+    plan_method  = optget(opts, 'plan_method', 'auto');
+    verbose      = optget(opts, 'verbose', false);
     if ~isfield(opts, 'model') || isempty(opts.model)
         model = createArmModel(struct('N', 6, 'L_seg', 1.04393));
     else
@@ -116,8 +116,4 @@ end
 function Ti = inv_se2m(T)
     R = T(1:2,1:2);  t = T(1:2,3);
     Ti = [R' -R'*t; 0 0 1];
-end
-function v = getopt2(s, f, d)
-    v = d;
-    if isfield(s, f) && ~isempty(s.(f)), v = s.(f); end
 end

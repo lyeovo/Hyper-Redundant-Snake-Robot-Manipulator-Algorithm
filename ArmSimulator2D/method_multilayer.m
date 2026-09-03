@@ -22,28 +22,28 @@ function info = method_multilayer(model, q0, target, opts)
 %   末尾用 refineRandomGreedy 做一次精确微调（pos<0.03m 判成功）。
     if nargin < 4 || isempty(opts), opts = struct(); end
     cfg = model.cfg;
-    if ~of(opts,'use_multilayer', true)
+    if ~optget(opts,'use_multilayer', true)
         info = fallbackSolve(model, q0, target, opts);  info.method_used = 'multilayer(off)'; return;
     end
     [~, pe0] = planarFK_L(q0, model.DH, cfg.rod_offset_arr);
     start = pe0(1:2);  goal = target(1:2);
-    [graph, ginfo] = buildConnectivityGraph(cfg.obstacles, start, goal, struct('GRID',of(opts,'GRID',64),'model',model));
+    [graph, ginfo] = buildConnectivityGraph(cfg.obstacles, start, goal, struct('GRID',optget(opts,'GRID',64),'model',model));
     if isempty(graph) || isempty(graph.edges) || ~ginfo.start_goal_reachable
         info = fallbackSolve(model, q0, target, opts);  info.method_used = 'multilayer(fallback:no-path)'; return;
     end
-    K = of(opts,'k_paths',2);  maxSeg = of(opts,'max_segments',9);
+    K = optget(opts,'k_paths',2);  maxSeg = optget(opts,'max_segments',9);
     paths = graphPaths(graph, K, maxSeg);
     if isempty(paths)
         info = fallbackSolve(model, q0, target, opts);  info.method_used = 'multilayer(fallback:no-cand)'; return;
     end
-    sel = of(opts,'candidate_idx', 0);   % >0：只求解指定候选（复用“候选集→选择”→逐条求解）
+    sel = optget(opts,'candidate_idx', 0);   % >0：只求解指定候选（复用“候选集→选择”→逐条求解）
     if sel > 0 && sel <= numel(paths), paths = paths(sel); end
-    segFast = of(opts,'seg_method_fast','momentum');
-    segRob  = of(opts,'seg_method_rob','rrt');
+    segFast = optget(opts,'seg_method_fast','momentum');
+    segRob  = optget(opts,'seg_method_rob','rrt');
     segBud  = min(400, max(150, round(cfg.rrt_max_samples/4)));   % 受限预算防慢
     if isfield(opts,'seg_budget'), segBud = opts.seg_budget; end
     tried = 0;
-    wpEps = of(opts,'waypoint_eps', 0.4);   % 中间路点位置宽松容差（m）：不碰障+在空间内+可轻松到达
+    wpEps = optget(opts,'waypoint_eps', 0.4);   % 中间路点位置宽松容差（m）：不碰障+在空间内+可轻松到达
     for pi = 1:numel(paths)
         [snap, qf, ok] = solveSegments(model, q0, graph.nodes, paths{pi}, target, segFast, segRob, segBud, wpEps);
         tried = tried + 1;
@@ -151,8 +151,4 @@ function info = fallbackSolve(model, q0, target, ~)
         m = simulateMotion(model, 'rrt', q0, target, 'Snapshot', 4, 'max_samples', 600);
     end
     info = m;
-end
-
-function v = of(s, f, d)
-    if isfield(s,f) && ~isempty(s.(f)), v = s.(f); else, v = d; end
 end

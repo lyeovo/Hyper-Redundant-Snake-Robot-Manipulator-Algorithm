@@ -18,12 +18,12 @@ function [model, q0, target, obs_desc] = sampleTask2D(opts)
 %     obs_desc  struct('circles',[n×3],'rects',[n×5])
     if nargin < 1 || isempty(opts), opts = struct(); end
     if isfield(opts, 'seed') && ~isempty(opts.seed), rng(opts.seed); end
-    N = of(opts, 'N', 4);
-    L = of(opts, 'L_seg', 1.04393);
-    ncm = of(opts, 'n_circle_max', 2);
-    nrm = of(opts, 'n_rect_max', 1);
-    tsig = of(opts, 'target_sigma', 0.25);
-    diff = of(opts, 'difficulty', 2);
+    N = optget(opts, 'N', 4);
+    L = optget(opts, 'L_seg', 1.04393);
+    ncm = optget(opts, 'n_circle_max', 2);
+    nrm = optget(opts, 'n_rect_max', 1);
+    tsig = optget(opts, 'target_sigma', 0.25);
+    diff = optget(opts, 'difficulty', 2);
 
     R = N * L;   % 可达域半径（几何自适应基准）
 
@@ -98,13 +98,5 @@ function ok = isTargetFree(model, p)
         if abs(lx) <= r(4)/2 + cfg.rho0 && abs(ly) <= r(5)/2 + cfg.rho0
             ok = false; return;
         end
-    end
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
     end
 end

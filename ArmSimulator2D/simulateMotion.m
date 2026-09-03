@@ -49,7 +49,7 @@ function info = simulateMotion(model, method, q0, target, varargin)
 
     % ---- 方法分派 ----
     if isfield(opts, 'Cancel'),  opts.isCancel = opts.Cancel; end   % 统一键名
-    mopts = opts;                                                   % 全量透传（方法用 of() 自取）
+    mopts = opts;                                                   % 全量透传（方法用 optget() 自取）
     if ~isfield(mopts, 'snapshot_m'), mopts.snapshot_m = opts.snapshot_m; end
 
     switch method

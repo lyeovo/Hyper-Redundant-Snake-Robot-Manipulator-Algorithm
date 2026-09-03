@@ -19,9 +19,9 @@ function info = method_rl(model, q0, target, opts)
 %   返回 info 结构同各方法；info.stats.theta 为学得策略（可导出复用）
     cfg = model.cfg;
     if nargin < 4 || isempty(opts), opts = struct(); end
-    snapshot_m = of(opts, 'snapshot_m', cfg.snapshot_m);
-    onStep  = of(opts, 'onStep', []);
-    isCancel= of(opts, 'isCancel', []);
+    snapshot_m = optget(opts, 'snapshot_m', cfg.snapshot_m);
+    onStep  = optget(opts, 'onStep', []);
+    isCancel= optget(opts, 'isCancel', []);
     train   = of2(opts, {'train','Train'}, true);
     n_pop   = of2(opts, {'n_pop','NPop'}, 16);
     n_gen   = of2(opts, {'n_gen','NGen'}, 20);
@@ -75,14 +75,6 @@ function info = method_rl(model, q0, target, opts)
     info.stats.theta = theta;
     info.stats.lambda = lam;
     info.stats.trained = train;
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
-    end
 end
 
 function v = of2(s, names, default)

@@ -18,13 +18,13 @@ function res = verifyPolicy(opts)
 %             .base_succ/.base_coll/.base_pos（RRT* 基线）
     addpath(fullfile(fileparts(fileparts(mfilename('fullpath'))), 'ArmSimulator2D'));
     if nargin < 1 || isempty(opts), opts = struct(); end
-    policy_file = of(opts, 'policy_file', 'rl_pipeline/policy_cvae_n6.mat');
-    N = of(opts, 'N', 6);
-    L = of(opts, 'L_seg', 0.5);
-    n_test  = of(opts, 'n_test', 20);
-    seed    = of(opts, 'seed', 5);
-    ref_ms  = of(opts, 'ref_max_samples', 1500);
-    show    = of(opts, 'show', false);
+    policy_file = optget(opts, 'policy_file', 'rl_pipeline/policy_cvae_n6.mat');
+    N = optget(opts, 'N', 6);
+    L = optget(opts, 'L_seg', 0.5);
+    n_test  = optget(opts, 'n_test', 20);
+    seed    = optget(opts, 'seed', 5);
+    ref_ms  = optget(opts, 'ref_max_samples', 1500);
+    show    = optget(opts, 'show', false);
 
     if exist(policy_file, 'file') ~= 2
         error('verifyPolicy:file', '策略文件不存在: %s（先训练或调整 policy_file）', policy_file);
@@ -96,9 +96,6 @@ function res = verifyPolicy(opts)
         rd.mean_gap*100);
 end
 
-function v = of(s, f, d)
-    if isfield(s, f) && ~isempty(s.(f)), v = s.(f); else, v = d; end
-end
 function r = iif(c, a, b)
     if c, r = a; else, r = b; end
 end

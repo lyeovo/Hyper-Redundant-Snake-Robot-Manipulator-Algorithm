@@ -17,7 +17,7 @@ function [X_hand, stats] = handEyeEstimate2D(pose_base_ee, obs_cam, opts)
     if nargin < 3 || isempty(opts), opts = struct(); end
     K = min(size(pose_base_ee, 1), size(obs_cam, 1));
     if K < 2, error('handEyeEstimate2D:frames', '至少需要 2 帧观测'); end
-    yaw_target = getopt2(opts, 'yaw_target', []);
+    yaw_target = optget(opts, 'yaw_target', []);
 
     % ---- 1. 手眼旋转 θ_X ----
     if ~isempty(yaw_target)
@@ -60,13 +60,8 @@ function [X_hand, stats] = handEyeEstimate2D(pose_base_ee, obs_cam, opts)
     X_hand = [tX(1), tX(2), thX];
     stats = struct('n_used', K-1, 'resid', resid, 'resid_med', median(resid(2:end)), ...
         'yaw_used', yaw_used);
-    if getopt2(opts, 'verbose', false)
+    if optget(opts, 'verbose', false)
         fprintf('[handeye] θ_X=%.3f (yaw约束=%d) t=(%.3f,%.3f) 残差中位=%.4f\n', ...
             thX, yaw_used, tX(1), tX(2), stats.resid_med);
     end
-end
-
-function v = getopt2(s, f, d)
-    v = d;
-    if isfield(s, f) && ~isempty(s.(f)), v = s.(f); end
 end

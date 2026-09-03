@@ -13,18 +13,18 @@ function info = method_rrt(model, q0, target, opts)
 %   返回 info 结构同 method_momentum（q_snapshot=路径快照 / q_final / success / error_code）
     cfg = model.cfg;
     if nargin < 4 || isempty(opts), opts = struct(); end
-    snapshot_m = of(opts, 'snapshot_m', cfg.snapshot_m);
-    onStep  = of(opts, 'onStep', []);
-    isCancel= of(opts, 'isCancel', []);
-    max_samples = of(opts, 'max_samples', cfg.rrt_max_samples);
-    max_step    = of(opts, 'max_step', cfg.rrt_max_step);
-    goal_eps    = of(opts, 'goal_eps', cfg.rrt_goal_eps);
-    goal_ang    = of(opts, 'goal_ang', cfg.rrt_goal_ang);
+    snapshot_m = optget(opts, 'snapshot_m', cfg.snapshot_m);
+    onStep  = optget(opts, 'onStep', []);
+    isCancel= optget(opts, 'isCancel', []);
+    max_samples = optget(opts, 'max_samples', cfg.rrt_max_samples);
+    max_step    = optget(opts, 'max_step', cfg.rrt_max_step);
+    goal_eps    = optget(opts, 'goal_eps', cfg.rrt_goal_eps);
+    goal_ang    = optget(opts, 'goal_ang', cfg.rrt_goal_ang);
 
     N = cfg.N;
     q_min = cfg.q_min(:)';  q_max = cfg.q_max(:)';
-    if ~isempty(of(opts, 'seed', [])), rng(of(opts, 'seed', [])); end   % 可复现
-    use_prescan = of(opts, 'use_prescan', true);                       % 种子预跑开关（无障时可关省时）
+    if ~isempty(optget(opts, 'seed', [])), rng(optget(opts, 'seed', [])); end   % 可复现
+    use_prescan = optget(opts, 'use_prescan', true);                       % 种子预跑开关（无障时可关省时）
 
     % ---- 内部工具（闭包于本函数） ----
     function ok = isFree(qq)
@@ -198,13 +198,5 @@ function path = extractPath(tree, parent, idx)
     while c ~= 1
         c = parent(c);
         path = [tree(:, c)'; path]; %#ok<AGROW>
-    end
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
     end
 end

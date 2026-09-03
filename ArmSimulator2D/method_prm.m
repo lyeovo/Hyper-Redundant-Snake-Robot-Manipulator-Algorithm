@@ -10,18 +10,18 @@ function info = method_prm(model, q0, target, opts)
 %   失败（A* 无路径）：返回最近可达节点（warm start，error_code=3）
     cfg = model.cfg;
     if nargin < 4 || isempty(opts), opts = struct(); end
-    snapshot_m = of(opts, 'snapshot_m', cfg.snapshot_m);
-    onStep  = of(opts, 'onStep', []);
-    isCancel= of(opts, 'isCancel', []);
-    n_nodes = of(opts, 'n_nodes', cfg.prm_n_nodes);
-    rad     = of(opts, 'rad', cfg.prm_rad);
-    goal_eps = of(opts, 'goal_eps', cfg.rrt_goal_eps);
-    goal_ang = of(opts, 'goal_ang', cfg.rrt_goal_ang);
+    snapshot_m = optget(opts, 'snapshot_m', cfg.snapshot_m);
+    onStep  = optget(opts, 'onStep', []);
+    isCancel= optget(opts, 'isCancel', []);
+    n_nodes = optget(opts, 'n_nodes', cfg.prm_n_nodes);
+    rad     = optget(opts, 'rad', cfg.prm_rad);
+    goal_eps = optget(opts, 'goal_eps', cfg.rrt_goal_eps);
+    goal_ang = optget(opts, 'goal_ang', cfg.rrt_goal_ang);
     N = cfg.N;
     q_min = cfg.q_min(:)';  q_max = cfg.q_max(:)';
     cancelled = false;
-    if ~isempty(of(opts, 'seed', [])), rng(of(opts, 'seed', [])); end   % 可复现
-    use_prescan = of(opts, 'use_prescan', true);                       % 种子预跑开关（无障时可关省时）
+    if ~isempty(optget(opts, 'seed', [])), rng(optget(opts, 'seed', [])); end   % 可复现
+    use_prescan = optget(opts, 'use_prescan', true);                       % 种子预跑开关（无障时可关省时）
 
     function ok = isFree(qq)
         g = obsDistAll(model, qq);
@@ -167,12 +167,4 @@ function info = method_prm(model, q0, target, opts)
     info.err_ang = err_ang;
     info.error_code = err_code_final;
     info.stats.nodes = M;
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
-    end
 end

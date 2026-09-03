@@ -15,13 +15,13 @@ function info = method_momentum(model, q0, target, opts)
 %             .error_code .stats(含 dt_mean)
     cfg = model.cfg;
     if nargin < 4 || isempty(opts), opts = struct(); end
-    snapshot_m = of(opts, 'snapshot_m', cfg.snapshot_m);
-    onStep  = of(opts, 'onStep', []);
-    isCancel= of(opts, 'isCancel', []);
-    max_iter= of(opts, 'max_iter', cfg.max_iter);
-    tol_pos = of(opts, 'tol_pos', cfg.tol_pos);
-    tol_ang = of(opts, 'tol_ang', cfg.tol_ang);
-    verbose = of(opts, 'verbose', false);
+    snapshot_m = optget(opts, 'snapshot_m', cfg.snapshot_m);
+    onStep  = optget(opts, 'onStep', []);
+    isCancel= optget(opts, 'isCancel', []);
+    max_iter= optget(opts, 'max_iter', cfg.max_iter);
+    tol_pos = optget(opts, 'tol_pos', cfg.tol_pos);
+    tol_ang = optget(opts, 'tol_ang', cfg.tol_ang);
+    verbose = optget(opts, 'verbose', false);
 
     q = q0(:)';
     X_t = target(1:2);  th_t = target(3);
@@ -46,7 +46,7 @@ function info = method_momentum(model, q0, target, opts)
     % strict=true（默认）：只认硬达标（1e-4/1e-3），精修兜底关闭——简单场景保持高精度，
     %   到不了硬达标则正常失败（走 auto 链换方法）
     % strict=false：动态收敛（逐项 < 0.001 即收敛，精度 ~0.03）
-    strict = of(opts, 'strict', true);
+    strict = optget(opts, 'strict', true);
     phase2 = false;  phase2_stall = 0;
     v_p_prev = inf;  v_a_prev = inf;  v_o_prev = inf;
     conv_type = 'hard';
@@ -201,13 +201,5 @@ function info = method_momentum(model, q0, target, opts)
     if verbose
         fprintf('[momentum] iter=%d conv=%d |err|=%.4f |err_ang|=%.3f\n', ...
             iter, converged, dist_end, abs(e_ang));
-    end
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
     end
 end

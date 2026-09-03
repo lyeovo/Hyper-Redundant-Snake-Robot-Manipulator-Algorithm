@@ -22,15 +22,15 @@ function stats = runTaskLoop(model, opts)
     addpath(fullfile(runDir, 'ArmSimulator2D'));
 
     if nargin < 2, opts = struct(); end
-    outbox = getopt(opts, 'outbox', '');
-    inbox  = getopt(opts, 'inbox', '');
-    method = getopt(opts, 'method', 'auto');
-    snapshot_m = getopt(opts, 'snapshot_m', 10);
-    approach_dist = getopt(opts, 'approach_dist', 0.15);
-    max_tasks = getopt(opts, 'max_tasks', 0);
-    poll = getopt(opts, 'poll_interval', 1.0);
-    estop = getopt(opts, 'estop', []);
-    verbose = getopt(opts, 'verbose', true);
+    outbox = optget(opts, 'outbox', '');
+    inbox  = optget(opts, 'inbox', '');
+    method = optget(opts, 'method', 'auto');
+    snapshot_m = optget(opts, 'snapshot_m', 10);
+    approach_dist = optget(opts, 'approach_dist', 0.15);
+    max_tasks = optget(opts, 'max_tasks', 0);
+    poll = optget(opts, 'poll_interval', 1.0);
+    estop = optget(opts, 'estop', []);
+    verbose = optget(opts, 'verbose', true);
     if isempty(outbox) || isempty(inbox)
         error('runTaskLoop:args', '需要 outbox 与 inbox 目录');
     end
@@ -78,13 +78,5 @@ function stats = runTaskLoop(model, opts)
         % 处理完成 → 重命名防重复
         movefile(fn, [fn '.done']);
         if max_tasks > 0 && n_done >= max_tasks, break; end
-    end
-end
-
-function v = getopt(opts, field, default)
-    if isfield(opts, field) && ~isempty(opts.(field))
-        v = opts.(field);
-    else
-        v = default;
     end
 end

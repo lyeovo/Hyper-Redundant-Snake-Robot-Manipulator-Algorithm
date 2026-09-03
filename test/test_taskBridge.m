@@ -11,14 +11,14 @@ function test_taskBridge()
     m = testModel('N', 4, 'X_target', [2.5, 1.0], 'theta_target', 0.0, ...
         'obstacles', struct('rects', [], 'circles', []));
 
-    % ---- 1. pick_and_place 正常执行 ----
-    cmd = mockCmd('pick_and_place');
+    % ---- 1. pick（抓取动作链：到目标 + 夹爪闭合）----
+    cmd = mockCmd('pick');
     info = taskExecute(m, cmd, struct('inbox', inbox, 'snapshot_m', 10));
-    fails = fails + assertTrue(info.success, 'pick_and_place 成功');
+    fails = fails + assertTrue(info.success, 'pick 成功');
     fails = fails + assertEq(info.status, 'COMPLETED', '状态 COMPLETED');
     gseq = info.motor_cmd.gripper_seq;
     fails = fails + assertEq(numel(gseq), size(info.motor_cmd.q_seq, 1), 'gripper_seq 与 q_seq 对齐');
-    fails = fails + assertEq(gseq(gseq ~= 0), [2 1], '夹爪事件序列 [闭合(2) 张开(1)]');
+    fails = fails + assertEq(gseq(gseq ~= 0), [2], '夹爪事件序列 [闭合(2)]');
     % 状态文件存在且最终状态正确
     fn = fullfile(inbox, [cmd.command_id '_status.json']);
     fails = fails + assertTrue(exist(fn, 'file') == 2, '状态文件写出');
@@ -34,22 +34,22 @@ function test_taskBridge()
     fails = fails + assertEq(s2.progress, 0.4, 'progress 回写');
 
     % ---- 3. 安全校验拒绝：allow_execute=false ----
-    cmd2 = mockCmd('pick_and_place');
+    cmd2 = mockCmd('move_to');
     cmd2.safety.allow_execute = false;
     info2 = taskExecute(m, cmd2, struct('inbox', inbox));
     fails = fails + assertTrue(~info2.success, 'allow_execute=false 拒绝');
     fails = fails + assertEq(info2.status, 'REJECTED', '状态 REJECTED');
 
     % ---- 4. 急停中断 ----
-    cmd3 = mockCmd('pick_and_place');
+    cmd3 = mockCmd('move_to');
     info3 = taskExecute(m, cmd3, struct('inbox', inbox, 'estop', @() true));
     fails = fails + assertTrue(~info3.success, '急停中断');
     fails = fails + assertEq(info3.status, 'ESTOP_TRIGGERED', '状态 ESTOP_TRIGGERED');
 
-    % ---- 5. move_near_target 单段 ----
-    cmd4 = mockCmd('move_near_target');
+    % ---- 5. move_to 单段 ----
+    cmd4 = mockCmd('move_to');
     info4 = taskExecute(m, cmd4, struct('inbox', inbox));
-    fails = fails + assertTrue(info4.success, 'move_near_target 成功');
+    fails = fails + assertTrue(info4.success, 'move_to 成功');
     fails = fails + assertEq(numel(info4.seg_infos), 1, '单段任务');
 
     % 清理

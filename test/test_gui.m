@@ -1,9 +1,10 @@
-function test_gui()
+function nf = test_gui()
 %test_gui 交互 GUI（ArmSimApp）验收测试
 %   覆盖：创建/默认值、参数修改→模型重建、障碍增删改、各方法单次求解、
-%        5 种模拟视觉任务下发执行、关闭。
+%        模拟视觉任务下发执行、关闭。
 %   通过 feval 触发控件回调模拟真实交互（回调内部用 src+ancestor 定位 figure，
 %   不依赖 gcbf，可在 -batch 下触发）。
+%   返回 nf：失败断言数（>0 时本函数抛错，供 test_all 汇总）
     fprintf('== test_gui（交互 GUI 验收） ==\n');
     nf = 0;
     t0 = tic;
@@ -15,7 +16,7 @@ function test_gui()
         ok(1) = s.model.cfg.N == 6;
         ok(2) = size(s.model.cfg.obstacles.circles, 1) == 1 && ...
                 size(s.model.cfg.obstacles.rects, 1) == 0;
-        ok(3) = numel(get(s.hTaskType, 'String')) == 5;   % 5 种任务类型
+        ok(3) = numel(get(s.hTaskType, 'String')) == 11;  % 任务类型数（与 taskToSegments 的 11 种保持一致）
 
         % ---------- 2. 参数修改 → 单次求解（先清空障碍保证快收敛） ----------
         set(s.hObsTable, 'Data', {});
@@ -87,7 +88,7 @@ function test_gui()
         ok(13) = true;   % 各方法回调均正常返回（未抛错即通过）
 
         % ---------- 5. 5 种模拟视觉任务下发执行 ----------
-        ct = {'move_near_target','pick_target','pick_and_place','dock_to_interface','home'};
+        ct = {'move_to','move_along','move_for_pick','move_for_place','rotate','rotate_arm','facing_arm','pick','place','withdraw','reset'};
         for k = 1:numel(ct)
             set(s.hTaskType, 'Value', k);
             feval(get(s.hTaskRun, 'Callback'), s.hTaskRun, []);
@@ -114,5 +115,8 @@ function test_gui()
     fprintf('  耗时 %.1fs | 失败 %d 项\n', toc(t0), nf);
     if nf == 0
         fprintf('  GUI 验收通过 ✓\n');
+    else
+        % 必须抛出：否则 test_all 无法感知 GUI 验收失败（历史坑：此处只打印不报错）
+        error('test_gui:FAILED', 'GUI 验收失败 %d 项', nf);
     end
 end

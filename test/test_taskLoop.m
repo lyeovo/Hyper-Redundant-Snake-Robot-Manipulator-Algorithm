@@ -14,7 +14,7 @@ function test_taskLoop()
         'obstacles', struct('rects', [], 'circles', []));
 
     % ---- 1. 灌入 3 个任务（模拟视觉 UI 发布） ----
-    types = {'pick_and_place', 'move_near_target', 'pick_target'};
+    types = {'move_to', 'move_for_pick', 'pick'};
     for k = 1:numel(types)
         cmd = mockCmd(types{k}, k);
         fid = fopen(fullfile(outbox, [cmd.command_id '.json']), 'w');

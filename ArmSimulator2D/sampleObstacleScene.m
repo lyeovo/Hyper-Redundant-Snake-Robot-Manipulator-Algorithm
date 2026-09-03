@@ -14,9 +14,9 @@ function scene = sampleObstacleScene(opts)
 %   并避开起点与目标（保证连通图有实际意义）。
     if nargin < 1 || isempty(opts), opts = struct(); end
     if isfield(opts,'seed') && ~isempty(opts.seed), rng(opts.seed); end
-    N = of(opts,'N',6);
-    L = of(opts,'L_seg',1.04393);
-    nobs = of(opts,'n_obs',0);
+    N = optget(opts,'N',6);
+    L = optget(opts,'L_seg',1.04393);
+    nobs = optget(opts,'n_obs',0);
     if nobs < 2 || nobs > 5, nobs = randi([2,5]); end
     R = N * L;
 
@@ -95,8 +95,4 @@ function ok = isPtFree(model, p)
         ly = -(p(1)-r(1))*st + (p(2)-r(2))*ct;
         if abs(lx) <= r(4)/2 + cfg.rho0 && abs(ly) <= r(5)/2 + cfg.rho0, ok = false; return; end
     end
-end
-
-function v = of(s, f, d)
-    if isfield(s,f) && ~isempty(s.(f)), v = s.(f); else, v = d; end
 end

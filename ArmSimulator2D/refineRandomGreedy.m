@@ -11,12 +11,12 @@ function [q_best, pos_err, ang_err] = refineRandomGreedy(model, q0, target, opts
 %   返回最优解的 位置误差 与 角度误差 分解（达标判据由调用方按 goal_eps/goal_ang 分开判定）
     cfg = model.cfg;
     if nargin < 4 || isempty(opts), opts = struct(); end
-    layers = of(opts, 'layers', 4);
-    steps  = of(opts, 'steps_per_layer', 200);
-    sigma0 = of(opts, 'sigma_base', 0.15);
-    goal_eps = of(opts, 'goal_eps', cfg.rrt_goal_eps);
-    goal_ang = of(opts, 'goal_ang', cfg.rrt_goal_ang);
-    isCancel = of(opts, 'isCancel', []);
+    layers = optget(opts, 'layers', 4);
+    steps  = optget(opts, 'steps_per_layer', 200);
+    sigma0 = optget(opts, 'sigma_base', 0.15);
+    goal_eps = optget(opts, 'goal_eps', cfg.rrt_goal_eps);
+    goal_ang = optget(opts, 'goal_ang', cfg.rrt_goal_ang);
+    isCancel = optget(opts, 'isCancel', []);
     N = cfg.N;
 
     function [d, pa, aa] = errFull(qq)
@@ -52,13 +52,5 @@ function [q_best, pos_err, ang_err] = refineRandomGreedy(model, q0, target, opts
                 if pe2 < goal_eps && ae2 < goal_ang, return; end
             end
         end
-    end
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
     end
 end

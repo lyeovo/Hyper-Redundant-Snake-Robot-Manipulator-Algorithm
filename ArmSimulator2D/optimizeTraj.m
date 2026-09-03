@@ -22,9 +22,9 @@ function [traj, stats] = optimizeTraj(model, traj, opts)
 %   - 维度无关：路径是 [T×N] 关节序列，碰撞检查走 obsDistAll
 
     if nargin < 3, opts = struct(); end
-    n_shortcut = of(opts, 'n_shortcut', 800);
-    win        = of(opts, 'smooth_win', 3);
-    seed       = of(opts, 'seed', []);
+    n_shortcut = optget(opts, 'n_shortcut', 800);
+    win        = optget(opts, 'smooth_win', 3);
+    seed       = optget(opts, 'seed', []);
     if ~isempty(seed), rng(seed); end
 
     if size(traj, 1) < 3
@@ -83,8 +83,4 @@ function ok = edgeFree(model, qa, qb)
     for s = 0:n_chk
         if ~isFreeP(model, qa + (s/n_chk) * dq), ok = false; return; end
     end
-end
-
-function v = of(opts, name, default)
-    if isfield(opts, name), v = opts.(name); else, v = default; end
 end

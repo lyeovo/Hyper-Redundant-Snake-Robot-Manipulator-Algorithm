@@ -27,15 +27,15 @@ function stats = generateDemonstrations(opts)
 %   示例：generateDemonstrations();                 % 1000 条到 demonstrations/
 %         generateDemonstrations(struct('n_demo',100,'rrt_max_samples',2000));
     if nargin < 1 || isempty(opts), opts = struct(); end
-    n_demo  = of(opts, 'n_demo', 1000);
-    out_dir = of(opts, 'out_dir', 'demonstrations');
-    rrt_ms  = of(opts, 'rrt_max_samples', 3000);
-    per_file= of(opts, 'per_file', 100);
-    swin    = of(opts, 'smooth_window', 3);
-    diff_lv = of(opts, 'difficulty', 0);   % 0=随机 1-3；1-3=固定难度（专项生成用）
-    seed    = of(opts, 'seed', []);
-    N = of(opts, 'N', 4);
-    L = of(opts, 'L_seg', 1.04393);
+    n_demo  = optget(opts, 'n_demo', 1000);
+    out_dir = optget(opts, 'out_dir', 'demonstrations');
+    rrt_ms  = optget(opts, 'rrt_max_samples', 3000);
+    per_file= optget(opts, 'per_file', 100);
+    swin    = optget(opts, 'smooth_window', 3);
+    diff_lv = optget(opts, 'difficulty', 0);   % 0=随机 1-3；1-3=固定难度（专项生成用）
+    seed    = optget(opts, 'seed', []);
+    N = optget(opts, 'N', 4);
+    L = optget(opts, 'L_seg', 1.04393);
     if ~isempty(seed), rng(seed); end
     if ~exist(out_dir, 'dir'), mkdir(out_dir); end
 
@@ -121,13 +121,5 @@ function ok = isFreeAll(model, traj)
         if ~isempty(g) && min(g) < model.cfg.rho0
             ok = false; return;
         end
-    end
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
     end
 end

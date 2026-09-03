@@ -1,43 +1,14 @@
 function g_all = obsDistAll(model, q)
-%obsDistAll 轻量障碍距离（只算距离，不算梯度——碰撞检查用）
-%   与 obsDistGradAll 的 g_all 输出完全一致（遍历顺序相同）
-    cfg = model.cfg;
-    N = cfg.N; DH = model.DH; rod = cfg.rod_offset_arr;
-    obs = cfg.obstacles;
-    n_cir = size(obs.circles, 1);
-    n_rect = size(obs.rects, 1);
-    g_all = [];
-    if n_cir == 0 && n_rect == 0, return; end
-    if strcmp(cfg.obs_mode, 'point')
-        p_nodes = planarFK_SimpleNode(q, DH, rod);
-        for k = 2:N+1
-            p = p_nodes(k,:);
-            for ci = 1:n_cir
-                c = obs.circles(ci,:);
-                [g, ~] = pointCircleDistGrad(p, c(1), c(2), c(3));
-                g_all = [g_all; g]; %#ok<AGROW>
-            end
-            for ri = 1:n_rect
-                rect = obs.rects(ri,:);
-                [g, ~] = pointRectSignedDist(p, rect);
-                g_all = [g_all; g]; %#ok<AGROW>
-            end
-        end
-    else
-        [p_all, ~] = planarFK_L(q, DH, rod);
-        n_seg = size(p_all,1) - 1;
-        for seg = 1:n_seg
-            p0 = p_all(seg,:); p1 = p_all(seg+1,:);
-            for ci = 1:n_cir
-                c = obs.circles(ci,:);
-                [g, ~] = segCircleDistGrad(p0, p1, c(1), c(2), c(3), q, DH, seg, rod);
-                g_all = [g_all; g]; %#ok<AGROW>
-            end
-            for ri = 1:n_rect
-                rect = obs.rects(ri,:);
-                [g, ~] = segRectDistGrad(q, DH, seg, p0, p1, rect, rod);
-                g_all = [g_all; g]; %#ok<AGROW>
-            end
-        end
-    end
+%obsDistAll 障碍距离（只返回距离，不返回梯度——碰撞检查用）
+%   g_all = obsDistAll(model, q)
+%   g_all : K×1，到各障碍边缘的带符号距离（侵入为负），遍历顺序与 obsDistGradAll 一致
+%
+%   实现说明：本函数原先是 obsDistGradAll 的【逐行复制后删掉梯度部分】（43 行），
+%   两处逻辑一旦走偏就会造成"价值函数认为安全、碰撞检查认为侵入"的不一致。
+%   现改为薄封装，距离计算只有一份实现。
+%
+%   性能：实测（6 关节 / 2 圆 + 1 矩形 / 20000 次）薄封装与原实现耗时相同（1.00x）。
+%   原因是底层 segCircleDistGrad / segRectDistGrad 无论调用方是否需要都会算出梯度，
+%   原实现只是用 [g,~] 丢弃了结果——所谓"只算距离"的轻量性从未真正生效。
+    [g_all, ~] = obsDistGradAll(model, q);
 end

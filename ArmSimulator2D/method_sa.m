@@ -11,19 +11,19 @@ function info = method_sa(model, q0, target, opts)
 %   返回 info 结构同 method_momentum（q_snapshot/V_hist/q_final/success/error_code）
     cfg = model.cfg;
     if nargin < 4 || isempty(opts), opts = struct(); end
-    snapshot_m = of(opts, 'snapshot_m', cfg.snapshot_m);
-    onStep  = of(opts, 'onStep', []);
-    isCancel= of(opts, 'isCancel', []);
-    max_iter= of(opts, 'max_iter', cfg.sa_max_iter);
-    alpha   = of(opts, 'alpha', cfg.sa_alpha);
-    sigma0  = of(opts, 'sigma0', cfg.sa_sigma0);
-    tol_pos = of(opts, 'tol_pos', cfg.tol_pos);
-    tol_ang = of(opts, 'tol_ang', cfg.tol_ang);
+    snapshot_m = optget(opts, 'snapshot_m', cfg.snapshot_m);
+    onStep  = optget(opts, 'onStep', []);
+    isCancel= optget(opts, 'isCancel', []);
+    max_iter= optget(opts, 'max_iter', cfg.sa_max_iter);
+    alpha   = optget(opts, 'alpha', cfg.sa_alpha);
+    sigma0  = optget(opts, 'sigma0', cfg.sa_sigma0);
+    tol_pos = optget(opts, 'tol_pos', cfg.tol_pos);
+    tol_ang = optget(opts, 'tol_ang', cfg.tol_ang);
 
     q = q0(:)';
     q_best = q;  V_best = inf;
     V = armValue(model, q);
-    T0 = of(opts, 'T0', max(V, 1e-3));
+    T0 = optget(opts, 'T0', max(V, 1e-3));
     T = T0;
     snap = zeros(0, cfg.N);  t_seq = [];  V_hist = zeros(1, max_iter);
     converged = false;  cancelled = false;  dist_end = inf;  err_ang = 0;
@@ -108,12 +108,4 @@ function info = method_sa(model, q0, target, opts)
     end
     info.stats.T_final = T;
     info.stats.sigma_final = sigma;
-end
-
-function v = of(s, field, default)
-    if isfield(s, field) && ~isempty(s.(field))
-        v = s.(field);
-    else
-        v = default;
-    end
 end

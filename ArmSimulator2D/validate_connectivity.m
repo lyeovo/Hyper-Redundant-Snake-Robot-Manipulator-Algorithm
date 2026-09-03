@@ -17,11 +17,11 @@ function res = validate_connectivity(opts)
 %     addpath('ArmSimulator2D'); res = validate_connectivity();            % 默认 100 场景
 %     res = validate_connectivity(struct('n_scene',200,'GRID',64,'do_segment_solve',1));
     if nargin < 1 || isempty(opts), opts = struct(); end
-    rng(of(opts,'seed',1));
-    n_scene = of(opts,'n_scene',100);
-    GRID    = of(opts,'GRID',64);
-    gridList = of(opts,'gridList',[32 64 128]);
-    do_seg  = of(opts,'do_segment_solve',0);
+    rng(optget(opts,'seed',1));
+    n_scene = optget(opts,'n_scene',100);
+    GRID    = optget(opts,'GRID',64);
+    gridList = optget(opts,'gridList',[32 64 128]);
+    do_seg  = optget(opts,'do_segment_solve',0);
 
     base = struct('sg_ok',0,'gt_reach',0,'agree',0,'n_nodes',0,'n_edges',0, ...
         'seg_ok',0,'seg_try',0,'path_ok',0);
@@ -159,8 +159,4 @@ function ok = ptFree(model, p, rho0)
         lx=(p(1)-r(1))*ct+(p(2)-r(2))*st;  ly=-(p(1)-r(1))*st+(p(2)-r(2))*ct;
         if abs(lx)<=r(4)/2+rho0 && abs(ly)<=r(5)/2+rho0, ok=false; return; end
     end
-end
-
-function v = of(s, f, d)
-    if isfield(s,f) && ~isempty(s.(f)), v = s.(f); else, v = d; end
 end
