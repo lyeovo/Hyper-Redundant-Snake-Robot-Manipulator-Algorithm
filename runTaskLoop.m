@@ -26,6 +26,21 @@
     stats = struct('processed', 0, 'completed', 0, 'failed', 0, ...
         'rejected', 0, 'esstopped', 0, 'tasks', struct('id', cell(1,0), 'status', cell(1,0)));
     n_done = 0;
+
+    if verbose
+        N_deg = 0;
+        if isfield(model, 'cfg') && isfield(model.cfg, 'N')
+            N_deg = model.cfg.N;
+        end
+        fprintf('=================================================================\n');
+        fprintf('🚀 [runTaskLoop] 任务监听循环已就绪 (模型自由度 N=%d)\n', N_deg);
+        fprintf('📥 任务输入目录 (outbox): %s\n', outbox);
+        fprintf('📤 状态写回目录 (inbox) : %s\n', inbox);
+        fprintf('💡 提示: MATLAB 当前处于常驻监听状态 (Busy属正常现象)。\n');
+        fprintf('         请在 Python UI 界面下达任务指令，按 Ctrl+C 可停止监听。\n');
+        fprintf('=================================================================\n\n');
+    end
+
     while true
         if ~isempty(estop) && estop()
             if verbose, fprintf('[runTaskLoop] 急停，终止循环\n'); end
