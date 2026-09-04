@@ -7,7 +7,15 @@ function [pose2d, calibrated] = projectTo2D(pose3d)
 %   手眼标定（T_base_camera）前，相机系坐标直接作为仿真基座系使用（仿真模式）
 %   返回 calibrated 一直 false：本模块不握持标定矩阵，调用方应据此知晓"标定前仿真模式"。
     if isfield(pose3d, 'position') && ~isempty(pose3d.position)
-        x = pose3d.position.x;  y = pose3d.position.y;
+        % 相机坐标系 (D405): X 为右，Y 为下，Z 为前向深度
+        % 机械臂平面系: X 为前向纵深，Y 为左偏（右为负）
+        if isfield(pose3d.position, 'z') && pose3d.position.z > 0
+            x = pose3d.position.z;   % 前向深度
+            y = -pose3d.position.x;  % 右为负，左为正
+        else
+            x = pose3d.position.x;
+            y = pose3d.position.y;
+        end
     elseif isfield(pose3d, 'position_array')
         p = pose3d.position_array;  x = p(1);  y = p(2);
     else

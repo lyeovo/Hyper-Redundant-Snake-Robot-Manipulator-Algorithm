@@ -99,6 +99,8 @@ function info = taskExecute(model, cmd, opts)
             si = [];
             if strcmp(segs(s).kind, 'joint_delta') || strcmp(segs(s).kind, 'joint_abs')
                 si = execJointSeg(model, q, segs(s), snapshot_m);   % 关节空间段（直接驱动）
+            elseif strcmp(segs(s).kind, 'reset')
+                si = execResetSeg(model, q, snapshot_m);            % 复位段：全关节平滑回零（朝前直伸，不缩圈）
             else
                 tgt = resolveSegTarget(model, q, segs(s));          % 末端/相对/旋转段 → [x,y,θ]
                 for attempt = 1:3
@@ -150,6 +152,20 @@ function info = taskExecute(model, cmd, opts)
     end
     motor_cmd = struct('q_seq', q_seq, 't_seq', t_seq, 'gripper_seq', gripper_seq, ...
         'success', true, 'error_code', 0, 'q_final', q);
+
+    % ---- 慢放与逐帧运动回放（供 UI 观察连续轨迹动效） ----
+    playback_delay = optget(opts, 'playback_delay', 0.04);
+    if playback_delay > 0 && ~isempty(q_seq) && size(q_seq, 1) > 1
+        K = size(q_seq, 1);
+        step_stride = max(1, round(K / 30));
+        for k = 1:step_stride:K
+            taskWriteStatus(inbox, cmd, 'EXECUTING', 'Progress', k/K, ...
+                'Step', 'TRAJECTORY_PLAYBACK', 'Msg', sprintf('机械臂轨迹慢放中 (%d/%d)', k, K), ...
+                'JointPos', q_seq(k,:));
+            pause(playback_delay);
+        end
+    end
+
     taskWriteStatus(inbox, cmd, 'COMPLETED', 'Progress', 1, 'Msg', '任务完成', 'JointPos', q);
 
     info = mkInfo(true, 0, 'COMPLETED');
@@ -199,4 +215,17 @@ function si = execJointSeg(model, q, seg, snapshot_m)
     si = struct('q_snapshot', Q, 't_seq', (0:m-1), 'q_final', qn, ...
         'success', true, 'error_code', 0, 'dist_end', 0, 'err_ang', 0, ...
         'vel_ok', true, 'safety_ok', true, 'converged', true, 'method_used', 'joint');
+end
+
+
+function si = execResetSeg(model, q, snapshot_m)
+%execResetSeg 复位段：所有关节平滑回零（伸直朝前，不缩成圈）
+    cfg = model.cfg;
+    qn = zeros(1, cfg.N);
+    m = max(2, min(20, ceil(snapshot_m*3)));
+    xs = linspace(0, 1, m);
+    Q = repmat(q, m, 1) + (qn - q).*xs(:);
+    si = struct('q_snapshot', Q, 't_seq', (0:m-1), 'q_final', qn, ...
+        'success', true, 'error_code', 0, 'dist_end', 0, 'err_ang', 0, ...
+        'vel_ok', true, 'safety_ok', true, 'converged', true, 'method_used', 'reset');
 end
