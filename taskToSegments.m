@@ -14,11 +14,22 @@
         if isfield(cmd.selected_target, 'pose_base') && ~isempty(cmd.selected_target.pose_base) ...
                 && isfield(cmd.selected_target.pose_base, 'position')
             pb = cmd.selected_target.pose_base;
-            tgt_base = projectTo2D(pb);
-            if isfield(pb, 'frame_id') && (strcmpi(pb.frame_id, 'radar') || strcmpi(pb.frame_id, 'robot_base_ui'))
-                tgt = [tgt_base(2), -tgt_base(1), tgt_base(3)];
+            pos = pb.position;
+            if isstruct(pos)
+                ui_x = pos.x;
+                ui_y = pos.y;
+            elseif numel(pos) >= 2
+                ui_x = pos(1);
+                ui_y = pos(2);
             else
-                tgt = tgt_base;
+                ui_x = 0; ui_y = 0;
+            end
+            % UI 俯视系: X_ui 为右偏, Y_ui 为前向纵深
+            % MATLAB 机械臂系: X_arm 为前向纵深, Y_arm 为向左偏 (即 Y_arm = -X_ui)
+            if isfield(pb, 'frame_id') && strcmpi(pb.frame_id, 'robot_base_arm')
+                tgt = [ui_x, ui_y, 0];
+            else
+                tgt = [ui_y, -ui_x, 0];
             end
         elseif isfield(cmd.selected_target, 'pose_camera') && ~isempty(cmd.selected_target.pose_camera)
             tgt_cam = projectTo2D(cmd.selected_target.pose_camera);   % [x,y,θ] rad（相对相机）
@@ -61,9 +72,22 @@
 
         case 'move_for_place'
             if isfield(cmd,'destination') && isfield(cmd.destination,'pose_base') && ~isempty(cmd.destination.pose_base)
-                dest = projectTo2D(cmd.destination.pose_base);
+                dpb = cmd.destination.pose_base;
+                dpos = dpb.position;
+                if isstruct(dpos)
+                    d_x = dpos.x; d_y = dpos.y;
+                elseif numel(dpos) >= 2
+                    d_x = dpos(1); d_y = dpos(2);
+                else
+                    d_x = 0; d_y = 0;
+                end
+                if isfield(dpb, 'frame_id') && strcmpi(dpb.frame_id, 'robot_base_arm')
+                    dest = [d_x, d_y, 0];
+                else
+                    dest = [d_y, -d_x, 0];
+                end
             else
-                dest = tgt;   % 缺省：原目标位
+                dest = tgt;
             end
             segs = mk('ee', [dest(1), dest(2), dest(3)], 0, 'MOVING_TO_PLACE');
 
