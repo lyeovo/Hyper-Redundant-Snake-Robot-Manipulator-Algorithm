@@ -27,7 +27,7 @@ function def = modelDefaults()
     def.barrier_range = 0.5;            % 屏障激活距离（g_eff ≥ 此值势为 0；
                                         %   防止 -log(g) 在远处变负势干扰位置收敛）
     % --- 障碍 ---
-    def.obstacles.rects = [];           % [x,y,θ,w,h; ...] 可旋转矩形
+    def.obstacles.rects = [-1.06, 0.0, 0.0, 2.0, 20.0];  % 后方物理防护墙体障碍物：X <= -0.06m (厚度 2m, 跨度 20m)           % [x,y,θ,w,h; ...] 可旋转矩形
     def.obstacles.circles = [];         % [x,y,r; ...] 圆形
     def.obs_mode = 'seg';               % 'seg'（默认，段级）| 'point'（点级快速）
     % --- 迭代 ---

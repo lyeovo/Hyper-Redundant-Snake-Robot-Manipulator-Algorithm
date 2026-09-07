@@ -31,6 +31,7 @@
             else
                 tgt = [ui_y, -ui_x, 0];
             end
+            tgt(1) = max(0.05, tgt(1));  % 物理防护墙体约束：目标必须在前方 X_arm >= 0.05m
         elseif isfield(cmd.selected_target, 'pose_camera') && ~isempty(cmd.selected_target.pose_camera)
             tgt_cam = projectTo2D(cmd.selected_target.pose_camera);   % [x,y,θ] rad（相对相机）
             % 利用当前机械臂几何模型与末端位姿调用 objRelToAbs 转换为空间基座绝对物理位姿
@@ -62,7 +63,11 @@
     switch ct
         % ---- 末端位置段 ----
         case 'move_to'
-            segs = mk('ee', [y, -x, tgt(3)], 0, 'MOVING_TO');  % 对齐坐标系：X_arm=y(前), Y_arm=-x(侧)
+            % 坐标系转换：X_arm = y (前方), Y_arm = -x (向右为负，向左为正)
+            % 物理后方墙体防护：X_arm 强制限制在前方 >= 0.05m
+            x_arm = max(0.05, y);
+            y_arm = -x;
+            segs = mk('ee', [x_arm, y_arm, tgt(3)], 0, 'MOVING_TO');
 
         case 'move_along'
             segs = mk('ee_relative', [], 0, 'MOVING_ALONG', 'dir', Th, 'dist', D);
@@ -89,6 +94,7 @@
             else
                 dest = tgt;
             end
+            dest(1) = max(0.05, dest(1));  % 物理防护墙体约束：放置点必须在前方 X_arm >= 0.05m
             segs = mk('ee', [dest(1), dest(2), dest(3)], 0, 'MOVING_TO_PLACE');
 
         % ---- 旋转段 ----

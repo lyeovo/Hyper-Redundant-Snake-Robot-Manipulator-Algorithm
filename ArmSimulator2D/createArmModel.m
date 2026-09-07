@@ -20,6 +20,9 @@ function model = createArmModel(params)
     end
     cfg.q_min = repParam(gv(params, 'q_min', def.q_min), cfg.N);
     cfg.q_max = repParam(gv(params, 'q_max', def.q_max), cfg.N);
+    % 物理墙体约束：J1 为基座关节，后方为物理防护墙体，作业范围限制在前方 [-pi/2, +pi/2]
+    cfg.q_min(1) = max(cfg.q_min(1), -pi/2);
+    cfg.q_max(1) = min(cfg.q_max(1),  pi/2);
     cfg.rod_offset_arr = gv(params, 'rod_offset_arr', []);
     if isempty(cfg.rod_offset_arr), cfg.rod_offset_arr = zeros(1, cfg.N); end
     cfg.q_init = gv(params, 'q_init', []);
@@ -67,6 +70,21 @@ function model = createArmModel(params)
             th = atan2(dxy(2), dxy(1));
             if len < 1e-12, len = 1e-6; end
             obs.rects(end+1, :) = [(ln(1,1)+ln(2,1))/2, (ln(1,2)+ln(2,2))/2, th, len, 2*hw]; %#ok<AGROW>
+        end
+    end
+        % 后方物理防护墙体矩形障碍物：位于 X <= -0.06m (厚度 2m, 跨度 20m)
+    wall_rect = [-1.06, 0.0, 0.0, 2.0, 20.0];
+    if isempty(obs.rects)
+        obs.rects = wall_rect;
+    else
+        has_wall = false;
+        for ri = 1:size(obs.rects, 1)
+            if abs(obs.rects(ri, 1) - wall_rect(1)) < 0.1 && abs(obs.rects(ri, 2) - wall_rect(2)) < 0.1
+                has_wall = true; break;
+            end
+        end
+        if ~has_wall
+            obs.rects = [obs.rects; wall_rect];
         end
     end
     cfg.obstacles = obs;
