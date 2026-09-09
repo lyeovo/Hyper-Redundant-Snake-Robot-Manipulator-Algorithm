@@ -9,13 +9,13 @@ function test_taskUnify()
     if ~exist(inbox, 'dir'), mkdir(inbox); end
     delete(fullfile(inbox, '*.json'));
 
-    m = testModel('N', 4, 'X_target', [2.5, 1.0], 'theta_target', 0.0, ...
+    m = testModel('N', 6, 'X_target', [2.5, 1.0], 'theta_target', 0.0, ...
         'obstacles', struct('rects', [], 'circles', []));
 
-    % ---- 1. move_to：params.x/y（doc 常设 selected_target=null）----
+    % ---- 1. move_to：params.x/y（视觉系 x=右,y=前 → 臂系 [y,-x]）----
     cmd = docCmd('move_to');  cmd.selected_target = [];  cmd.params = struct('x', 0.35, 'y', -0.12);
     segs = taskToSegments(cmd, m, 0.15);
-    fails = fails + assertEq(segs(1).target, [0.35, -0.12, 0], 'move_to 用 params.x/y');
+    fails = fails + assertEq(segs(1).target, [-0.12, -0.35, 0], 'move_to 用 params.x/y → [y,-x]');
 
     % ---- 2. move_along：theta_deg/distance_m（度→弧度）----
     cmd = docCmd('move_along');  cmd.params = struct('theta_deg', 45, 'distance_m', 0.2);
@@ -31,8 +31,8 @@ function test_taskUnify()
 
     % ---- 4. rotate_arm：joint_index + alpha_deg，且 joint_index 按 model.N 截断 ----
     cmd = docCmd('rotate_arm');  cmd.params = struct('joint_index', 10, 'alpha_deg', -30);
-    segs = taskToSegments(cmd, m, 0.15);   % N=4 → 10 截断为 4
-    fails = fails + assertEq(segs(1).joint, 4, 'joint_index 截断到 N');
+    segs = taskToSegments(cmd, m, 0.15);   % N=6 → 10 截断为 6
+    fails = fails + assertEq(segs(1).joint, 6, 'joint_index 截断到 N');
     fails = fails + assertTrue(abs(segs(1).delta + pi/6) < 1e-9, 'rotate_arm delta 度→弧度');
 
     % ---- 5. facing_arm：joint_index + theta_deg（度→弧度）----

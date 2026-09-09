@@ -6,15 +6,25 @@ function [pose2d, calibrated] = projectTo2D(pose3d)
 %   工作平面 = 水平面（robot_base X-Y，Z 垂直），θ = yaw（绕垂直轴 Z 的四元数偏航角）
 %   手眼标定（T_base_camera）前，相机系坐标直接作为仿真基座系使用（仿真模式）
 %   返回 calibrated 一直 false：本模块不握持标定矩阵，调用方应据此知晓"标定前仿真模式"。
+%
+%   坐标区分（按 frame_id）：
+%     - 相机系（frame_id 含 'cam'，如 camera_left）：D405 约定 X右/Y下/Z前向深度
+%       → 臂平面系 X=前向深度(z)、Y=左偏(右为负, 即 -camX)。
+%     - 基座系（robot_base / radar / robot_base_ui 等）：直接取 position.x/y（z 为高度，忽略）。
+    isCam = isfield(pose3d, 'frame_id') && ischar(pose3d.frame_id) ...
+        && ~isempty(regexpi(pose3d.frame_id, 'cam', 'once'));
     if isfield(pose3d, 'position') && ~isempty(pose3d.position)
-        % 相机坐标系 (D405): X 为右，Y 为下，Z 为前向深度
-        % 机械臂平面系: X 为前向纵深，Y 为左偏（右为负）
-        if isfield(pose3d.position, 'z') && pose3d.position.z > 0
-            x = pose3d.position.z;   % 前向深度
-            y = -pose3d.position.x;  % 右为负，左为正
+        if isCam
+            % 相机坐标系 (D405): X 为右，Y 为下，Z 为前向深度
+            % 机械臂平面系: X 为前向纵深，Y 为左偏（右为负）
+            if isfield(pose3d.position, 'z') && ~isempty(pose3d.position.z)
+                x = pose3d.position.z;   % 前向深度
+                y = -pose3d.position.x;  % 右为负，左为正
+            else
+                x = pose3d.position.x;  y = pose3d.position.y;
+            end
         else
-            x = pose3d.position.x;
-            y = pose3d.position.y;
+            x = pose3d.position.x;  y = pose3d.position.y;   % 基座系：z 为高度，不参与平面投影
         end
     elseif isfield(pose3d, 'position_array')
         p = pose3d.position_array;  x = p(1);  y = p(2);

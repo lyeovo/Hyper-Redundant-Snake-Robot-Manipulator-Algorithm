@@ -9,6 +9,8 @@ function def = modelDefaults()
     def.q_max =  pi;                    % 关节上限
     def.rod_offset_arr = [];            % 逐段垂直偏移（空 → zeros(1,N)，纯平面模型）
     def.q_init = [];                    % 初始关节角（空 → zeros(1,N)）
+    def.mount_sign = [];                % 各电机安装方向符号（默认交替：奇数=+1, 偶数=-1 交叠反向安装）
+    def.direction_cw = 0;               % direction 位约定：0=顺时针(CW) 1=逆时针(CCW)（沿 model 正向=CCW）
     % --- 任务目标 ---
     def.X_target = [2.0, 1.0];          % 末端目标位置 [x,y] m
     def.theta_target = 0.0;             % 末端目标角度 rad

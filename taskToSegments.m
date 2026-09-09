@@ -1,4 +1,4 @@
-﻿function segs = taskToSegments(cmd, model, approach_dist)
+function segs = taskToSegments(cmd, model, approach_dist)
 %taskToSegments command_type -> 运动段展开（参数与视觉接口统一）
 %   segs = taskToSegments(cmd, model, approach_dist)
 %   cmd : TaskCommand（遵循 TASK_COMMAND_INTERFACE v2.0）
@@ -15,7 +15,8 @@
                 && isfield(cmd.selected_target.pose_base, 'position')
             pb = cmd.selected_target.pose_base;
             tgt_base = projectTo2D(pb);
-            if isfield(pb, 'frame_id') && (strcmpi(pb.frame_id, 'radar') || strcmpi(pb.frame_id, 'robot_base_ui'))
+            % 视觉/UI 基座系约定 x=右、y=前；臂平面系 X=前、Y=左(右为负)。故 base 位姿统一 [y,-x] 对齐。
+            if isfield(pb, 'frame_id') && (strcmpi(pb.frame_id, 'radar') || strcmpi(pb.frame_id, 'robot_base_ui') || strcmpi(pb.frame_id, 'robot_base'))
                 tgt = [tgt_base(2), -tgt_base(1), tgt_base(3)];
             else
                 tgt = tgt_base;
@@ -62,10 +63,12 @@
         case 'move_for_place'
             if isfield(cmd,'destination') && isfield(cmd.destination,'pose_base') && ~isempty(cmd.destination.pose_base)
                 dest = projectTo2D(cmd.destination.pose_base);
+                % 与 move_to 同约定：视觉基座系(x=右,y=前) → 臂平面系(X=前, Y=-右)
+                segs = mk('ee', [dest(2), -dest(1), dest(3)], 0, 'MOVING_TO_PLACE');
             else
                 dest = tgt;   % 缺省：原目标位
+                segs = mk('ee', [dest(1), dest(2), dest(3)], 0, 'MOVING_TO_PLACE');
             end
-            segs = mk('ee', [dest(1), dest(2), dest(3)], 0, 'MOVING_TO_PLACE');
 
         % ---- 旋转段 ----
         case 'rotate'

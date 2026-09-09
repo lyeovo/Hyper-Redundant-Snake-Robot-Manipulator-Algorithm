@@ -61,7 +61,13 @@ function info = taskExecute(model, cmd, opts)
 
     % ---- 逐段执行 ----
     seg_infos = repmat(struct('target', [], 'gripper', [], 'name', '', 'info', struct()), 1, numel(segs));
-    q = model.cfg.q_init;
+    % 起点 = 本地仿真位姿记录 model.q（电控不返回绝对位姿，默认电机精确，故以本地记录为准）；
+    % 缺失时回退 cfg.q_init。runTaskLoop 每任务后把 q_final 累进 model.q，实现跨任务串接。
+    if isfield(model, 'q') && ~isempty(model.q) && numel(model.q) == cfg.N
+        q = double(model.q(:).');
+    else
+        q = cfg.q_init;
+    end
     n_seg = numel(segs);
     % 预检：段目标是否被障碍吞没（距障碍 < rho0，安全约束下物理不可达）→ 明确报错
     for s = 1:n_seg
@@ -151,7 +157,20 @@ function info = taskExecute(model, cmd, opts)
         t_off = t_off + ts(end) + 1;        % 下一段时间偏移（+1 保证严格递增）
     end
     motor_cmd = struct('q_seq', q_seq, 't_seq', t_seq, 'gripper_seq', gripper_seq, ...
-        'success', true, 'error_code', 0, 'q_final', q);
+        'success', true, 'error_code', 0, 'q_final', q, ...
+        'mount_sign', cfg.mount_sign);   % 各电机安装方向符号(±1)，电控方向位据此修正偶数电机
+
+    % ---- 遥测（对齐 TASK_COMMAND_INTERFACE v2.0）：planner / gripper / 单位 ----
+    planner = struct();
+    if ~isempty(seg_infos) && isstruct(seg_infos(end).info)
+        siLast = seg_infos(end).info;
+        if isfield(siLast,'method_used') && ~isempty(siLast.method_used), planner.method_used = siLast.method_used; end
+        if isfield(siLast,'dist_end') && ~isempty(siLast.dist_end), planner.tracking_error_mm = siLast.dist_end*1000; end
+        if isfield(siLast,'err_ang') && ~isempty(siLast.err_ang), planner.angle_error_deg = siLast.err_ang*180/pi; end
+        if isfield(siLast,'solve_time') && ~isempty(siLast.solve_time), planner.solve_time_ms = siLast.solve_time*1000; end
+    end
+    gripper_final = 0;
+    if ~isempty(gripper_seq), gripper_final = gripper_seq(end); end
 
     % ---- 慢放与逐帧运动回放（供 UI 观察连续轨迹动效） ----
     playback_delay = optget(opts, 'playback_delay', 0.04);
@@ -161,12 +180,13 @@ function info = taskExecute(model, cmd, opts)
         for k = 1:step_stride:K
             taskWriteStatus(inbox, cmd, 'EXECUTING', 'Progress', k/K, ...
                 'Step', 'TRAJECTORY_PLAYBACK', 'Msg', sprintf('机械臂轨迹慢放中 (%d/%d)', k, K), ...
-                'JointPos', q_seq(k,:));
+                'JointPos', q_seq(k,:), 'JointPosUnit', 'rad');
             pause(playback_delay);
         end
     end
 
-    taskWriteStatus(inbox, cmd, 'COMPLETED', 'Progress', 1, 'Msg', '任务完成', 'JointPos', q);
+    taskWriteStatus(inbox, cmd, 'COMPLETED', 'Progress', 1, 'Msg', '任务完成', ...
+        'JointPos', q, 'JointPosUnit', 'rad', 'Gripper', gripper_final, 'Planner', planner);
 
     info = mkInfo(true, 0, 'COMPLETED');
     info.seg_infos = seg_infos;

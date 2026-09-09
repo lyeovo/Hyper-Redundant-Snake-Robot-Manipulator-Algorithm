@@ -26,6 +26,15 @@ function model = createArmModel(params)
     if isempty(cfg.q_init), cfg.q_init = zeros(1, cfg.N); end
     if numel(cfg.q_init) ~= cfg.N, cfg.q_init = zeros(1, cfg.N); end
 
+    % 各电机安装方向符号：交叠反向安装（弹簧状），奇数 1,3,5 正向、偶数 2,4,6 反向。
+    % 缺省 alternate：mount_sign(j) = +1(奇) / -1(偶)。方向位在此符号下定义。
+    cfg.mount_sign = gv(params, 'mount_sign', []);
+    if isempty(cfg.mount_sign)
+        cfg.mount_sign = (-1).^(0:cfg.N-1);      % [1,-1,1,-1,...]; 可用作方向位翻转
+    elseif numel(cfg.mount_sign) ~= cfg.N
+        cfg.mount_sign = (-1).^(0:cfg.N-1);
+    end
+
     % --- 任务目标 ---
     cfg.X_target = gv(params, 'X_target', def.X_target);
     cfg.theta_target = gv(params, 'theta_target', def.theta_target);
@@ -129,6 +138,9 @@ function model = createArmModel(params)
     model.cfg = cfg;
     model.DH = zeros(cfg.N, 4);
     model.DH(:,3) = cfg.L_seg;
+    % 本地仿真位姿记录：电控侧不返回绝对位姿(默认电机精确)，故当前位姿以本地记录为准。
+    % 初始=cfg.q_init；后续每次任务后在 runTaskLoop 里以 taskExecute 的 q_final 累进。
+    model.q = cfg.q_init;
     model.meta = struct('source', 'ArmSimulator2D', ...
         'created', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
 end
